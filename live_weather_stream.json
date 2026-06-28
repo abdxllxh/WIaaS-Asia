@@ -1,0 +1,17 @@
+{
+    "pipeline_metadata": {
+        "processed_at": "2026-06-28T11:04:08.396670",
+        "status": "CRITICAL_ANOMALY",
+        "ingestion_latency_ms": 3.06
+    },
+    "metrics": {
+        "temperature_celsius": 30.47,
+        "observed_precipitation_mm": 26.57,
+        "precipitation_deficit_pct": 50.0,
+        "soil_moisture": 0.19
+    },
+    "amd_telemetry": {
+        "amd_rocm_visible_devices": "GPU-0",
+        "gpu_utilization_pct": 85
+    }
+}
