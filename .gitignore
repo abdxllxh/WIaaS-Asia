@@ -3,4 +3,4 @@ __pycache__/
 .env
 venv/
 .vscode/
-.json
+*.json
