@@ -23,10 +23,10 @@ import json
 import requests
 from datetime import datetime, timezone
 
-from config import REGIONS
-from analytics import ClimateAnomalyEngine
-from ledger import SyntheticResourceLedger
-from bridge import GNNToLLMBridge
+from app.core.config import REGIONS
+from app.engines.analytics import ClimateAnomalyEngine
+from app.engines.ledger import SyntheticResourceLedger
+from app.services.bridge import GNNToLLMBridge
 
 
 class WeatherIntelligencePipeline:
