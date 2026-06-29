@@ -16,7 +16,7 @@ Computational stack (in dependency order):
 
 from __future__ import annotations
 import math
-from config import PHYSICS, ANOMALY_THRESHOLDS
+from app.core.config import PHYSICS, ANOMALY_THRESHOLDS
 
 
 class ClimateAnomalyEngine:

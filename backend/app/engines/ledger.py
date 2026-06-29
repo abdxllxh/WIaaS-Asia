@@ -16,7 +16,7 @@ Degradation pathways:
 """
 
 from __future__ import annotations
-from config import DEGRADATION
+from app.core.config import DEGRADATION
 
 
 class SyntheticResourceLedger:
