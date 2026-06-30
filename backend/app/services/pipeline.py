@@ -152,11 +152,19 @@ class WeatherIntelligencePipeline:
         print(f"[4/6] ✓  State vector     {len(state_vector)} chars constructed")
 
         # ── Stage 5: Structured Payload Assembly ──────────────────────────────
+        current_time = datetime.now(timezone.utc)
+        diurnal_cycle = "DAY" if 6 <= current_time.hour <= 18 else "NIGHT"
         payload: dict = {
             "_meta": {
                 "pipeline_version": self._PIPELINE_VERSION,
                 "generated_at_utc": datetime.now(timezone.utc).isoformat(),
                 "region_key":       region_key,
+                "timezone":         region.get("timezone", "UTC+0"),
+                "coordinates": {
+                    "latitude":     region["latitude"],
+                    "longitude":    region["longitude"]
+                },
+                "diurnal_cycle":    diurnal_cycle
             },
             "monitored_region": region["name"],
             "system_status":    analysis["status"],
@@ -196,3 +204,5 @@ if __name__ == "__main__":
     pipeline = WeatherIntelligencePipeline()
     pipeline.execute("pakistan_punjab")
     pipeline.execute("togo_maritime")
+    pipeline.execute("france_paris")
+    pipeline.execute("usa_california_central_valley")
