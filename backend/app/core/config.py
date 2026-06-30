@@ -68,11 +68,8 @@ REGIONS: dict[str, dict] = {
         "name":                  "Maritime Region, Togo (Coastal West Africa)",
         "latitude":              6.1375,
         "longitude":             1.2223,
-        # The historically recorded operational temperature ceiling for this zone.
-        # Anything above this is a genuine anomaly — not a hot day in a hotter region.
         "expected_max_baseline": 34.0,
-        # Nominal (non-crisis) inventory of finite physical assets.
-        # Used as the starting point for physics-based degradation in the Ledger.
+        "timezone":              "GMT+0 (Togo Time)",
         "resource_baselines": {
             "water_reservoir_m3":  1_250_000,
             "grid_capacity_mw":    320,
@@ -83,13 +80,134 @@ REGIONS: dict[str, dict] = {
         "name":                  "Punjab Region, Pakistan (Arid/Semi-Arid Zone)",
         "latitude":              31.1704,
         "longitude":             72.7097,
-        # 47°C is NOT anomalous for Punjab — it is the regional operational ceiling.
-        # The system will only trigger alerts for conditions breaching this threshold.
         "expected_max_baseline": 47.0,
+        "timezone":              "GMT+5 (Pakistan Standard Time)",
         "resource_baselines": {
             "water_reservoir_m3":  3_800_000,
             "grid_capacity_mw":    850,
             "fuel_reserve_liters": 210_000,
+        },
+    },
+    # ── Europe ─────────────────────────────────────────────────────────────
+    "france_paris": {
+        "name":                  "Paris Île-de-France, France (Temperate Zone)",
+        "latitude":              48.8566,
+        "longitude":             2.3522,
+        "expected_max_baseline": 35.0,
+        "timezone":              "GMT+2 (Central European Summer Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  2_100_000,
+            "grid_capacity_mw":    600,
+            "fuel_reserve_liters": 120_000,
+        },
+    },
+    "spain_andalusia": {
+        "name":                  "Andalusia, Spain (Mediterranean Hot Arid Zone)",
+        "latitude":              37.3891,
+        "longitude":             -5.9845,
+        "expected_max_baseline": 42.0,
+        "timezone":              "GMT+2 (Central European Summer Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  950_000,
+            "grid_capacity_mw":    450,
+            "fuel_reserve_liters": 80_000,
+        },
+    },
+    "germany_bavaria": {
+        "name":                  "Bavaria, Germany (Continental Zone)",
+        "latitude":              48.1351,
+        "longitude":             11.5820,
+        "expected_max_baseline": 33.0,
+        "timezone":              "GMT+2 (Central European Summer Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  2_800_000,
+            "grid_capacity_mw":    750,
+            "fuel_reserve_liters": 150_000,
+        },
+    },
+    "uk_london": {
+        "name":                  "Greater London, United Kingdom (Maritime Temperate)",
+        "latitude":              51.5074,
+        "longitude":             -0.1278,
+        "expected_max_baseline": 31.0,
+        "timezone":              "GMT+1 (British Summer Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  1_500_000,
+            "grid_capacity_mw":    500,
+            "fuel_reserve_liters": 90_000,
+        },
+    },
+    "italy_sicily": {
+        "name":                  "Sicily, Italy (Subtropical Mediterranean Zone)",
+        "latitude":              37.5990,
+        "longitude":             14.0154,
+        "expected_max_baseline": 44.0,
+        "timezone":              "GMT+2 (Central European Summer Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  800_000,
+            "grid_capacity_mw":    400,
+            "fuel_reserve_liters": 75_000,
+        },
+    },
+    # ── Americas ───────────────────────────────────────────────────────────
+    "usa_california_central_valley": {
+        "name":                  "Central Valley, California, USA (Semi-Arid Agri Hub)",
+        "latitude":              36.7783,
+        "longitude":             -119.4179,
+        "expected_max_baseline": 41.0,
+        "timezone":              "GMT-7 (Pacific Daylight Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  4_500_000,
+            "grid_capacity_mw":    900,
+            "fuel_reserve_liters": 250_000,
+        },
+    },
+    "usa_texas_houston": {
+        "name":                  "Houston, Texas, USA (Humid Subtropical Grid Edge)",
+        "latitude":              29.7604,
+        "longitude":             -95.3698,
+        "expected_max_baseline": 38.0,
+        "timezone":              "GMT-5 (Central Daylight Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  3_200_000,
+            "grid_capacity_mw":    1_200,
+            "fuel_reserve_liters": 300_000,
+        },
+    },
+    "brazil_cerrado": {
+        "name":                  "Cerrado Savannah, Brazil (Tropical Agro Ecosystem)",
+        "latitude":              -14.2350,
+        "longitude":             -51.9253,
+        "expected_max_baseline": 36.0,
+        "timezone":              "GMT-3 (Brasilia Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  5_000_000,
+            "grid_capacity_mw":    800,
+            "fuel_reserve_liters": 180_000,
+        },
+    },
+    "canada_alberta": {
+        "name":                  "Alberta Plains, Canada (Boreal Subarctic)",
+        "latitude":              53.9333,
+        "longitude":             -116.5765,
+        "expected_max_baseline": 30.0,
+        "timezone":              "GMT-6 (Mountain Daylight Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  2_000_000,
+            "grid_capacity_mw":    550,
+            "fuel_reserve_liters": 140_000,
+        },
+    },
+    "argentina_pampas": {
+        "name":                  "The Pampas, Argentina (Humid Pampas Plain)",
+        "latitude":              -34.6037,
+        "longitude":             -58.3816,
+        "expected_max_baseline": 37.0,
+        "timezone":              "GMT-3 (Argentina Time)",
+        "resource_baselines": {
+            "water_reservoir_m3":  2_200_000,
+            "grid_capacity_mw":    480,
+            "fuel_reserve_liters": 110_000,
         },
     },
 }
