@@ -187,6 +187,30 @@ class WeatherIntelligencePipeline:
             # The bounded context injected into the vLLM inference layer.
             "llm_state_vector": state_vector,
         }
+        # ── ADDED: n8n Compatibility Layer for vxr ──────────────────────
+        vxr_compatibility = {
+            "region_name":                    payload["monitored_region"],
+            "system_status":                  payload["system_status"],
+            "climate_matrix": {
+                "vapor_pressure_deficit_kpa":      payload["climate_matrix"]["vapor_pressure_deficit_kpa"],
+                "heat_index_celsius":              payload["climate_matrix"]["heat_index_celsius"],
+                "wet_bulb_celsius":                payload["climate_matrix"]["wet_bulb_celsius"],
+                "water_surface_evap_loss_pct":     payload["synthetic_resource_ledger"]["water_surface_evap_loss_pct"],
+                "water_irrigation_efficiency_pct": payload["synthetic_resource_ledger"]["water_irrigation_efficiency_pct"]
+            },
+            "ledger": {
+                "grid_available_capacity_mw":      payload["synthetic_resource_ledger"]["grid_available_capacity_mw"],
+                "grid_demand_surge_pct":           payload["synthetic_resource_ledger"]["grid_demand_surge_pct"],
+                "fuel_thermal_overhead_pct":       payload["synthetic_resource_ledger"]["fuel_thermal_overhead_pct"]
+            },
+            "telemetry": {
+                "temperature_celsius":             payload["climate_matrix"]["telemetry"]["temperature_celsius"],
+                "humidity_percentage":             payload["climate_matrix"]["telemetry"]["humidity_percentage"],
+                "wind_speed_kmh":                  payload["climate_matrix"]["telemetry"]["wind"]["speed_kmh"]
+            }
+        }
+        
+        payload.update(vxr_compatibility)
         payload_bytes = len(json.dumps(payload))
         print(f"[5/6] ✓  Payload          {payload_bytes:,} bytes assembled")
 
