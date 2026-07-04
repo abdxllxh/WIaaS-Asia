@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIaaS - Weather Intelligence as a Service</title>
+    
+    <!-- Google Fonts: Outfit (UI) & JetBrains Mono (Data) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js and Three.js CDNs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Left: Active Region and Local Time Widget -->
+        <div class="active-region-widget">
+            <div class="region-info">
+                <i data-lucide="map-pin" class="accent-icon"></i>
+                <div class="region-meta">
+                    <span class="region-label">ACTIVE MONITORING ZONE</span>
+                    <span class="region-name" id="current-region-name">Punjab Region, Pakistan</span>
+                </div>
+            </div>
+            <div class="region-time">
+                <span class="time-label">LOCAL RUNTIME</span>
+                <span class="time-value" id="current-region-time">00:00:00</span>
+            </div>
+        </div>
+
+        <!-- Top Navigation Bar -->
+        <header class="top-nav-container">
+            <nav class="top-nav">
+                <button class="nav-item" data-tab="region">
+                    <i data-lucide="globe"></i>
+                    <span>Region</span>
+                </button>
+                <button class="nav-item" data-tab="physics">
+                    <i data-lucide="thermometer"></i>
+                    <span>Physics</span>
+                </button>
+                <button class="nav-item active" data-tab="agriculture">
+                    <i data-lucide="sprout"></i>
+                    <span>Agriculture</span>
+                </button>
+                <button class="nav-item" data-tab="grid">
+                    <i data-lucide="zap"></i>
+                    <span>Grid</span>
+                </button>
+                <button class="nav-item" data-tab="logistics">
+                    <i data-lucide="truck"></i>
+                    <span>Logistics</span>
+                </button>
+                <button class="nav-item" data-tab="research">
+                    <i data-lucide="microscope"></i>
+                    <span>Research</span>
+                </button>
+                <button class="nav-item" data-tab="globe-analysis">
+                    <i data-lucide="layers"></i>
+                    <span>Globe Analysis</span>
+                </button>
+                <div class="nav-divider"></div>
+                <button class="nav-item" data-tab="agents">
+                    <i data-lucide="cpu"></i>
+                    <span>AI Agents</span>
+                </button>
+                <button class="nav-item" data-tab="analytics">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span>Analytics</span>
+                </button>
+                <button class="nav-item" data-tab="alerts">
+                    <i data-lucide="megaphone"></i>
+                    <span>Alerts</span>
+                </button>
+            </nav>
+        </header>
+
+
+        <!-- Main Workspace (Three.js Globe Canvas) -->
+        <div id="globe-container" style="position: relative;">
+            <!-- Three.js Canvas mounts here -->
+            
+            <!-- Floating Region Details Overlay -->
+            <div id="globe-popup-overlay" class="hidden" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;">
+                <svg id="globe-popup-connector" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">
+                    <path id="connector-path" d="" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,4" fill="none" />
+                </svg>
+                <div id="globe-popup-box" class="glass-card" style="position: absolute; pointer-events:auto; width:220px; background: rgba(13, 13, 18, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 14px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.6); backdrop-filter: blur(12px); font-family: var(--font-ui);">
+                    <button class="popup-close-btn" onclick="closeGlobePopup()" style="position: absolute; top: 8px; right: 10px; background:none; border:none; color:var(--text-secondary); font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                    <div class="popup-header" style="font-size:0.8rem; font-weight:700; color:var(--text-primary); margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:6px;">Punjab, Pakistan</div>
+                    <div class="popup-body" style="display:flex; flex-direction:column; gap:8px;">
+                        <div class="popup-row" style="display:flex; justify-content:space-between; font-size:0.7rem;">
+                            <span class="popup-label" style="color:var(--text-secondary);">Temperature</span>
+                            <span id="popup-temp-val" class="popup-val" style="color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">47°C</span>
+                        </div>
+                        <div class="popup-row" style="display:flex; justify-content:space-between; font-size:0.7rem;">
+                            <span class="popup-label" style="color:var(--text-secondary);">Relative Humidity</span>
+                            <span id="popup-humidity-val" class="popup-val" style="color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">50%</span>
+                        </div>
+                        <div class="popup-row" style="display:flex; justify-content:space-between; font-size:0.7rem;">
+                            <span class="popup-label" style="color:var(--text-secondary);">Wind Speed</span>
+                            <span id="popup-wind-val" class="popup-val" style="color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">12 km/h</span>
+                        </div>
+                        <div class="popup-row" style="display:flex; justify-content:space-between; font-size:0.7rem;">
+                            <span class="popup-label" style="color:var(--text-secondary);">Climate Status</span>
+                            <span id="popup-status-val" class="popup-val warning" style="font-weight:600; font-family:var(--font-ui);">CRITICAL</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Left Side: Sector Panels Container -->
+        <aside class="panel left-panel visible" id="left-sidebar">
+            <!-- Agriculture Intelligence Panel -->
+            <div class="panel-card" id="agriculture-panel">
+                <div class="panel-header">
+                    <div class="header-title">
+                        <i data-lucide="sprout" class="accent-icon"></i>
+                        <h2>Agriculture Intelligence</h2>
+                    </div>
+                    <div class="header-actions">
+                        <button class="action-btn" title="View Next"><i data-lucide="chevron-right"></i></button>
+                        <button class="action-btn" id="refresh-data-btn" title="Sync Data"><i data-lucide="refresh-cw"></i></button>
+                        <button class="action-btn" id="close-left-panel" title="Close"><i data-lucide="x"></i></button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="kpi-section">
+                        <div class="kpi-header">
+                            <span>Mean Crop Health Index</span>
+                            <i data-lucide="sparkles" class="kpi-spark"></i>
+                        </div>
+                        <div class="kpi-value-row">
+                            <span class="kpi-value" id="crop-health-value">0.82</span>
+                            <span class="kpi-unit">NDVI</span>
+                        </div>
+                        <div class="kpi-status green" id="crop-health-status">Highly Productive</div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+
+                    <ul class="data-grid">
+                        <li class="data-row">
+                            <span class="data-label">Soil Moisture (0-30cm)</span>
+                            <span class="data-value green" id="soil-moisture-val">34.2% (Optimal)</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Irrigation Demand</span>
+                            <span class="data-value" id="irrigation-demand-val">120 m³/hectare</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Disease Risk Index</span>
+                            <span class="data-value green" id="disease-risk-val">Low (8%)</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Water Stress Index</span>
+                            <span class="data-value" id="water-stress-val">0.18 (Nominal)</span>
+                        </li>
+                    </ul>
+
+                    <div class="ai-recommendation">
+                        <div class="rec-header">
+                            <i data-lucide="bot"></i>
+                            <span>AI RECOMMENDATION</span>
+                        </div>
+                        <p class="rec-text" id="ai-recommendation-text">
+                            Soil saturation will reach maximum capacity in 18 hours due to micro front accumulation. Suspend automated irrigation in Sector 4B to minimize runoff.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- General/Other Info Panels (Physics, Grid, Logistics, Research) -->
+            <div class="panel-card hidden" id="general-info-panel">
+                <div class="panel-header">
+                    <div class="header-title">
+                        <i data-lucide="info" class="accent-icon" id="general-panel-icon"></i>
+                        <h2 id="general-panel-title">Sector Intelligence</h2>
+                    </div>
+                    <div class="header-actions">
+                        <button class="action-btn" id="close-general-panel"><i data-lucide="x"></i></button>
+                    </div>
+                </div>
+                <div class="panel-body scrollable">
+                    <div id="general-panel-content">
+                        <!-- Dynamic content injected via JS -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Side: AI Assistant Chat Panel -->
+        <aside class="panel right-panel visible" id="right-sidebar">
+            <div class="panel-card chat-card">
+                <div class="panel-header">
+                    <div class="header-title">
+                        <i data-lucide="sparkles" class="accent-icon"></i>
+                        <h2>WIaaS AI Assistant</h2>
+                    </div>
+                    <div class="header-actions">
+                        <button class="action-btn" id="clear-chat" title="Clear Chat"><i data-lucide="trash-2"></i></button>
+                        <button class="action-btn" id="close-right-panel" title="Close"><i data-lucide="x"></i></button>
+                    </div>
+                </div>
+                <div class="panel-body chat-body" id="chat-messages-container">
+                    <div class="chat-message agent-msg">
+                        <div class="msg-header">
+                            <span class="agent-tag"><i data-lucide="cpu"></i> WIaaS-SWARM-V1.0</span>
+                            <span class="msg-time" id="msg-start-time">07:28</span>
+                        </div>
+                        <p class="msg-text">Greetings, Operator. I am analyzing the telemetry feed across five specialized models. What sector requires focus?</p>
+                        <div class="system-notification">
+                            <span class="notif-title">System Notification</span>
+                            <p class="notif-body" id="system-notification-text">Global weather models have just compiled a new ensemble forecast for the Next 72 Hours. Focus is recommended on Sector West Grid.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-footer">
+                    <div class="input-wrapper">
+                        <input type="text" id="chat-input" placeholder="Ask WIaaS agent swarm anything...">
+                        <div class="input-actions">
+                            <button class="icon-btn" title="Voice Input"><i data-lucide="mic"></i></button>
+                            <button class="icon-btn send-btn" id="send-chat-btn" title="Send message"><i data-lucide="send-horizontal"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Bottom Side: ROCm Multi-Agent Inference Details (Collapsible) -->
+        <footer class="bottom-panel collapsed" id="bottom-panel">
+            <div class="panel-card bottom-card">
+                <div class="panel-header">
+                    <div class="header-title">
+                        <i data-lucide="cpu" class="accent-icon"></i>
+                        <h2>ROCm Multi-Agent Inference Details</h2>
+                    </div>
+                    <div class="header-actions">
+                        <button class="action-btn" id="toggle-bottom-panel" title="Toggle Panel"><i data-lucide="chevron-up" id="bottom-toggle-icon"></i></button>
+                    </div>
+                </div>
+                <div class="panel-body bottom-charts-row">
+                    <div class="bottom-chart-col">
+                        <h3>VRAM ALLOCATION BY AGENT (GB)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="vramChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bottom-chart-col">
+                        <h3>CORE TEMPERATURE & POWER LEVEL</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="tempPowerChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Left/Right Sidebar Docking Controls -->
+        <button class="slider-btn left-btn" id="toggle-left-dock" title="Toggle Sidebar">
+            <i data-lucide="chevron-left" id="left-dock-icon"></i>
+        </button>
+        <button class="slider-btn right-btn" id="toggle-right-dock" title="Toggle Chat">
+            <i data-lucide="chevron-right" id="right-dock-icon"></i>
+        </button>
+
+        <!-- Bottom-most ROCm Status & Metric Bar -->
+        <div class="status-bar-container">
+            <div class="status-bar">
+                <div class="rocm-branding">
+                    <span class="dot"></span>
+                    <span class="branding-title">ROCm</span>
+                    <span class="branding-sub">Multi-Agent Inference Hub</span>
+                    <span class="branding-details">AMD Instinct™ MI300X | ROCm 6.1 Accelerated</span>
+                </div>
+                <div class="performance-metrics">
+                    <div class="metric">
+                        <span class="m-label">CPU UTILIZATION</span>
+                        <span class="m-value" id="cpu-util-val">81.1%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="m-label">VRAM USAGE</span>
+                        <span class="m-value" id="vram-usage-val">160.5 / 192 GB</span>
+                    </div>
+                    <div class="metric">
+                        <span class="m-label">INFERENCE SPEED</span>
+                        <span class="m-value" id="inf-speed-val">4,335 T/s</span>
+                    </div>
+                    <div class="metric">
+                        <span class="m-label">ACTIVE AGENTS</span>
+                        <span class="m-value green" id="active-agents-val">6 Swarm</span>
+                    </div>
+                    <div class="metric">
+                        <span class="m-label">LATENCY</span>
+                        <span class="m-value" id="latency-val">8.4 ms</span>
+                    </div>
+                    <div class="metric">
+                        <span class="m-label">POWER DRAW</span>
+                        <span class="m-value" id="power-draw-val">656 W</span>
+                    </div>
+                </div>
+                <div class="hosting-status">
+                    <span>HOSTING: 5+ SPECIALISTS</span>
+                    <div class="loading-ring"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
