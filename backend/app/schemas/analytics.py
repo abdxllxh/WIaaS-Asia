@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from pydantic import BaseModel, Field
 
 
@@ -27,3 +28,12 @@ class AnalyticsResponse(BaseModel):
     climate_matrix: dict[str, float | str]
     ledger: ResourceLedger
     telemetry: ClimateTelemetry
+
+
+class ChatRequest(BaseModel):
+    query: str = Field(..., description="User query for the AI Swarm")
+
+
+class ChatResponse(BaseModel):
+    reply: str = Field(..., description="Response from the n8n webhook")
+    raw_data: dict[str, Any] | None = Field(None, description="Raw JSON from n8n")
