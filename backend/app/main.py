@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+# Force stdout/stderr to UTF-8 on Windows to prevent UnicodeEncodeError
+# when printing state vectors or pipeline logs containing non-ASCII characters.
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr.encoding and sys.stderr.encoding.lower() != "utf-8":
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

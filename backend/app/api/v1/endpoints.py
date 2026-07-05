@@ -83,13 +83,16 @@ def simulate_chat(region_key: str, request: ChatRequest) -> ChatResponse:
     payload = pipeline.execute(region_key)
 
     if not payload:
-        raise HTTPException(status_code=500, detail="Failed to generate region payload")
+        return ChatResponse(
+            reply="[System] Could not generate region telemetry payload. Live weather API may be temporarily unavailable. Please try again in a moment.",
+            raw_data=None
+        )
 
     # Attach the user's query to the payload for n8n
     payload["user_query"] = request.query
 
     try:
-        response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=20)
+        response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=(10, 60))
         response.raise_for_status()
         
         # Try to parse the response format from n8n
@@ -119,9 +122,15 @@ def simulate_chat(region_key: str, request: ChatRequest) -> ChatResponse:
             # If it's not JSON, return as plain text
             return ChatResponse(reply=response.text, raw_data=None)
 
+    except requests.exceptions.Timeout:
+        print(f"Webhook timeout for region: {region_key}")
+        return ChatResponse(
+            reply="[System] The AI Swarm is processing a complex analysis and took too long to respond. Please try again — it may respond faster on retry.",
+            raw_data=None
+        )
     except requests.exceptions.RequestException as e:
         print(f"Webhook error: {e}")
         return ChatResponse(
-            reply=f"[Error] Failed to connect to AI Swarm (n8n Webhook): {str(e)}",
+            reply=f"[System] Unable to reach the AI Swarm at this time. Please check the n8n workflow is active and retry.",
             raw_data=None
         )
