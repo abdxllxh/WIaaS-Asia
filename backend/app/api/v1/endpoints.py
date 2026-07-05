@@ -27,12 +27,23 @@ def analyze_region(region_key: str) -> AnalyticsResponse:
         raise HTTPException(status_code=404, detail="Region not found")
 
     region = REGIONS[region_key]
-    telemetry = ClimateTelemetry(
-        temperature_celsius=region["expected_max_baseline"],
-        humidity_percentage=50.0,
-        wind_speed_kmh=10.0,
-        wind_direction_degrees=180,
-    )
+    pipeline = WeatherIntelligencePipeline()
+    live = pipeline.fetch_api_telemetry(region["latitude"], region["longitude"])
+
+    if live:
+        telemetry = ClimateTelemetry(
+            temperature_celsius=live.get("temperature_2m", region["expected_max_baseline"]),
+            humidity_percentage=live.get("relative_humidity_2m", 50.0),
+            wind_speed_kmh=live.get("wind_speed_10m", 10.0),
+            wind_direction_degrees=live.get("wind_direction_10m", 180),
+        )
+    else:
+        telemetry = ClimateTelemetry(
+            temperature_celsius=region["expected_max_baseline"],
+            humidity_percentage=50.0,
+            wind_speed_kmh=10.0,
+            wind_direction_degrees=180,
+        )
 
     analysis = ClimateAnomalyEngine.calculate_thermal_anomaly(
         current_temp=telemetry.temperature_celsius,

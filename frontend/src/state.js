@@ -1,7 +1,10 @@
 /**
  * state.js — Centralized application state for WIaaS frontend.
  * All shared mutable state is declared here and imported by other modules.
+ * Now supports both legacy hardcoded regions and dynamic user-selected cities.
  */
+
+import citiesManager from './cities.js';
 
 // ── Active Region ────────────────────────────────────────────────────────────
 export let activeRegionKey = 'pakistan_punjab';
@@ -10,42 +13,72 @@ export function setActiveRegionKey(key) {
     activeRegionKey = key;
 }
 
-// ── Region Metadata ──────────────────────────────────────────────────────────
-export const regionsList = [
+// ── Legacy Hardcoded Regions (fallback/defaults) ─────────────────────────────
+const LEGACY_REGIONS = {
+    'pakistan_punjab':               'Punjab Region, Pakistan',
+    'togo_maritime':                 'Maritime Region, Togo',
+    'france_paris':                  'Paris, France',
+    'spain_andalusia':               'Andalusia, Spain',
+    'germany_bavaria':               'Bavaria, Germany',
+    'uk_london':                     'Greater London, UK',
+    'italy_sicily':                  'Sicily, Italy',
+    'usa_california_central_valley': 'Central Valley, California',
+    'usa_texas_houston:':            'Houston, Texas',
+    'brazil_cerrado':                'Cerrado Savannah, Brazil',
+    'canada_alberta':                'Alberta Plains, Canada',
+    'argentina_pampas':              'The Pampas, Argentina',
+};
+
+const LEGACY_REGION_OFFSETS = {
+    'pakistan_punjab':               5,
+    'togo_maritime':                 0,
+    'france_paris':                  2,
+    'spain_andalusia':               2,
+    'germany_bavaria':               2,
+    'uk_london':                     1,
+    'italy_sicily':                  2,
+    'usa_california_central_valley': -7,
+    'usa_texas_houston':             -5,
+    'brazil_cerrado':                -3,
+    'canada_alberta':                -6,
+    'argentina_pampas':              -3,
+};
+
+// ── Region Metadata (merged: legacy + dynamic) ──────────────────────────────
+export let regionsList = [
     'pakistan_punjab', 'togo_maritime', 'france_paris', 'spain_andalusia',
     'germany_bavaria', 'uk_london', 'italy_sicily', 'usa_california_central_valley',
     'usa_texas_houston', 'brazil_cerrado', 'canada_alberta', 'argentina_pampas',
 ];
 
-export const regionOffsets = {
-    pakistan_punjab:               5,
-    togo_maritime:                 0,
-    france_paris:                  2,
-    spain_andalusia:               2,
-    germany_bavaria:               2,
-    uk_london:                     1,
-    italy_sicily:                  2,
-    usa_california_central_valley: -7,
-    usa_texas_houston:             -5,
-    brazil_cerrado:                -3,
-    canada_alberta:                -6,
-    argentina_pampas:              -3,
-};
+export let regionNames = { ...LEGACY_REGIONS };
+export let regionOffsets = { ...LEGACY_REGION_OFFSETS };
 
-export const regionNames = {
-    pakistan_punjab:               'Punjab Region, Pakistan',
-    togo_maritime:                 'Maritime Region, Togo',
-    france_paris:                  'Paris, France',
-    spain_andalusia:               'Andalusia, Spain',
-    germany_bavaria:               'Bavaria, Germany',
-    uk_london:                     'Greater London, UK',
-    italy_sicily:                  'Sicily, Italy',
-    usa_california_central_valley: 'Central Valley, California',
-    usa_texas_houston:             'Houston, Texas',
-    brazil_cerrado:                'Cerrado Savannah, Brazil',
-    canada_alberta:                'Alberta Plains, Canada',
-    argentina_pampas:              'The Pampas, Argentina',
-};
+/**
+ * Add a dynamic city to the region list
+ * @param {Object} cityData - City data from citiesManager
+ */
+export function addDynamicRegion(cityData) {
+    if (!cityData.id) {
+        cityData.id = `city_${cityData.latitude}_${cityData.longitude}`;
+    }
+    
+    if (!regionsList.includes(cityData.id)) {
+        regionsList.push(cityData.id);
+        regionNames[cityData.id] = cityData.displayName || cityData.name;
+        regionOffsets[cityData.id] = 0; // Use UTC by default
+    }
+}
+
+/**
+ * Sync dynamic cities from citiesManager to region state
+ */
+export function syncDynamicCities() {
+    const userCities = citiesManager.getAllCities();
+    userCities.forEach(city => {
+        addDynamicRegion(city);
+    });
+}
 
 // ── Telemetry Cache ──────────────────────────────────────────────────────────
 export const regionsTelemetryCache = {};

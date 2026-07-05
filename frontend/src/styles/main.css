@@ -41,23 +41,24 @@ body {
 
 /* Top Navigation Bar */
 .top-nav-container {
-    position: absolute;
+    position: fixed;
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 100;
+    z-index: 200;
+    pointer-events: auto;
 }
 
 .top-nav {
     display: flex;
     align-items: center;
-    background: rgba(18, 18, 24, 0.7);
+    background: rgba(18, 18, 24, 0.95);
     border: 1px solid var(--border-color);
     border-radius: 9999px;
-    padding: 6px 16px;
+    padding: 8px 16px;
     backdrop-filter: var(--glass-blur);
     gap: 8px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
 }
 
 .nav-item {
@@ -111,10 +112,10 @@ body {
 
 /* Slider Controls */
 .slider-btn {
-    position: absolute;
+    position: fixed;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(20, 20, 25, 0.4);
+    background: rgba(20, 20, 25, 0.6);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     width: 48px;
@@ -124,9 +125,10 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10;
+    z-index: 140;
     transition: all 0.2s;
     backdrop-filter: var(--glass-blur);
+    pointer-events: auto;
 }
 
 .slider-btn:hover {
@@ -155,11 +157,11 @@ body {
 
 /* Panels General Layout */
 .panel {
-    position: absolute;
-    top: 80px;
+    position: fixed;
+    top: 100px;
     bottom: 70px;
-    width: 380px;
-    z-index: 10;
+    width: 400px;
+    z-index: 120;
     pointer-events: none;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
     display: flex;
@@ -197,6 +199,39 @@ body {
 }
 
 .panel-card.hidden {
+    display: none;
+}
+
+/* ── Stacking fix ──────────────────────────────────────────────────────────
+   .panel.left-panel can host more than one .panel-card at the same time
+   (the City Explorer injected by ui-cities.js sits alongside the
+   Agriculture / General Info cards). Previously every .panel-card had
+   height:100%, so each one demanded the full column height and they
+   visually collapsed onto each other ("se mélangent"). Now: the
+   tab-driven card (agriculture/general-info) grows to fill the
+   remaining space, while the City Explorer keeps a bounded height and
+   scrolls internally. */
+.panel.left-panel {
+    gap: 16px;
+}
+
+.panel.left-panel > .panel-card {
+    height: auto;
+    flex: 0 0 auto;
+}
+
+.panel.left-panel > .panel-card#agriculture-panel,
+.panel.left-panel > .panel-card#general-info-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.city-search-card {
+    max-height: 46%;
+    flex: 0 1 auto;
+}
+
+.city-search-card.collapsed .panel-body {
     display: none;
 }
 
@@ -582,12 +617,13 @@ body {
 
 /* Bottom Side: ROCm Inference Details Panel */
 .bottom-panel {
-    position: absolute;
+    position: fixed;
     bottom: 50px;
     left: 25px;
     right: 25px;
-    z-index: 10;
+    z-index: 110;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
+    pointer-events: none;
 }
 
 .bottom-panel.collapsed {
@@ -631,14 +667,15 @@ body {
 
 /* Bottom-most Status Metric Bar */
 .status-bar-container {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     height: 50px;
-    z-index: 50;
+    z-index: 150;
     background: #020204;
     border-top: 1px solid var(--border-color);
+    pointer-events: auto;
 }
 
 .status-bar {
@@ -754,19 +791,20 @@ body {
 
 /* Active Region Status Widget */
 .active-region-widget {
-    position: absolute;
+    position: fixed;
     top: 20px;
     left: 25px;
-    z-index: 100;
-    background: rgba(18, 18, 24, 0.7);
+    z-index: 180;
+    background: rgba(18, 18, 24, 0.95);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 10px 16px;
+    padding: 12px 16px;
     backdrop-filter: var(--glass-blur);
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    gap: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+    pointer-events: auto;
 }
 
 .region-info {
@@ -816,5 +854,313 @@ body {
 #right-sidebar.visible ~ #toggle-right-dock {
     right: 420px;
 }
+
+/* ─── City Search Panel Styles ─────────────────────────────────────────────── */
+.city-search-card {
+    margin-bottom: 16px;
+}
+
+.city-search-body {
+    gap: 14px;
+}
+
+.city-search-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.city-search-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    flex: 1;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.city-search-input:focus {
+    border-color: var(--accent-color);
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.city-search-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.city-search-btn {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--accent-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.city-search-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: var(--accent-color);
+}
+
+.city-search-btn i {
+    width: 16px;
+    height: 16px;
+}
+
+.city-search-results {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.city-search-results.hidden {
+    display: none;
+}
+
+.search-loading,
+.search-no-results,
+.search-error {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 8px 0;
+    text-align: center;
+}
+
+.search-error {
+    color: var(--red-accent);
+}
+
+.city-result-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.city-result-item:hover {
+    background: rgba(56, 189, 248, 0.05);
+    border-color: rgba(56, 189, 248, 0.2);
+}
+
+.city-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.city-result-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.city-result-details {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+
+.city-result-add-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: var(--accent-color);
+    cursor: pointer;
+    margin-left: 8px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.city-result-add-btn:hover {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: var(--accent-color);
+}
+
+.city-result-add-btn i {
+    width: 14px;
+    height: 14px;
+}
+
+.city-selected-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.city-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.city-list-empty {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 12px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.city-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.city-item:hover {
+    background: rgba(56, 189, 248, 0.05);
+    border-color: rgba(56, 189, 248, 0.2);
+}
+
+.city-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.city-item-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.city-item-coords {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-family: var(--font-data);
+    margin-top: 2px;
+}
+
+.city-item-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-left: 6px;
+}
+
+.city-item-select-btn,
+.city-item-remove-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 4px 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.city-item-select-btn:hover {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: var(--green-accent);
+    color: var(--green-accent);
+}
+
+.city-item-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--red-accent);
+    color: var(--red-accent);
+}
+
+.city-item-select-btn i,
+.city-item-remove-btn i {
+    width: 12px;
+    height: 12px;
+}
+
+.city-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn-primary,
+.action-btn-secondary {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--accent-color);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.action-btn-primary:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: var(--accent-color);
+}
+
+.action-btn-secondary {
+    background: rgba(239, 68, 68, 0.05);
+    color: var(--red-accent);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.action-btn-secondary:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--red-accent);
+}
+
+.action-btn-primary i,
+.action-btn-secondary i {
+    width: 14px;
+    height: 14px;
+}
+
 
 

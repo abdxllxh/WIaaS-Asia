@@ -2,6 +2,14 @@
  * globe.js — Three.js Globe module for WIaaS.
  * All globe rendering, shaders, animation, and layer toggles.
  * Uses shared state from state.js, reads/writes via setters.
+ *
+ * v2 — design pass:
+ *   - Fixed lat/lon → 3D projection (was mismatched with the sphere's own
+ *     UV parameterization, which is why cities landed in the wrong place).
+ *   - Realistic day/night shader material with a moving terminator line,
+ *     ocean specular glint, and city lights on the dark side.
+ *   - Scroll-to-zoom (desktop) + pinch-to-zoom (touch), clamped.
+ *   - City markers are now small glowing points instead of 3D pin/halo blobs.
  */
 
 import {
@@ -26,23 +34,35 @@ import {
     setPrecipitationActive,
 } from './state.js';
 
-// ── Region Geographic Coordinates ────────────────────────────────────────────
-const REGION_COORDS = {
-    pakistan_punjab:               { lat:  31.17, lon:   72.70 },
-    togo_maritime:                 { lat:   6.13, lon:    1.22 },
-    france_paris:                  { lat:  48.85, lon:    2.35 },
-    spain_andalusia:               { lat:  37.38, lon:   -5.98 },
-    germany_bavaria:               { lat:  48.79, lon:   11.49 },
-    uk_london:                     { lat:  51.50, lon:   -0.12 },
-    italy_sicily:                  { lat:  37.60, lon:   14.01 },
-    usa_california_central_valley: { lat:  36.77, lon: -119.41 },
-    usa_texas_houston:             { lat:  29.76, lon:  -95.36 },
-    brazil_cerrado:                { lat: -14.23, lon:  -51.92 },
-    canada_alberta:                { lat:  53.93, lon: -116.57 },
-    argentina_pampas:              { lat: -34.60, lon:  -58.38 },
-};
+// Single source of truth for region coordinates — previously this exact
+// object was duplicated here AND in globe-coords.js, which is how the two
+// copies drift apart when someone edits only one of them.
+import { REGION_COORDS } from './globe-coords.js';
+
+// ── Geometry constants ───────────────────────────────────────────────────────
+const GLOBE_RADIUS = 1.6;
+
+// ── lat/lon → Vector3 (single source of truth) ──────────────────────────────
+// This MUST match THREE.SphereGeometry's own vertex parameterization
+// (x = -r·cos(φ)·sin(θ), y = r·cos(θ), z = r·sin(φ)·sin(θ), with
+// φ = azimuth = (lon+180)·π/180 and θ = polar = (90-lat)·π/180), otherwise
+// anything placed with this helper drifts away from where the day texture
+// actually shows that location. The previous version had sin/cos swapped
+// between the two horizontal terms, which is exactly why cities were
+// showing up rotated ~90° away from their real coordinates.
+function latLonToVector3(lat, lon, radius = GLOBE_RADIUS) {
+    const polar   = (90 - lat) * (Math.PI / 180);
+    const azimuth = (lon + 180) * (Math.PI / 180);
+    return new THREE.Vector3(
+        -radius * Math.cos(azimuth) * Math.sin(polar),
+         radius * Math.cos(polar),
+         radius * Math.sin(azimuth) * Math.sin(polar)
+    );
+}
 
 // ── GLSL Shaders ─────────────────────────────────────────────────────────────
+
+// Heatmap overlay (unchanged logic, still fed by the corrected regionPos array)
 const GLOBE_VERTEX_SHADER = `
     varying vec2 vUv;
     varying vec3 vLocalPosition;
@@ -95,6 +115,46 @@ const GLOBE_FRAGMENT_SHADER = `
     }
 `;
 
+// Realistic satellite material: blends a lit "day" texture with a "night
+// lights" texture across a soft terminator line driven by a world-space sun
+// direction, plus a cheap specular glint over oceans near the sub-solar point.
+const EARTH_VERTEX_SHADER = `
+    varying vec2 vUv;
+    varying vec3 vNormalW;
+    void main() {
+        vUv = uv;
+        vNormalW = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+
+const EARTH_FRAGMENT_SHADER = `
+    uniform sampler2D dayTexture;
+    uniform sampler2D nightTexture;
+    uniform sampler2D specularMap;
+    uniform vec3      sunDirection;
+    varying vec2      vUv;
+    varying vec3      vNormalW;
+
+    void main() {
+        vec3  normal  = normalize(vNormalW);
+        float sunDot  = dot(normal, normalize(sunDirection));
+        float dayMix  = smoothstep(-0.18, 0.15, sunDot);
+
+        vec3  dayColor   = texture2D(dayTexture, vUv).rgb;
+        vec3  nightColor = texture2D(nightTexture, vUv).rgb * 1.6;
+        float waterMask  = texture2D(specularMap, vUv).r;
+
+        // Soft ocean glint near the sub-solar point, lit side only.
+        float glint = pow(max(sunDot, 0.0), 24.0) * waterMask * 0.85;
+
+        vec3 litSide  = dayColor + vec3(glint);
+        vec3 color    = mix(nightColor, litSide, dayMix);
+
+        gl_FragColor = vec4(color, 1.0);
+    }
+`;
+
 const ATMOS_VERTEX_SHADER = `
     varying vec3 vNormal;
     void main() {
@@ -116,6 +176,30 @@ let _scene, _camera, _renderer, _globe, _pinsGroup;
 let _standardMaterial, _heatmapMaterial;
 let _windHelpers  = [];
 let _rainHelpers  = [];
+let _cityMarkers  = [];
+let _zoomDistance = 4.5;
+
+const MIN_ZOOM = 2.3;
+const MAX_ZOOM = 8.5;
+
+// ── Small helper: canvas-generated radial glow texture for point markers ────
+function createDotTexture(rgb) {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const c = canvas.width / 2;
+    const gradient = ctx.createRadialGradient(c, c, 0, c, c, c);
+    gradient.addColorStop(0.0,  `rgba(${rgb}, 1)`);
+    gradient.addColorStop(0.22, `rgba(${rgb}, 0.95)`);
+    gradient.addColorStop(0.55, `rgba(${rgb}, 0.28)`);
+    gradient.addColorStop(1.0,  `rgba(${rgb}, 0)`);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+}
 
 // ── initGlobe() ──────────────────────────────────────────────────────────────
 export function initGlobe() {
@@ -126,29 +210,35 @@ export function initGlobe() {
     _scene  = new THREE.Scene();
     _scene.background = null;
     _camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    _camera.position.z = 4.5;
+    _camera.position.z = _zoomDistance;
 
     _renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     _renderer.setSize(width, height);
-    _renderer.setPixelRatio(window.devicePixelRatio);
+    _renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
     container.appendChild(_renderer.domElement);
+    container.style.cursor = 'grab';
 
-    // Lighting
+    // Lighting — position doubles as our shader's sun direction, so the
+    // day/night terminator on the custom material and the highlight from
+    // this light always agree with each other.
+    const sunPosition = new THREE.Vector3(5, 3, 5);
     const sunLight = new THREE.DirectionalLight(0xffffff, 1.6);
-    sunLight.position.set(5, 3, 5);
+    sunLight.position.copy(sunPosition);
     _scene.add(sunLight);
     _scene.add(new THREE.AmbientLight(0x112233, 0.35));
 
-    // Textures
-    const loader      = new THREE.TextureLoader();
-    const dayTex      = loader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-    const normalTex   = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg');
-    const specularTex = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
-    const cloudTex    = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_2048.png');
+    // Textures — day/night/specular from three-globe's asset set (reliable,
+    // production-used imagery), clouds + normal detail from three.js's own
+    // example textures.
+    const loader        = new THREE.TextureLoader();
+    const dayTex        = loader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
+    const nightTex      = loader.load('https://unpkg.com/three-globe/example/img/earth-night.jpg');
+    const waterMaskTex  = loader.load('https://unpkg.com/three-globe/example/img/earth-water.png');
+    const cloudTex      = loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png');
 
     // Heatmap shader material
     const earthUniforms = {
-        specularMap: { value: specularTex },
+        specularMap: { value: waterMaskTex },
         regionPos:   { value: new Float32Array(36) },
         regionTemp:  { value: new Float32Array(12) },
     };
@@ -160,29 +250,32 @@ export function initGlobe() {
         opacity:        0.95,
     });
 
-    // Satellite material
-    _standardMaterial = new THREE.MeshPhongMaterial({
-        map:         dayTex,
-        normalMap:   normalTex,
-        normalScale: new THREE.Vector2(0.6, 0.6),
-        specularMap: specularTex,
-        shininess:   18,
-        specular:    new THREE.Color(0x224466),
+    // Realistic day/night satellite material
+    _standardMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            dayTexture:   { value: dayTex },
+            nightTexture: { value: nightTex },
+            specularMap:  { value: waterMaskTex },
+            sunDirection: { value: sunPosition.clone().normalize() },
+        },
+        vertexShader:   EARTH_VERTEX_SHADER,
+        fragmentShader: EARTH_FRAGMENT_SHADER,
     });
 
-    // Globe mesh
+    // Globe mesh — bumped segment count so the silhouette stays smooth at
+    // the new closer zoom levels.
     _globe = new THREE.Mesh(
-        new THREE.SphereGeometry(1.6, 64, 64),
+        new THREE.SphereGeometry(GLOBE_RADIUS, 96, 96),
         heatmapActive ? _heatmapMaterial : _standardMaterial
     );
     _scene.add(_globe);
 
     // Cloud layer
     const cloudSphere = new THREE.Mesh(
-        new THREE.SphereGeometry(1.625, 48, 48),
+        new THREE.SphereGeometry(GLOBE_RADIUS * 1.016, 64, 64),
         new THREE.MeshPhongMaterial({
             map: cloudTex, alphaMap: cloudTex,
-            transparent: true, opacity: 0.42, depthWrite: false,
+            transparent: true, opacity: 0.38, depthWrite: false,
         })
     );
     _scene.add(cloudSphere);
@@ -190,7 +283,7 @@ export function initGlobe() {
 
     // Atmosphere glow
     _scene.add(new THREE.Mesh(
-        new THREE.SphereGeometry(1.68, 48, 48),
+        new THREE.SphereGeometry(GLOBE_RADIUS * 1.05, 64, 64),
         new THREE.ShaderMaterial({
             vertexShader:   ATMOS_VERTEX_SHADER,
             fragmentShader: ATMOS_FRAGMENT_SHADER,
@@ -216,7 +309,7 @@ export function initGlobe() {
         heatmapMaterial:  _heatmapMaterial,
     });
 
-    // Drag rotation
+    // ── Drag rotation (mouse) ────────────────────────────────────────────
     let isDragging = false;
     let previousMousePosition = { x: 0, y: 0 };
     let userRotationOffset    = { x: 0, y: 0 };
@@ -224,6 +317,7 @@ export function initGlobe() {
     container.addEventListener('mousedown', (e) => {
         isDragging = true;
         previousMousePosition = { x: e.clientX, y: e.clientY };
+        container.style.cursor = 'grabbing';
     });
     container.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
@@ -232,9 +326,62 @@ export function initGlobe() {
         userRotationOffset.x  = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, userRotationOffset.x));
         previousMousePosition = { x: e.clientX, y: e.clientY };
     });
-    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+        container.style.cursor = 'grab';
+    });
 
-    // Animation loop
+    // ── Scroll-to-zoom (desktop) ─────────────────────────────────────────
+    container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        // Scale the zoom step by current distance so it feels consistent
+        // whether you're far out or already close in.
+        _zoomDistance += e.deltaY * 0.0022 * _zoomDistance;
+        _zoomDistance  = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, _zoomDistance));
+        _camera.position.z = _zoomDistance;
+    }, { passive: false });
+
+    // ── Touch: one-finger drag to rotate, two-finger pinch to zoom ───────
+    let pinchStartDist = null;
+    let pinchStartZoom = _zoomDistance;
+
+    function touchDistance(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            pinchStartDist = touchDistance(e.touches);
+            pinchStartZoom = _zoomDistance;
+        } else if (e.touches.length === 1) {
+            isDragging = true;
+            previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && pinchStartDist) {
+            const newDist = touchDistance(e.touches);
+            const scale   = pinchStartDist / newDist;
+            _zoomDistance = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * scale));
+            _camera.position.z = _zoomDistance;
+        } else if (e.touches.length === 1 && isDragging) {
+            const t = e.touches[0];
+            userRotationOffset.y += (t.clientX - previousMousePosition.x) * 0.005;
+            userRotationOffset.x += (t.clientY - previousMousePosition.y) * 0.005;
+            userRotationOffset.x  = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, userRotationOffset.x));
+            previousMousePosition = { x: t.clientX, y: t.clientY };
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchend', () => {
+        isDragging = false;
+        pinchStartDist = null;
+    });
+
+    // ── Animation loop ───────────────────────────────────────────────────
     let autoSpinAngle = 0;
     let pulseTime     = 0;
 
@@ -264,18 +411,20 @@ export function initGlobe() {
             });
         }
 
+        // Gentle pulse on the city point markers so they read as "live" data.
+        if (_cityMarkers.length > 0) {
+            _cityMarkers.forEach((marker, idx) => {
+                const pulse = 1.0 + Math.sin(pulseTime * 2 + idx * 1.3) * 0.18;
+                marker.scale.set(marker.userData.baseScale * pulse, marker.userData.baseScale * pulse, 1);
+            });
+        }
+
         // Popup connector line
         const overlay = document.getElementById('globe-popup-overlay');
         if (isRotationPaused && activePopupRegionKey && overlay && !overlay.classList.contains('hidden')) {
             const coords = REGION_COORDS[activePopupRegionKey];
             if (coords) {
-                const phi   = (90 - coords.lat) * (Math.PI / 180);
-                const theta = (coords.lon + 180) * (Math.PI / 180);
-                const localPos = new THREE.Vector3(
-                    -(1.6 * Math.sin(phi) * Math.sin(theta)),
-                    1.6 * Math.cos(phi),
-                    1.6 * Math.sin(phi) * Math.cos(theta)
-                );
+                const localPos = latLonToVector3(coords.lat, coords.lon, GLOBE_RADIUS);
                 const worldPos = localPos.clone().applyMatrix4(_globe.matrixWorld);
                 worldPos.project(_camera);
                 const rect    = container.getBoundingClientRect();
@@ -306,13 +455,14 @@ export function initGlobe() {
 }
 
 // ── buildGlobePins() ─────────────────────────────────────────────────────────
-export function buildGlobePins() {
+export async function buildGlobePins(cities = []) {
     // Clear existing helpers
     _windHelpers.forEach(h => _pinsGroup.remove(h));
     _rainHelpers.forEach(h => _pinsGroup.remove(h));
     _pinsGroup.clear();
     _windHelpers = [];
     _rainHelpers = [];
+    _cityMarkers = [];
 
     const positionsArray = new Float32Array(36); // 12 × 3
     const tempsArray     = new Float32Array(12);
@@ -334,20 +484,14 @@ export function buildGlobePins() {
             humidity    = cache.telemetry.humidity_percentage;
         }
 
-        const phi   = (90 - coords.lat) * (Math.PI / 180);
-        const theta = (coords.lon + 180) * (Math.PI / 180);
-        const x = 1.6 * Math.sin(phi) * Math.sin(theta);
-        const y = 1.6 * Math.cos(phi);
-        const z = 1.6 * Math.sin(phi) * Math.cos(theta);
-
-        positionsArray[idx * 3]     = x;
-        positionsArray[idx * 3 + 1] = y;
-        positionsArray[idx * 3 + 2] = z;
+        const pos = latLonToVector3(coords.lat, coords.lon, GLOBE_RADIUS);
+        positionsArray[idx * 3]     = pos.x;
+        positionsArray[idx * 3 + 1] = pos.y;
+        positionsArray[idx * 3 + 2] = pos.z;
         tempsArray[idx] = Math.max(0, Math.min(1, (tempCelsius + 5) / 50));
 
         // Wind arrow
-        const origin     = new THREE.Vector3(x, y, z);
-        const normal     = origin.clone().normalize();
+        const normal     = pos.clone().normalize();
         const localNorth = new THREE.Vector3(0, 1, 0).projectOnPlane(normal).normalize();
         const localEast  = normal.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
         const windRad    = (windDir * Math.PI) / 180;
@@ -355,7 +499,7 @@ export function buildGlobePins() {
             .multiplyScalar(Math.cos(windRad))
             .add(localEast.clone().multiplyScalar(Math.sin(windRad)))
             .normalize();
-        const arrow = new THREE.ArrowHelper(windDir3, origin,
+        const arrow = new THREE.ArrowHelper(windDir3, pos,
             0.15 + (windSpeed / 60) * 0.35, 0x38bdf8, 0.08, 0.04);
         arrow.visible = windActive;
         _pinsGroup.add(arrow);
@@ -369,12 +513,22 @@ export function buildGlobePins() {
                 transparent: true, opacity: (humidity / 100) * 0.8,
             })
         );
-        rainRing.position.set(x, y, z);
+        rainRing.position.copy(pos);
         rainRing.lookAt(0, 0, 0);
         rainRing.visible = precipitationActive && humidity > 60;
         _pinsGroup.add(rainRing);
         _rainHelpers.push(rainRing);
     });
+
+    // Add dynamic city pins if provided — rendered as small glowing points
+    // rather than 3D pin/halo shapes, sitting just above the surface.
+    if (cities && cities.length > 0) {
+        cities.forEach((city, idx) => {
+            const marker = createCityPointMarker(city, idx);
+            _pinsGroup.add(marker);
+            _cityMarkers.push(marker);
+        });
+    }
 
     if (_heatmapMaterial && _heatmapMaterial.uniforms) {
         _heatmapMaterial.uniforms.regionPos.value  = positionsArray;
@@ -384,6 +538,40 @@ export function buildGlobePins() {
     // Sync back to shared state
     setWindHelpers(_windHelpers);
     setRainHelpers(_rainHelpers);
+}
+
+/**
+ * Create a small glowing point marker for a city, billboarded to always
+ * face the camera (a Sprite), instead of the old 3D flattened-sphere pin.
+ * @param {Object} city - City object with latitude, longitude, name
+ * @param {number} idx - Index for color cycling
+ * @returns {THREE.Sprite}
+ */
+function createCityPointMarker(city, idx) {
+    const colors = [
+        '255, 107, 107', // red
+        '78, 205, 196',  // teal
+        '255, 230, 109', // yellow
+        '149, 225, 211', // mint
+        '255, 138, 163', // pink
+        '133, 220, 176', // green
+    ];
+    const rgb = colors[idx % colors.length];
+
+    const material = new THREE.SpriteMaterial({
+        map: createDotTexture(rgb),
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+    });
+    const marker = new THREE.Sprite(material);
+
+    const baseScale = 0.11;
+    marker.scale.set(baseScale, baseScale, 1);
+    marker.position.copy(latLonToVector3(city.latitude, city.longitude, GLOBE_RADIUS * 1.008));
+    marker.userData = { city, baseScale, createdAt: Date.now() };
+
+    return marker;
 }
 
 // ── Layer Toggle Exports (called from ui.js) ─────────────────────────────────
