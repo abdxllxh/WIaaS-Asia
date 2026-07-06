@@ -21,6 +21,21 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 N8N_WEBHOOK_URL = "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisis-simulation"
 
 
+@router.get("/", response_model=dict)
+def get_all_regions():
+    """
+    Returns a list of all available region keys and their human-readable names.
+    """
+    available_regions = {
+        key: data.get("name", key) 
+        for key, data in REGIONS.items()
+    }
+    return {
+        "status": "success",
+        "count": len(available_regions),
+        "regions": available_regions
+    }
+
 @router.get("/{region_key}", response_model=AnalyticsResponse)
 def analyze_region(region_key: str) -> AnalyticsResponse:
     if region_key not in REGIONS:
