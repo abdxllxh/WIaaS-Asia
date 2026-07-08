@@ -11,6 +11,8 @@ While modern AI enterprise solutions rely on single-model generative text, WIaaS
 
 This repository houses the core pipeline infrastructures, translation bridges, and reward verifiers that allow the system to process multi-variable climate threats and output verifiable, machine-executable survival protocols.
 
+**Backend documentation:** see [docs/architecture.md](docs/architecture.md) for module layout, pipeline stages, API routes, and JSON payload format.
+
 ---
 
 ## 2. System Architecture & Core Innovations
