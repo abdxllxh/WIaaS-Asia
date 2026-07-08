@@ -194,8 +194,8 @@ class WeatherIntelligencePipeline:
             "synthetic_resource_ledger": ledger,
             "llm_state_vector": state_vector,
         }
-        
-        # M2M Node/n8n Compatibility schema layer for Vxr execution routing
+
+        # Couche de compatibilité n8n / routage M2M (champs aplatis pour les webhooks)
         vxr_compatibility = {
             "region_name":                    payload["monitored_region"],
             "system_status":                  payload["system_status"],
@@ -217,7 +217,7 @@ class WeatherIntelligencePipeline:
                 "wind_speed_kmh":                  payload["climate_matrix"]["telemetry"]["wind"]["speed_kmh"]
             }
         }
-        
+
         payload.update(vxr_compatibility)
         payload_bytes = len(json.dumps(payload))
         print(f"[5/6] OK Payload          {payload_bytes:,} bytes assembled")

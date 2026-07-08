@@ -60,7 +60,7 @@ class GNNToLLMBridge:
         if analysis["overhead_irrigation_efficiency"] < 0.5:
             irrigation_block = (
                 f"  Overhead Sprinkler Efficiency : {irrig_eff_pct}%\n"
-                f"  ⚠  HARD PENALTY ACTIVE\n"
+                f"  [!] HARD PENALTY ACTIVE\n"
                 f"     {irrig_loss_pct}% of deployed water is lost before reaching soil.\n"
                 f"     The RLVR engine will apply a NEGATIVE REWARD to any agent\n"
                 f"     proposing standard overhead systems.\n"
