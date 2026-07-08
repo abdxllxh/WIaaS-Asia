@@ -21,8 +21,34 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 N8N_WEBHOOK_URL = "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisis-simulation"
 
 
+def check_and_register_dynamic_region(region_key: str, name: str | None = None) -> None:
+    if region_key in REGIONS:
+        return
+    try:
+        parts = region_key.split('_')
+        if len(parts) == 2:
+            lat = float(parts[0])
+            lon = float(parts[1])
+            REGIONS[region_key] = {
+                "name": name or f"Custom City ({lat:.4f}, {lon:.4f})",
+                "latitude": lat,
+                "longitude": lon,
+                "expected_max_baseline": 35.0,
+                "timezone": "GMT+0 (UTC)",
+                "resource_baselines": {
+                    "water_reservoir_m3":  1_500_000,
+                    "grid_capacity_mw":    450,
+                    "fuel_reserve_liters": 120_000,
+                },
+            }
+    except (ValueError, TypeError):
+        pass
+
+
 @router.get("/{region_key}", response_model=AnalyticsResponse)
-def analyze_region(region_key: str) -> AnalyticsResponse:
+def analyze_region(region_key: str, name: str | None = None) -> AnalyticsResponse:
+    check_and_register_dynamic_region(region_key, name)
+
     if region_key not in REGIONS:
         raise HTTPException(status_code=404, detail="Region not found")
 
@@ -74,7 +100,9 @@ def analyze_region(region_key: str) -> AnalyticsResponse:
 
 
 @router.post("/{region_key}/chat", response_model=ChatResponse)
-def simulate_chat(region_key: str, request: ChatRequest) -> ChatResponse:
+def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None) -> ChatResponse:
+    check_and_register_dynamic_region(region_key, name)
+
     if region_key not in REGIONS:
         raise HTTPException(status_code=404, detail="Region not found")
 

@@ -4,6 +4,8 @@
  * In production, the HTML is served by FastAPI which also handles /analytics/*
  */
 
+import { regionNames } from './state.js';
+
 /**
  * Fetch analytics payload for a given region key.
  * @param {string} regionKey
@@ -11,7 +13,9 @@
  */
 export async function fetchRegionAnalytics(regionKey) {
     try {
-        const response = await fetch(`/analytics/${regionKey}`);
+        const name = regionNames[regionKey] || '';
+        const url = name ? `/analytics/${regionKey}?name=${encodeURIComponent(name)}` : `/analytics/${regionKey}`;
+        const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return await response.json();
     } catch (error) {

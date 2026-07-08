@@ -4,7 +4,7 @@
  */
 
 import citiesManager from './cities.js';
-import { addDynamicRegion, syncDynamicCities, regionNames, setActiveRegionKey } from './state.js';
+import { addDynamicRegion, syncDynamicCities, regionNames, setActiveRegionKey, activeRegionKey } from './state.js';
 import { buildGlobePins } from './globe.js';
 
 /**
@@ -36,7 +36,7 @@ function injectCitySearchPanel() {
     
     const panel = document.createElement('div');
     panel.id = 'city-search-panel';
-    panel.className = 'panel-card city-search-card';
+    panel.className = 'panel-card city-search-card hidden';
     panel.innerHTML = `
         <div class="panel-header">
             <div class="header-title">
@@ -135,10 +135,17 @@ function wireupCitySearchEvents() {
     let debounceTimer;
     searchInput.addEventListener('input', () => {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            if (searchInput.value.length >= 2) {
-                performCitySearch();
+        const query = searchInput.value.trim();
+        if (query.length < 2) {
+            const resultsDiv = document.getElementById('city-search-results');
+            if (resultsDiv) {
+                resultsDiv.classList.add('hidden');
+                resultsDiv.innerHTML = '';
             }
+            return;
+        }
+        debounceTimer = setTimeout(() => {
+            performCitySearch();
         }, 300);
     });
     
@@ -250,22 +257,25 @@ function refreshCityUI() {
         return;
     }
     
-    selectedList.innerHTML = cities.map((city, idx) => `
-        <div class="city-item" data-city-id="${city.id}">
-            <div class="city-item-info">
-                <div class="city-item-name">${escapeHtml(city.name)}</div>
-                <div class="city-item-coords">${city.latitude.toFixed(2)}°, ${city.longitude.toFixed(2)}°</div>
+    selectedList.innerHTML = cities.map((city, idx) => {
+        const isActive = city.id === activeRegionKey;
+        return `
+            <div class="city-item" data-city-id="${city.id}">
+                <div class="city-item-info">
+                    <div class="city-item-name">${escapeHtml(city.name)}</div>
+                    <div class="city-item-coords">${city.latitude.toFixed(2)}°, ${city.longitude.toFixed(2)}°</div>
+                </div>
+                <div class="city-item-actions">
+                    <button class="city-item-select-btn ${isActive ? 'active' : ''}" data-city-id="${city.id}" title="Select as active">
+                        <i data-lucide="target"></i>
+                    </button>
+                    <button class="city-item-remove-btn" data-city-id="${city.id}" title="Remove">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
             </div>
-            <div class="city-item-actions">
-                <button class="city-item-select-btn" data-city-id="${city.id}" title="Select as active">
-                    <i data-lucide="target"></i>
-                </button>
-                <button class="city-item-remove-btn" data-city-id="${city.id}" title="Remove">
-                    <i data-lucide="trash-2"></i>
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -293,6 +303,7 @@ function refreshCityUI() {
                 const event = new CustomEvent('citySelected', { detail: { cityId, city } });
                 document.dispatchEvent(event);
                 console.log('[ui-cities] Selected city:', city.name);
+                refreshCityUI();
             }
         });
     });
