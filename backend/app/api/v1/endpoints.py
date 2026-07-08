@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 from fastapi import APIRouter, HTTPException
 
@@ -15,10 +16,14 @@ from app.schemas.analytics import (
 from app.services.pipeline import WeatherIntelligencePipeline
 import requests
 import json
+import os
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-N8N_WEBHOOK_URL = "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisis-simulation"
+N8N_WEBHOOK_URL = os.getenv(
+    "N8N_WEBHOOK_URL",
+    "http://n8n:5678/webhook/wias-crisis-simulation"
+)
 
 
 @router.get("/{region_key}", response_model=AnalyticsResponse)
