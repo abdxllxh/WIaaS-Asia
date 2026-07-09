@@ -17,7 +17,6 @@ services:
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
 
     volumes:
-      - ./backend:/app
       - backend_data:/app/data
 
     depends_on:

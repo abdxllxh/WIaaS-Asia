@@ -2,12 +2,12 @@
 Core Backend Orchestrator — WIaaS Physics Pipeline.
 
 Coordinates the full ingestion-to-vector pipeline across six explicit stages:
-    Stage 1 → Live telemetry ingestion (Open-Meteo API / GraphCast GNN)
-    Stage 2 → Multi-variable climate analysis  (ClimateAnomalyEngine)
-    Stage 3 → Physics-degraded resource computation  (SyntheticResourceLedger)
-    Stage 4 → Bounded text-state vector construction  (GNNToLLMBridge)
-    Stage 5 → Structured JSON payload assembly
-    Stage 6 → Atomic file commit
+    Stage 1 ➔ Live telemetry ingestion (Open-Meteo API / GraphCast GNN)
+    Stage 2 ➔ Multi-variable climate analysis  (ClimateAnomalyEngine)
+    Stage 3 ➔ Physics-degraded resource computation  (SyntheticResourceLedger)
+    Stage 4 ➔ Bounded text-state vector construction  (GNNToLLMBridge)
+    Stage 5 ➔ Structured JSON payload assembly
+    Stage 6 ➔ Atomic file commit
 
 The final payload serves two consumers:
     - The vLLM inference layer, which injects the `llm_state_vector` as the
@@ -33,7 +33,7 @@ class WeatherIntelligencePipeline:
 
     _API_BASE_URL    = "https://api.open-meteo.com/v1/forecast"
     _TELEMETRY_VARS  = "temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m"
-    _REQUEST_TIMEOUT = 10   # seconds; configurable at class level, not buried in method bodies
+    _REQUEST_TIMEOUT = 10   # seconds; configurable at class level
     _PIPELINE_VERSION = "1.1.0"
 
     def __init__(self, output_filename: str = "live_weather_stream.json"):
@@ -47,8 +47,7 @@ class WeatherIntelligencePipeline:
 
         In production, this endpoint is replaced by the GraphCast GNN inference
         layer, which provides the same field names as multi-dimensional spatial
-        tensors. The pipeline interface is intentionally identical to both sources
-        so that swapping the data origin requires zero downstream changes.
+        tensors. The pipeline interface is intentionally identical to both sources.
 
         Returns:
             Raw current-conditions dict, or None on any failure variant.
@@ -59,9 +58,14 @@ class WeatherIntelligencePipeline:
             "current":   self._TELEMETRY_VARS,
             "timezone":  "auto",
         }
+        # Added production standard User-Agent header to avoid edge cloud firewalls during hackathon execution
+        headers = {
+            "User-Agent": "WeatherIntelligencePipeline/1.1.0 (Hackathon Context Engine)",
+            "Accept": "application/json"
+        }
         try:
             response = requests.get(
-                self._API_BASE_URL, params=params, timeout=self._REQUEST_TIMEOUT
+                self._API_BASE_URL, params=params, headers=headers, timeout=self._REQUEST_TIMEOUT
             )
             response.raise_for_status()
             return response.json()["current"]
@@ -91,14 +95,12 @@ class WeatherIntelligencePipeline:
             return None
 
         region = REGIONS[region_key]
-        print(f"\n[INIT]  Pipeline active -> {region['name']}")
+        print(f"\n[INIT]  Pipeline active ➔ {region['name']}")
         print("-" * 66)
 
         # ── Stage 1: Live Telemetry ───────────────────────────────────────────
         raw = self.fetch_api_telemetry(region["latitude"], region["longitude"])
         if raw is None:
-            # Live API unavailable — fall back to region baseline data so the
-            # pipeline can continue and the chat endpoint remains functional.
             print("[WARN]  Live telemetry unavailable. Falling back to region baseline.")
             raw = {
                 "temperature_2m":       region["expected_max_baseline"],
@@ -150,7 +152,7 @@ class WeatherIntelligencePipeline:
             f"Fuel={ledger['fuel_available_liters']:,} L"
         )
 
-        # -- Stage 4: GNN-to-LLM Text-State Vector -----------------------------
+        # ── Stage 4: GNN-to-LLM Text-State Vector ─────────────────────────────
         state_vector: str = GNNToLLMBridge.build_state_vector(
             region_name = region["name"],
             telemetry   = telemetry,
@@ -165,7 +167,7 @@ class WeatherIntelligencePipeline:
         payload: dict = {
             "_meta": {
                 "pipeline_version": self._PIPELINE_VERSION,
-                "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                "generated_at_utc": current_time.isoformat(),
                 "region_key":       region_key,
                 "timezone":         region.get("timezone", "UTC+0"),
                 "coordinates": {
@@ -184,18 +186,16 @@ class WeatherIntelligencePipeline:
                 "wet_bulb_celsius":                analysis["wet_bulb_celsius"],
                 "telemetry":                       telemetry,
             },
-            # RLVR constraint surface: consumed by the Agri-Agent reward verifier.
             "rlvr_constraints": {
                 "overhead_irrigation_efficiency": analysis["overhead_irrigation_efficiency"],
                 "overhead_irrigation_viable":     analysis["overhead_irrigation_efficiency"] >= 0.5,
                 "irrigation_penalty_active":      analysis["overhead_irrigation_efficiency"] < 0.5,
             },
-            # Fully degraded asset ceilings: the bid limits for all agents.
             "synthetic_resource_ledger": ledger,
-            # The bounded context injected into the vLLM inference layer.
             "llm_state_vector": state_vector,
         }
-        # ── ADDED: n8n Compatibility Layer for vxr ──────────────────────
+
+        # Couche de compatibilité n8n / routage M2M (champs aplatis pour les webhooks)
         vxr_compatibility = {
             "region_name":                    payload["monitored_region"],
             "system_status":                  payload["system_status"],
@@ -217,7 +217,7 @@ class WeatherIntelligencePipeline:
                 "wind_speed_kmh":                  payload["climate_matrix"]["telemetry"]["wind"]["speed_kmh"]
             }
         }
-        
+
         payload.update(vxr_compatibility)
         payload_bytes = len(json.dumps(payload))
         print(f"[5/6] OK Payload          {payload_bytes:,} bytes assembled")
@@ -225,16 +225,7 @@ class WeatherIntelligencePipeline:
         # ── Stage 6: Atomic File Commit ───────────────────────────────────────
         with open(self.output_filename, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=4, ensure_ascii=False)
-        print(f"[6/6] OK Committed       -> {self.output_filename}")
+        print(f"[6/6] OK Committed       ➔ {self.output_filename}")
 
-        # Surface the state vector directly in terminal output for inspection.
         print(f"\n{'-' * 66}\n{state_vector}\n")
         return payload
-
-
-if __name__ == "__main__":
-    pipeline = WeatherIntelligencePipeline()
-    pipeline.execute("pakistan_punjab")
-    pipeline.execute("togo_maritime")
-    pipeline.execute("france_paris")
-    pipeline.execute("usa_california_central_valley")

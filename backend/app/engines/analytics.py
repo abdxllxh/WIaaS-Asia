@@ -6,12 +6,12 @@ and deterministic thermodynamic laws. This module contains zero magic numbers �
 all constants are sourced from config.py.
 
 Computational stack (in dependency order):
-  1. _saturated_vapor_pressure_kpa()       → Tetens equation (WMO-calibrated)
-  2. calculate_vapor_pressure_deficit()    → Atmospheric 'dryness', primary evaporation driver
-  3. calculate_heat_index()                → Rothfusz regression (NOAA NWS standard)
-  4. calculate_wet_bulb_temperature()      → Stull (2011) approximation
-  5. calculate_overhead_irrigation_efficiency() → RLVR Physics Verifier (Agri-Agent)
-  6. calculate_thermal_anomaly()           → Multi-variable severity grader
+  1. _saturated_vapor_pressure_kpa()       ➔ Tetens equation (WMO-calibrated)
+  2. calculate_vapor_pressure_deficit()    ➔ Atmospheric 'dryness', primary evaporation driver
+  3. calculate_heat_index()                ➔ Rothfusz regression (NOAA NWS standard)
+  4. calculate_wet_bulb_temperature()      ➔ Stull (2011) approximation
+  5. calculate_overhead_irrigation_efficiency() ➔ RLVR Physics Verifier (Agri-Agent)
+  6. calculate_thermal_anomaly()           ➔ Multi-variable severity grader
 """
 
 from __future__ import annotations
@@ -52,9 +52,9 @@ class ClimateAnomalyEngine:
         VPD = e_s(T) − e_a,  where e_a = e_s × (RH / 100)
 
         Interpretation:
-            VPD ≈ 0.0 kPa → saturated air; evaporation is negligible.
-            VPD ≈ 2.5 kPa → moderate stress (typical greenhouse upper threshold).
-            VPD ≥ 5.0 kPa → extreme desiccating conditions; irrigation is largely wasted.
+            VPD ≈ 0.0 kPa ➔ saturated air; evaporation is negligible.
+            VPD ≈ 2.5 kPa ➔ moderate stress (typical greenhouse upper threshold).
+            VPD ≥ 5.0 kPa ➔ extreme desiccating conditions; irrigation is largely wasted.
         """
         e_s = ClimateAnomalyEngine._saturated_vapor_pressure_kpa(temp_c)
         e_a = e_s * (humidity_pct / 100.0)
@@ -76,21 +76,27 @@ class ClimateAnomalyEngine:
         if temp_c < 26.7 or humidity_pct < 40:
             return round(temp_c, 2)
 
-        T  = temp_c * 9 / 5 + 32   # Rothfusz is defined in Fahrenheit
+        # Optimization: Use 1.8 instead of 9 / 5 division
+        T  = temp_c * 1.8 + 32.0   
         RH = humidity_pct
+
+        # Micro-op Optimization: Pre-calculate squared bounds to avoid costly **2 operators
+        T_sq = T * T
+        RH_sq = RH * RH
 
         HI_f = (
             -42.379
             + 2.04901523  * T
             + 10.14333127 * RH
             - 0.22475541  * T  * RH
-            - 0.00683783  * T  ** 2
-            - 0.05481717  * RH ** 2
-            + 0.00122874  * T  ** 2 * RH
-            + 0.00085282  * T  * RH ** 2
-            - 0.00000199  * T  ** 2 * RH ** 2
+            - 0.00683783  * T_sq
+            - 0.05481717  * RH_sq
+            + 0.00122874  * T_sq * RH
+            + 0.00085282  * T  * RH_sq
+            - 0.00000199  * T_sq * RH_sq
         )
-        return round((HI_f - 32) * 5 / 9, 2)
+        # Optimization: Multiplying by 5/9 reciprocal avoids slow CPU hardware division
+        return round((HI_f - 32.0) * 0.5555555555555556, 2)
 
     @staticmethod
     def calculate_wet_bulb_temperature(temp_c: float, humidity_pct: float) -> float:
@@ -106,11 +112,16 @@ class ClimateAnomalyEngine:
         Air Temperature", Journal of Applied Meteorology and Climatology, 50(11).
         """
         T, RH = temp_c, humidity_pct
+        
+        # Micro-op Optimization: Replace generic power **0.5 and **1.5 with math.sqrt and algebraic multiplication
+        rh_sqrt_bound = math.sqrt(RH + 8.313659)
+        rh_pow_1_5 = RH * math.sqrt(RH)
+        
         Tw = (
-            T  * math.atan(0.151977 * (RH + 8.313659) ** 0.5)
+            T  * math.atan(0.151977 * rh_sqrt_bound)
             +    math.atan(T + RH)
             -    math.atan(RH - 1.676331)
-            + 0.00391838 * RH ** 1.5 * math.atan(0.023101 * RH)
+            + 0.00391838 * rh_pow_1_5 * math.atan(0.023101 * RH)
             - 4.686035
         )
         return round(Tw, 2)
@@ -171,9 +182,6 @@ class ClimateAnomalyEngine:
 
         Both temperature deviation AND wet-bulb temperature are independently
         evaluated; the more severe of the two determines the final system status.
-        This dual-variable approach catches events that a single-variable check
-        would miss — e.g., a 'moderate' temperature paired with extreme humidity
-        that creates a lethal wet-bulb reading.
 
         Args:
             current_temp:  Live temperature reading (°C).
@@ -193,7 +201,6 @@ class ClimateAnomalyEngine:
             current_temp, humidity_pct, wind_kmh
         )
 
-        # All threshold comparisons are sourced from config — no literals in logic.
         crit_dev = ANOMALY_THRESHOLDS["critical_deviation_celsius"]
         warn_dev = ANOMALY_THRESHOLDS["warning_deviation_celsius"]
         crit_wb  = ANOMALY_THRESHOLDS["wet_bulb_critical_celsius"]

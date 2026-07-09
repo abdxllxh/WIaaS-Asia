@@ -215,7 +215,7 @@ REGIONS: dict[str, dict] = {
 }
 
 # ─── Dynamic Registry Injection ────────────────────────────────────────────────
-# Cible directement le fichier JSON situé dans le même dossier (core/)
+# Loads optional extended regions from core/regions_registry.json at startup.
 _json_path = os.path.join(os.path.dirname(__file__), "regions_registry.json")
 
 if os.path.exists(_json_path):
@@ -223,9 +223,9 @@ if os.path.exists(_json_path):
         with open(_json_path, "r", encoding="utf-8") as _f:
             _extended_regions = json.load(_f)
             REGIONS.update(_extended_regions)
-            print(f"🚀 WIaaS Config: Injected {len(_extended_regions)} cities from registry.")
+            print(f"[WIaaS Config] Injected {len(_extended_regions)} cities from registry.")
     except Exception as _e:
-        print(f"⚠️ WIaaS Config: Failed to parse regions_registry.json ({_e})")
+        print(f"[WIaaS Config] Failed to parse regions_registry.json ({_e})")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Deployment / Docker Configuration
