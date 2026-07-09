@@ -139,3 +139,72 @@ class SyntheticResourceLedger:
             "fuel_available_liters":           available_fuel_liters,
             "fuel_thermal_overhead_pct":       round(fuel_overhead_frac * 100, 2),
         }
+    def compute_24h_predictions(self, deviation_celsius: float, vpd_kpa: float) -> dict:
+        """
+        Deterministically computes the 24-hour grid overload curve and generates
+        an immediate M2M activation verdict to offload the LLM.
+
+        Args:
+            deviation_celsius: Temperature deviation from regional baseline (°C)
+            vpd_kpa: Vapor Pressure Deficit (kPa)
+
+        Returns:
+            dict: 24-hour timeline with blackout risks and analytics summary
+        """
+        temp_deviation = max(0.0, deviation_celsius)
+        
+        # Combined effect of atmospheric dryness on transformer cooling efficiency
+        humidity_penalty = max(1.0, 1.2 * (1.5 / max(0.1, vpd_kpa)))
+        
+        hourly_predictions = []
+        max_blackout_risk = 0.0
+        critical_surge_hour = "00:00"
+
+        # Anthropic daily load profile coupled with building thermal inertia
+        for hour in range(24):
+            if 0 <= hour <= 6:
+                time_factor = 0.4   # Nighttime - minimal demand
+            elif 7 <= hour <= 11:
+                time_factor = 0.75  # Active morning ramp-up
+            elif 12 <= hour <= 13:
+                time_factor = 0.85  # Midday plateau
+            elif 14 <= hour <= 18:
+                time_factor = 1.35  # PEAK: Heat accumulation + maximum AC load
+            else:
+                time_factor = 0.9   # Evening residential consumption
+
+            if temp_deviation > 0:
+                # Non-linear exponential equation modeling accumulated thermal stress
+                base_risk = (temp_deviation ** 1.4) * 8.5 * time_factor * humidity_penalty
+            else:
+                base_risk = 15.0 if (hour == 19 or hour == 20) else 0.0
+
+            blackout_probability = round(min(100.0, max(0.0, base_risk)), 1)
+            
+            nominal_capacity = self.baselines["grid_capacity_mw"]
+            current_capacity_mw = round(max(0.0, nominal_capacity * (1 - (blackout_probability / 100))), 1)
+
+            hourly_predictions.append({
+                "time": f"{hour:02d}:00",
+                "blackout_risk_pct": blackout_probability,
+                "available_capacity_mw": current_capacity_mw
+            })
+
+            if blackout_probability > max_blackout_risk:
+                max_blackout_risk = blackout_probability
+                critical_surge_hour = f"{hour:02d}:00"
+
+        action_required = max_blackout_risk > 75.0
+
+        return {
+            "timeline_24h": hourly_predictions,
+            "analytics_summary": {
+                "max_blackout_risk_pct": max_blackout_risk,
+                "peak_surge_hour": critical_surge_hour,
+                "grid_status": "CRITICAL_OVERLOAD" if max_blackout_risk > 80 else "WARNING" if max_blackout_risk > 50 else "STABLE",
+                "m2m_trigger": {
+                    "action_required": action_required,
+                    "recommended_mitigation": "DISPATCH_CARGO_TO_SAILORS_PORT_BLACKOUT" if action_required else "NONE"
+                }
+        }
+    }
