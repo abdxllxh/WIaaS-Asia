@@ -1,0 +1,58 @@
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    container_name: wiaas-backend
+
+    ports:
+      - "8000:8000"
+
+    env_file:
+      - .env
+
+    environment:
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+
+    volumes:
+      - backend_data:/app/data
+
+    depends_on:
+      - n8n
+
+    restart: unless-stopped
+
+    networks:
+      - wiaas-network
+
+
+  n8n:
+    image: n8nio/n8n:latest
+
+    container_name: wiaas-n8n
+
+    ports:
+      - "5678:5678"
+
+    env_file:
+      - .env
+
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+    restart: unless-stopped
+
+    networks:
+      - wiaas-network
+
+
+volumes:
+  backend_data:
+  n8n_data:
+
+
+networks:
+  wiaas-network:
+    driver: bridge

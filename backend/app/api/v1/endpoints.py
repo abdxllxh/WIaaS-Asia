@@ -1,6 +1,7 @@
 """Routes REST pour l'analyse climatique et le chat multi-agents."""
 
 from __future__ import annotations
+import os
 
 import json
 
@@ -21,7 +22,10 @@ from app.services.pipeline import WeatherIntelligencePipeline
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-N8N_WEBHOOK_URL = "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisis-simulation"
+N8N_WEBHOOK_URL = os.getenv(
+    "N8N_WEBHOOK_URL",
+    "http://n8n:5678/webhook/wias-crisis-simulation"
+)
 
 
 def _extract_webhook_reply(resp_json: object) -> str:

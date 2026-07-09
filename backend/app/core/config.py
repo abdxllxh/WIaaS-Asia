@@ -226,3 +226,22 @@ if os.path.exists(_json_path):
             print(f"[WIaaS Config] Injected {len(_extended_regions)} cities from registry.")
     except Exception as _e:
         print(f"[WIaaS Config] Failed to parse regions_registry.json ({_e})")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deployment / Docker Configuration
+# All deployment-specific values are loaded from environment variables.
+# This keeps the application portable across local development, Docker,
+# AMD Developer Cloud, and production environments.
+# ─────────────────────────────────────────────────────────────────────────────
+
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8000"))
+
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
+N8N_BASE_URL = os.getenv(
+    "N8N_BASE_URL",
+    "http://localhost:5678"
+)
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
