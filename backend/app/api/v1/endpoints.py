@@ -1,10 +1,7 @@
-"""Routes REST pour l'analyse climatique et le chat multi-agents."""
-
+"""Endpoints for the v1 API."""
 from __future__ import annotations
 import os
-
 import json
-
 import requests
 from fastapi import APIRouter, HTTPException
 
@@ -22,9 +19,10 @@ from app.services.pipeline import WeatherIntelligencePipeline
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
+
 N8N_WEBHOOK_URL = os.getenv(
     "N8N_WEBHOOK_URL",
-    "http://n8n:5678/webhook/wias-crisis-simulation"
+    "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisis-simulation"
 )
 
 
@@ -92,10 +90,20 @@ def analyze_region(region_key: str) -> AnalyticsResponse:
         wind_kmh=telemetry.wind_speed_kmh,
     )
 
-    ledger = SyntheticResourceLedger(region["resource_baselines"]).compute(
+    # 1. Ledger initialization with the regional baseline
+    ledger_engine = SyntheticResourceLedger(region["resource_baselines"])
+    
+    # 2. Calculation of the classic ledger at time T
+    ledger_data = ledger_engine.compute(
         deviation_celsius=analysis["deviation_celsius"],
         vpd_kpa=analysis["vapor_pressure_deficit_kpa"],
         irrigation_efficiency=analysis["overhead_irrigation_efficiency"],
+    )
+
+    # 3. Calculation of the 24h predictions
+    grid_predictions = ledger_engine.compute_24h_predictions(
+        deviation_celsius=analysis["deviation_celsius"],
+        vpd_kpa=analysis["vapor_pressure_deficit_kpa"]
     )
 
     return AnalyticsResponse(
@@ -108,8 +116,9 @@ def analyze_region(region_key: str) -> AnalyticsResponse:
             "heat_index_celsius": analysis["heat_index_celsius"],
             "wet_bulb_celsius": analysis["wet_bulb_celsius"],
         },
-        ledger=ResourceLedger(**ledger),
+        ledger=ResourceLedger(**ledger_data),
         telemetry=telemetry,
+        grid_predictions=grid_predictions,
     )
 
 
@@ -130,9 +139,11 @@ def simulate_chat(region_key: str, request: ChatRequest) -> ChatResponse:
             raw_data=None,
         )
 
-    payload["user_query"] = request.query
+      
+    payload["chatInput"] = request.query
 
     try:
+        print(f"Sending payload to n8n: {N8N_WEBHOOK_URL}")
         response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=(10, 60))
         response.raise_for_status()
 
@@ -158,8 +169,8 @@ def simulate_chat(region_key: str, request: ChatRequest) -> ChatResponse:
             raw_data=None,
         )
     except requests.exceptions.RequestException as e:
-        print(f"Webhook error: {e}")
+        print(f"Webhook error detail: {e}")
         return ChatResponse(
-            reply="[System] Unable to reach the AI Swarm at this time. Please check the n8n workflow is active and retry.",
+            reply=f"[System] Unable to reach the AI Swarm. Error details: {e}",
             raw_data=None,
         )
