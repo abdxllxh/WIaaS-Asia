@@ -4,7 +4,7 @@
 
 **Weather Intelligence as a Service (WIaaS)** is a next-generation climate intelligence platform that transforms deterministic weather forecasts into explainable, AI-driven mitigation strategies.
 
-Unlike traditional weather dashboards, WIaaS combines **Google GraphCast**, **physics-constrained simulation**, **FastAPI**, **n8n workflow automation**, and a **collaborative multi-agent AI swarm** to analyze complex climate events and generate actionable recommendations for governments, emergency responders, utility providers, and agricultural stakeholders.
+Unlike traditional weather dashboards, WIaaS combines **real-time weather data**, **physics-constrained simulation**, **FastAPI**, **n8n workflow automation**, and a **collaborative multi-agent AI swarm** to analyze complex climate events and generate actionable recommendations for governments, emergency responders, utility providers, and agricultural stakeholders.
 
 The platform emphasizes **physics-grounded reasoning**, ensuring that every recommendation is evaluated against real-world environmental constraints rather than relying solely on generative AI predictions.
 
@@ -23,7 +23,7 @@ By integrating simulation, automation, and collaborative AI decision-making, WIa
 
 ![n8n](https://img.shields.io/badge/n8n-Automation-EA4B71?style=for-the-badge&logo=n8n&logoColor=white)
 
-![GraphCast](https://img.shields.io/badge/Google-GraphCast-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![Open-Meteo](https://img.shields.io/badge/Open--Meteo-Weather_API-0051A8?style=for-the-badge&logo=open-meteo&logoColor=white)
 
 ![AMD Instinct](https://img.shields.io/badge/AMD-MI300X-ED1C24?style=for-the-badge&logo=amd&logoColor=white)
 
@@ -32,45 +32,45 @@ By integrating simulation, automation, and collaborative AI decision-making, WIa
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 
-## 🚀 Live Demo
+##  Live Demo
 
-> **🚧 Demo Coming Soon**
+> **Demo Coming Soon**
 
 The production deployment is currently under active development.
 
 Once deployed, this section will include:
 
-- 🌐 Live Application
-- 🎥 Demonstration Video
-- 📊 Interactive Dashboard
-- 🤖 Multi-Agent Chat Interface
-- 📄 API Documentation
+-  Live Application
+-  Demonstration Video
+-  Interactive Dashboard
+-  Multi-Agent Chat Interface
+-  API Documentation
 
 Stay tuned for the official public release.
 
 
-## ✨ Key Features
+##  Key Features
 
-- 🌦️ **Physics-Constrained Weather Intelligence** powered by deterministic climate forecasts.
-- 🤖 **Collaborative Multi-Agent AI Swarm** for domain-specific decision making.
-- ⚡ **FastAPI Backend** providing scalable simulation APIs.
-- 🔄 **n8n Workflow Automation** for intelligent event orchestration.
-- 🧠 **Neural-LAM Integration** for physics-grounded weather forecasting.
-- 📊 **Interactive Dashboard** for visual climate intelligence.
-- 💬 **AI Chat Interface** for explainable climate recommendations.
-- 🌍 **Multi-Region Simulation Support** across diverse climate baselines.
-- 🔒 **Physics-Based Verification Engine** to reduce hallucinations and improve reliability.
-- 🚀 **Designed for AMD Instinct™ MI300X** accelerated computing.
+-  **Physics-Constrained Weather Intelligence** powered by deterministic climate forecasts.
+-  **Collaborative Multi-Agent AI Swarm** for domain-specific decision making.
+-  **FastAPI Backend** providing scalable simulation APIs.
+-  **n8n Workflow Automation** for intelligent event orchestration.
+-  **Neural-LAM Integration** for physics-grounded weather forecasting.
+-  **Interactive Dashboard** for visual climate intelligence.
+-  **AI Chat Interface** for explainable climate recommendations.
+-  **Multi-Region Simulation Support** across diverse climate baselines.
+-  **Physics-Based Verification Engine** to reduce hallucinations and improve reliability.
+-  **Designed for AMD Instinct™ MI300X** accelerated computing.
 
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 flowchart LR
 
 A[🌦 Weather Data Sources]
 
-A --> B[Neural-Network Weather Model]
+A --> B[open meteo API]
 
 B --> C[FastAPI Backend]
 
@@ -104,7 +104,7 @@ I --> K[Mitigation Recommendations]
 
 I --> L[AI Chat Interface]
 ```
-## 🎯 Why WIaaS?
+##  Why WIaaS?
 
 Traditional weather platforms primarily provide forecasts, leaving critical decision-making to human operators.
 
@@ -119,7 +119,7 @@ Instead of asking *"What will happen?"*, WIaaS answers:
 - **How should multiple stakeholders coordinate?**
 
 This transforms climate intelligence into practical operational decision support.
-## 🌍 Featured Demo Regions
+##  Featured Demo Regions
 
 The following regions demonstrate the flexibility of WIaaS across diverse climate conditions.
 
@@ -129,19 +129,19 @@ The following regions demonstrate the flexibility of WIaaS across diverse climat
 | 🇹🇬 Lomé, Togo | Tropical Coastal | Flooding & Storm Surge | Disaster response and evacuation planning |
 | 🇺🇸 Boston, USA | Temperate Coastal | Winter Storms & Urban Flooding | Grid stability and emergency logistics |
 | 🌎 Template Region | Configurable | User-defined Scenario | Rapid experimentation and testing |
-## 🖥️ Dashboard Preview
+##  Dashboard Preview
 
-> **🚧 Screenshot Coming Soon**
+> **Screenshot Coming Soon**
 
 The dashboard provides an interactive view of climate intelligence and simulation results.
 
 ### Planned Dashboard Features
 
-- 📊 Regional Climate Analytics
-- 🌦️ Live Weather Intelligence
-- ⚠️ Risk Assessment Dashboard
-- 📈 Environmental Metrics
-- 🤖 AI-Generated Recommendations
+-  Regional Climate Analytics
+-  Live Weather Intelligence
+-  Risk Assessment Dashboard
+-  Environmental Metrics
+-  AI-Generated Recommendations
 
 <p align="center">
 
@@ -151,18 +151,18 @@ The dashboard provides an interactive view of climate intelligence and simulatio
 
 ---
 
-## 🤖 Multi-Agent Chat Interface
+##  Multi-Agent Chat Interface
 
-> **🚧 Screenshot Coming Soon**
+> **Screenshot Coming Soon**
 
 The AI Swarm enables users to communicate with multiple specialized AI agents that collaboratively generate climate mitigation strategies.
 
 ### Planned Interface
 
-- 💬 Interactive AI Conversation
-- 🤝 Multi-Agent Collaboration
-- 🌍 Region-Specific Recommendations
-- 📄 Explainable Decision Making
+-  Interactive AI Conversation
+-  Multi-Agent Collaboration
+-  Region-Specific Recommendations
+-  Explainable Decision Making
 
 <p align="center">
 
@@ -170,7 +170,7 @@ The AI Swarm enables users to communicate with multiple specialized AI agents th
 
 </p>
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 
@@ -206,7 +206,7 @@ The AI Swarm enables users to communicate with multiple specialized AI agents th
 
 
 
-## 🚀 Roadmap
+## Roadmap
 
 - [x] FastAPI Backend
 - [x] Physics Simulation Engine
@@ -218,7 +218,7 @@ The AI Swarm enables users to communicate with multiple specialized AI agents th
 - [X] Explainable AI Decision Traces
 - [x] Public Cloud Deployment
 
-## 👥 Authors
+## Authors
 
 - **Prince** — Team Lead; Backend Lead & Physics Engine
 - **biswadeep_infinity** — Frontend Developer & UI/UX Design
@@ -226,7 +226,7 @@ The AI Swarm enables users to communicate with multiple specialized AI agents th
 - **Siraj Ahmed** —Technical Documentation & Simulation Scenario Design
 
 
-## 🙏 Acknowledgements
+## Acknowledgements
 
 Special thanks to the following technologies and communities:
 
@@ -239,7 +239,7 @@ Special thanks to the following technologies and communities:
 - Open Source Community
 
 
-## 💬 Support
+## Support
 
 If you have questions, suggestions, or would like to contribute:
 
