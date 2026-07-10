@@ -48,7 +48,7 @@ class SyntheticResourceLedger:
 
     def compute(
         self,
-        deviation_celsius:     float,
+        current_temp:          float,
         vpd_kpa:               float,
         irrigation_efficiency: float,
     ) -> dict:
@@ -74,17 +74,15 @@ class SyntheticResourceLedger:
                Effective reserve shrinks as operational burn rate increases.
 
         Args:
-            deviation_celsius:     Temperature excess above regional baseline.
-                                   Negative values indicate below-baseline conditions
-                                   and apply zero degradation (favorable state).
+            current_temp:          Live dry-bulb temperature in °C.
             vpd_kpa:               Atmospheric dryness; primary surface evaporation driver.
             irrigation_efficiency: Fraction of water reaching soil [0.05 – 1.0].
 
         Returns:
             A fully computed resource constraint dict — the bid ceiling for all agents.
         """
-        # Below-baseline temperatures are favorable; degradation floor is zero.
-        thermal_stress = max(0.0, deviation_celsius)
+        # Thermal stress kicks in above a standard room temp base of 25.0°C.
+        thermal_stress = max(0.0, current_temp - 25.0)
 
         # ── Water ─────────────────────────────────────────────────────────────
 
@@ -126,6 +124,15 @@ class SyntheticResourceLedger:
             self.baselines["fuel_reserve_liters"] * (1.0 - fuel_overhead_frac)
         )
 
+        # Calculate dynamic peak surge time based on thermal stress
+        # Grid peak demand surge shifts earlier (up to 3 hours) as thermal stress increases
+        base_peak_hour = 19.0
+        shift = min(3.0, max(0.0, thermal_stress * 0.25))
+        peak_hour_val = base_peak_hour - shift
+        hour = int(peak_hour_val)
+        minute = int((peak_hour_val - hour) * 60)
+        dynamic_peak_time = f"{hour:02d}:{minute:02d}"
+
         return {
             # Water — surfaced as two distinct physical quantities
             "water_gross_reservoir_m3":        gross_reservoir_m3,
@@ -135,6 +142,8 @@ class SyntheticResourceLedger:
             # Grid
             "grid_available_capacity_mw":      available_grid_mw,
             "grid_demand_surge_pct":           round(grid_demand_surge_frac * 100, 2),
+            "grid_peak_surge_pct":             round(min(0.60, grid_demand_surge_frac * 1.5) * 100, 2),
+            "grid_peak_surge_time":            dynamic_peak_time,
             # Fuel
             "fuel_available_liters":           available_fuel_liters,
             "fuel_thermal_overhead_pct":       round(fuel_overhead_frac * 100, 2),

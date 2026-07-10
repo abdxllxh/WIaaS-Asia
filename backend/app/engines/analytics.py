@@ -208,6 +208,23 @@ class ClimateAnomalyEngine:
         else:
             status, intensity = "HEALTHY",           "SEASONAL_NORM"
 
+        # Calculate a baseline risk / criticality score
+        # Base score starts at 45. Scaled based on physical variables.
+        wb_contrib = max(0.0, (wet_bulb - 10.0) / (PHYSICS["wet_bulb_survivability_celsius"] - 10.0)) * 30.0
+        dev_contrib = max(0.0, deviation / crit_dev) * 20.0
+        vpd_contrib = min(15.0, vpd * 5.0)
+        irrig_loss_contrib = (1.0 - irrig_eff) * 15.0
+        
+        score = 45.0 + wb_contrib + dev_contrib + vpd_contrib + irrig_loss_contrib
+        mission_criticality_score = int(min(100.0, max(10.0, score)))
+        
+        if mission_criticality_score >= 80:
+            risk_level = "HIGH" if mission_criticality_score < 90 else "CRITICAL"
+        elif mission_criticality_score >= 50:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+
         return {
             "status":                          status,
             "intensity":                       intensity,
@@ -216,4 +233,6 @@ class ClimateAnomalyEngine:
             "heat_index_celsius":              heat_index,
             "wet_bulb_celsius":                wet_bulb,
             "overhead_irrigation_efficiency":  irrig_eff,
+            "risk_level":                      risk_level,
+            "mission_criticality_score":       mission_criticality_score,
         }

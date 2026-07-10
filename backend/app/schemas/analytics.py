@@ -20,6 +20,9 @@ class ResourceLedger(BaseModel):
     grid_demand_surge_pct: float
     fuel_available_liters: int
     fuel_thermal_overhead_pct: float
+    grid_peak_surge_pct: float
+    grid_peak_surge_time: str
+
 
 
 class AnalyticsResponse(BaseModel):
@@ -28,6 +31,19 @@ class AnalyticsResponse(BaseModel):
     climate_matrix: dict[str, float | str]
     ledger: ResourceLedger
     telemetry: ClimateTelemetry
+    crop_health_ndvi: float
+    soil_moisture_pct: float
+    disease_risk_pct: float
+    water_stress_index: float
+    diurnal_cycle: str
+    timezone: str
+    latitude: float
+    longitude: float
+    llm_state_vector: str
+    risk_level: str
+    mission_criticality_score: int
+
+
 
 
 class ChatRequest(BaseModel):

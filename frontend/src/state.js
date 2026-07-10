@@ -9,10 +9,15 @@ import citiesManager from './cities.js';
 // ── Active Region ─────────────────────────────────────────────────────────────
 export let activeRegionKey = 'pakistan_punjab';
 export let activeLeftTab   = 'region';
+window._activeRegionKey    = activeRegionKey; // Initialize for polling helpers
 
 export function setActiveRegionKey(key) {
     activeRegionKey = key;
+    window._activeRegionKey = key;  // mirror for polling helpers
+    window._latestGridPredictions = null;
+    window._latestGridAge = null;
 }
+
 
 export function setActiveLeftTab(tab) {
     activeLeftTab = tab;
@@ -28,7 +33,7 @@ const LEGACY_REGIONS = {
     'uk_london':                     'Greater London, UK',
     'italy_sicily':                  'Sicily, Italy',
     'usa_california_central_valley': 'Central Valley, California',
-    'usa_texas_houston:':            'Houston, Texas',
+    'usa_texas_houston':             'Houston, Texas',
     'brazil_cerrado':                'Cerrado Savannah, Brazil',
     'canada_alberta':                'Alberta Plains, Canada',
     'argentina_pampas':              'The Pampas, Argentina',

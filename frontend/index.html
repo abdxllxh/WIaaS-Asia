@@ -132,6 +132,7 @@
                         <h2>Agriculture Intelligence</h2>
                     </div>
                     <div class="header-actions">
+                        <button class="action-btn" id="generate-agri-report-btn" title="Generate Detailed Report"><i data-lucide="file-text"></i></button>
                         <button class="action-btn" title="View Next"><i data-lucide="chevron-right"></i></button>
                         <button class="action-btn" id="refresh-data-btn" title="Sync Data"><i data-lucide="refresh-cw"></i></button>
                         <button class="action-btn" id="close-left-panel" title="Close"><i data-lucide="x"></i></button>
@@ -203,6 +204,21 @@
                             <span class="data-value green" id="waste-penalty-val">Inactive</span>
                         </li>
                     </ul>
+
+                    <!-- Detailed Agriculture Report (Hidden by default) -->
+                    <div id="agriculture-report-section" class="hidden" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                            <span style="font-weight: 700; font-size: 0.8rem; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                                <i data-lucide="clipboard-list" style="width: 14px; height: 14px;"></i>
+                                Detailed Agricultural Report
+                            </span>
+                            <button class="action-btn" id="close-agri-report" style="padding: 2px; border-radius: 4px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary);"><i data-lucide="x" style="width: 12px; height: 12px;"></i></button>
+                        </div>
+                        
+                        <div style="background: rgba(56, 189, 248, 0.015); border: 1px solid rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+                            <div id="agri-report-content"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

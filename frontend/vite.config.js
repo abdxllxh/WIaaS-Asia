@@ -15,5 +15,13 @@ export default defineConfig({
   build: {
     outDir: '../backend/static',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Use stable filenames with no content hash — prevents cache-mismatch 404s
+        entryFileNames: 'assets/index.js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name][extname]',
+      },
+    },
   },
 });

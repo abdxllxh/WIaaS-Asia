@@ -152,7 +152,7 @@ class WeatherIntelligencePipeline:
         # ── Stage 3: Physics-Degraded Resource Ledger ─────────────────────────
         ledger_engine = SyntheticResourceLedger(region["resource_baselines"])
         ledger: dict = ledger_engine.compute(
-            deviation_celsius     = analysis["deviation_celsius"],
+            current_temp          = telemetry["temperature_celsius"],
             vpd_kpa               = analysis["vapor_pressure_deficit_kpa"],
             irrigation_efficiency = analysis["overhead_irrigation_efficiency"],
         )
@@ -189,6 +189,8 @@ class WeatherIntelligencePipeline:
             },
             "monitored_region": region["name"],
             "system_status":    analysis["status"],
+            "risk_level":       analysis["risk_level"],
+            "mission_criticality_score": analysis["mission_criticality_score"],
             "climate_matrix": {
                 "intensity_level":                 analysis["intensity"],
                 "deviation_from_baseline_celsius": analysis["deviation_celsius"],
@@ -208,30 +210,27 @@ class WeatherIntelligencePipeline:
             # The bounded context injected into the vLLM inference layer.
             "llm_state_vector": state_vector,
         }
-        # ── ADDED: n8n Compatibility Layer for vxr ──────────────────────
-        vxr_compatibility = {
-            "region_name":                    payload["monitored_region"],
-            "system_status":                  payload["system_status"],
-            "climate_matrix": {
-                "vapor_pressure_deficit_kpa":      payload["climate_matrix"]["vapor_pressure_deficit_kpa"],
-                "heat_index_celsius":              payload["climate_matrix"]["heat_index_celsius"],
-                "wet_bulb_celsius":                payload["climate_matrix"]["wet_bulb_celsius"],
-                "water_surface_evap_loss_pct":     payload["synthetic_resource_ledger"]["water_surface_evap_loss_pct"],
-                "water_irrigation_efficiency_pct": payload["synthetic_resource_ledger"]["water_irrigation_efficiency_pct"]
-            },
-            "ledger": {
-                "grid_available_capacity_mw":      payload["synthetic_resource_ledger"]["grid_available_capacity_mw"],
-                "grid_demand_surge_pct":           payload["synthetic_resource_ledger"]["grid_demand_surge_pct"],
-                "fuel_thermal_overhead_pct":       payload["synthetic_resource_ledger"]["fuel_thermal_overhead_pct"]
-            },
-            "telemetry": {
-                "temperature_celsius":             payload["climate_matrix"]["telemetry"]["temperature_celsius"],
-                "humidity_percentage":             payload["climate_matrix"]["telemetry"]["humidity_percentage"],
-                "wind_speed_kmh":                  payload["climate_matrix"]["telemetry"]["wind"]["speed_kmh"]
-            }
+        # ── ADDED: n8n Compatibility Layer for vxr (Non-destructive) ────────────────
+        payload["region_name"] = payload["monitored_region"]
+        payload["climate_matrix"].update({
+            "vapor_pressure_deficit_kpa":      payload["climate_matrix"]["vapor_pressure_deficit_kpa"],
+            "heat_index_celsius":              payload["climate_matrix"]["heat_index_celsius"],
+            "wet_bulb_celsius":                payload["climate_matrix"]["wet_bulb_celsius"],
+            "water_surface_evap_loss_pct":     payload["synthetic_resource_ledger"]["water_surface_evap_loss_pct"],
+            "water_irrigation_efficiency_pct": payload["synthetic_resource_ledger"]["water_irrigation_efficiency_pct"]
+        })
+        payload["ledger"] = {
+            "grid_available_capacity_mw":      payload["synthetic_resource_ledger"]["grid_available_capacity_mw"],
+            "grid_demand_surge_pct":           payload["synthetic_resource_ledger"]["grid_demand_surge_pct"],
+            "fuel_thermal_overhead_pct":       payload["synthetic_resource_ledger"]["fuel_thermal_overhead_pct"]
+        }
+        payload["telemetry"] = {
+            "temperature_celsius":             payload["climate_matrix"]["telemetry"]["temperature_celsius"],
+            "humidity_percentage":             payload["climate_matrix"]["telemetry"]["humidity_percentage"],
+            "wind_speed_kmh":                  payload["climate_matrix"]["telemetry"]["wind"]["speed_kmh"],
+            "wind_direction_degrees":          payload["climate_matrix"]["telemetry"]["wind"]["direction_degrees"]
         }
         
-        payload.update(vxr_compatibility)
         payload_bytes = len(json.dumps(payload))
         print(f"[5/6] OK Payload          {payload_bytes:,} bytes assembled")
 

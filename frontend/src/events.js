@@ -14,7 +14,7 @@ import {
 } from './state.js';
 import { fetchRegionAnalytics, fetchAllRegions } from './api.js';
 import { buildGlobePins } from './globe.js';
-import { updateUIElements, showGeneralInfoPanel, updateBottomPanelVisibility } from './ui.js';
+import { updateUIElements, showGeneralInfoPanel, updateBottomPanelVisibility, toggleAgricultureReport } from './ui.js';
 import { handleUserMessage } from './chat.js';
 import citiesManager from './cities.js';
 import { refreshCityUI } from './ui-cities.js';
@@ -51,6 +51,23 @@ export function setupEventListeners() {
     document.getElementById('close-left-panel').addEventListener('click', () => {
         closeLeftSidebar();
     });
+
+    // Generate Agriculture Report button
+    const genAgriBtn = document.getElementById('generate-agri-report-btn');
+    if (genAgriBtn) {
+        genAgriBtn.addEventListener('click', () => {
+            toggleAgricultureReport();
+        });
+    }
+
+    // Close Agriculture Report button
+    const closeAgriBtn = document.getElementById('close-agri-report');
+    if (closeAgriBtn) {
+        closeAgriBtn.addEventListener('click', () => {
+            const reportSec = document.getElementById('agriculture-report-section');
+            if (reportSec) reportSec.classList.add('hidden');
+        });
+    }
 
     // Close general info panel
     document.getElementById('close-general-panel').addEventListener('click', () => {
@@ -111,6 +128,9 @@ export function setupEventListeners() {
                         document.getElementById('agriculture-panel').classList.add('hidden');
                         document.getElementById('general-info-panel').classList.remove('hidden');
                         showGeneralInfoPanel(selectedTab);
+                        
+                        const reportSec = document.getElementById('agriculture-report-section');
+                        if (reportSec) reportSec.classList.add('hidden');
                     }
                     lucide.createIcons();
                 }
@@ -198,8 +218,11 @@ function closeLeftSidebar() {
     const iconEl = document.getElementById('left-dock-icon');
     if (iconEl) iconEl.setAttribute('data-lucide', 'chevron-right');
     document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
-    // Always hide City Explorer when sidebar closes
     const cityPanel = document.getElementById('city-search-panel');
     if (cityPanel) cityPanel.classList.add('hidden');
+    
+    const reportSec = document.getElementById('agriculture-report-section');
+    if (reportSec) reportSec.classList.add('hidden');
+    
     lucide.createIcons();
 }

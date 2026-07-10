@@ -16,30 +16,186 @@ import {
 } from './state.js';
 import { updateRadarChart, pushTempPowerReading, fluctuateVram } from './charts.js';
 import { toggleHeatmap, toggleWind, togglePrecipitation } from './globe.js';
-import { fetchRegionAnalytics } from './api.js';
+import { fetchRegionAnalytics, sendChatSimulation } from './api.js';
 
 // ── Telemetry Animation & Visual Ticker ───────────────────────────────────────
 let latestAnalytics = null;
 let tickerStarted = false;
 
+// ── AI Grid Prediction Polling ────────────────────────────────────────────────
+// Polls /analytics/{region}/grid-predictions every 60s and updates the grid panel
+// widgets with real AI model values instead of locally-computed approximations.
+let _gridPredictionTimer = null;
+
+async function fetchAndApplyGridPredictions(regionKey) {
+    try {
+        const res = await fetch(`/analytics/${regionKey}/grid-predictions`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.status !== 'ready') return;
+        
+        window._latestGridPredictions = json.predictions;
+        window._latestGridAge = json.age_seconds;
+        
+        applyAIGridValues(json.predictions, json.age_seconds);
+    } catch (e) {
+        // silently ignore — backend may not be ready yet
+    }
+}
+
+function applyAIGridValues(p, ageSeconds) {
+    if (!p) return;
+
+    // ── Right-panel widget IDs ──────────────────────────────────────────────
+    const peakBox = document.getElementById('ai-peak-blackout-risk-val');
+    if (peakBox && p.peak_blackout_risk_pct !== null) {
+        peakBox.textContent = `${p.peak_blackout_risk_pct.toFixed(2)}%`;
+    }
+    const peakTime = document.getElementById('ai-peak-blackout-time-val');
+    if (peakTime && p.peak_blackout_time !== null) {
+        peakTime.textContent = p.peak_blackout_time;
+    }
+    const capEl = document.getElementById('ai-grid-capacity-val');
+    if (capEl && p.grid_available_capacity_mw !== null) {
+        capEl.textContent = `${p.grid_available_capacity_mw.toFixed(2)} MW`;
+    }
+    const surgeEl = document.getElementById('ai-grid-surge-val');
+    if (surgeEl && p.grid_demand_surge_pct !== null) {
+        surgeEl.textContent = `+${p.grid_demand_surge_pct.toFixed(2)}%`;
+    }
+    const statusBadge = document.getElementById('ai-grid-status-badge');
+    if (statusBadge && p.grid_status) {
+        statusBadge.textContent = p.grid_status;
+        statusBadge.className = `kpi-status ${p.grid_status === 'STABLE' ? 'green' : p.grid_status === 'WARNING' ? 'yellow' : 'red'}`;
+    }
+    const summaryEl = document.getElementById('ai-grid-summary-text');
+    if (summaryEl && p.ai_grid_summary) {
+        summaryEl.textContent = p.ai_grid_summary;
+        summaryEl.style.fontStyle = 'normal';
+        summaryEl.style.color = 'var(--text-primary)';
+    }
+
+    // ── Grid tab IDs (left panel) ───────────────────────────────────────────
+    // Verdict text
+    const verdictEl = document.getElementById('grid-verdict-text');
+    if (verdictEl && p.ai_grid_summary) {
+        verdictEl.textContent = p.ai_grid_summary;
+        verdictEl.style.fontStyle = 'normal';
+        verdictEl.style.color = 'var(--text-primary)';
+    }
+    // Status badge (grid tab)
+    const gridTabBadge = document.getElementById('grid-ai-status-badge');
+    if (gridTabBadge && p.grid_status) {
+        gridTabBadge.textContent = p.grid_status;
+        gridTabBadge.className = `kpi-status ${p.grid_status === 'STABLE' ? 'green' : p.grid_status === 'WARNING' ? 'yellow' : 'red'}`;
+    }
+    // Peak risk card (grid tab)
+    const peakRiskVal = document.getElementById('grid-peak-risk-val');
+    if (peakRiskVal && p.peak_blackout_risk_pct !== null) {
+        peakRiskVal.textContent = `${p.peak_blackout_risk_pct.toFixed(2)}%`;
+    }
+    const peakTimeVal = document.getElementById('grid-peak-time-val');
+    if (peakTimeVal && p.peak_blackout_time !== null) {
+        peakTimeVal.textContent = p.peak_blackout_time;
+    }
+    
+    // Also populate duplicate rows in the data grid list
+    const peakRiskValRow = document.getElementById('grid-peak-risk-val-row');
+    if (peakRiskValRow && p.peak_blackout_risk_pct !== null) {
+        peakRiskValRow.textContent = `${p.peak_blackout_risk_pct.toFixed(2)}%`;
+    }
+    const peakTimeValRow = document.getElementById('grid-peak-time-val-row');
+    if (peakTimeValRow && p.peak_blackout_time !== null) {
+        peakTimeValRow.textContent = p.peak_blackout_time;
+    }
+    // Big KPI bar
+    const bigRiskEl = document.getElementById('ticker-blackout-risk');
+    const bigBar = document.getElementById('ticker-blackout-bar');
+    if (bigRiskEl && p.peak_blackout_risk_pct !== null) {
+        bigRiskEl.textContent = `${p.peak_blackout_risk_pct.toFixed(2)}%`;
+        const riskColor = p.peak_blackout_risk_pct > 60 ? 'red' : p.peak_blackout_risk_pct > 25 ? 'yellow' : 'green';
+        bigRiskEl.style.color = `var(--${riskColor}-accent)`;
+        if (bigBar) {
+            bigBar.style.width = `${Math.min(p.peak_blackout_risk_pct, 100)}%`;
+            bigBar.style.background = `var(--${riskColor}-accent)`;
+        }
+    }
+    // Data rows
+    const capTab = document.getElementById('ticker-grid-capacity-val');
+    if (capTab && p.grid_available_capacity_mw !== null) {
+        capTab.textContent = `${p.grid_available_capacity_mw.toFixed(2)} MW`;
+    }
+    const surgeTab = document.getElementById('ticker-grid-surge-val');
+    if (surgeTab && p.grid_demand_surge_pct !== null) {
+        surgeTab.textContent = `+${p.grid_demand_surge_pct.toFixed(2)}%`;
+    }
+    const thermalTab = document.getElementById('ticker-thermal-overhead-val');
+    if (thermalTab && p.thermal_overhead_pct !== null) {
+        thermalTab.textContent = `+${p.thermal_overhead_pct.toFixed(2)}%`;
+    }
+    // Age stamps (both panels)
+    const ageStamp = (id) => {
+        const el = document.getElementById(id);
+        if (el && ageSeconds !== null) {
+            const secs = Math.round(ageSeconds);
+            el.textContent = secs < 60 ? `${secs}s ago` : `${Math.round(secs / 60)}m ago`;
+        }
+    };
+    ageStamp('ai-grid-prediction-age');
+    ageStamp('grid-ai-age');
+}
+
+
+function startGridPredictionPolling(regionKey) {
+    if (_gridPredictionTimer) clearInterval(_gridPredictionTimer);
+    if (window._gridCountdownTimer) clearInterval(window._gridCountdownTimer);
+
+    let secondsLeft = 60;
+
+    function updateCountdown() {
+        const elLeft = document.getElementById('ai-grid-refresh-countdown-left');
+        const elRight = document.getElementById('ai-grid-refresh-countdown-right');
+
+        const updateEl = (el) => {
+            if (!el) return;
+            if (secondsLeft <= 0) {
+                el.textContent = 'Refreshing…';
+                el.style.color = 'var(--yellow-accent)';
+            } else {
+                const m = Math.floor(secondsLeft / 60);
+                const s = secondsLeft % 60;
+                el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+                el.style.color = secondsLeft <= 10 ? 'var(--yellow-accent)' : 'var(--text-secondary)';
+            }
+        };
+
+        updateEl(elLeft);
+        updateEl(elRight);
+        secondsLeft--;
+    }
+
+    // First fetch immediately, reset countdown on each successful fetch
+    async function doFetch() {
+        secondsLeft = 0;           // show "Refreshing…" while waiting
+        updateCountdown();
+        await fetchAndApplyGridPredictions(regionKey);
+        secondsLeft = 60;          // reset after fetch completes
+    }
+
+    doFetch();
+    _gridPredictionTimer = setInterval(doFetch, 60_000);
+
+    // Tick every second
+    updateCountdown();
+    window._gridCountdownTimer = setInterval(updateCountdown, 1000);
+}
+
+
+
+
 function renderRightAgentGridPanel(data) {
     const panel = document.getElementById('agent-grid-intelligence-panel');
     if (!panel) return;
-
-    const nominal = data.baselines ? data.baselines.grid_capacity_mw : (data.ledger.grid_available_capacity_mw / (1.0 - data.ledger.grid_demand_surge_pct / 100));
-    const blackoutRisk = (data.ledger.grid_demand_surge_pct / 60) * 100;
-    
-    let verdict = '';
-    let riskColor = 'green';
-    if (blackoutRisk > 80) {
-        verdict = 'CRITICAL: Severe heat anomaly has spiked demand to critical ceilings. Cascading failure risk is extreme. Switch off non-essential agricultural feeders immediately.';
-        riskColor = 'red';
-    } else if (blackoutRisk > 40) {
-        verdict = 'WARNING: Moderate thermal surge active. Substation temperatures are elevated. Implement demand-response limits on heavy motors.';
-        riskColor = 'yellow';
-    } else {
-        verdict = 'NORMAL: Grid frequency is stable. Supply capacity satisfies all active operational agent bids.';
-    }
 
     panel.className = 'agent-grid-monitor-box';
     panel.style.background = 'rgba(13, 13, 18, 0.95)';
@@ -50,41 +206,49 @@ function renderRightAgentGridPanel(data) {
     panel.style.marginBottom = '16px';
     panel.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)';
 
-    // Multi-agent metrics: Bids
-    const agriBid = (nominal * 0.15).toFixed(2);
-    const logisticsBid = (nominal * 0.05).toFixed(2);
-    const civilBid = (nominal * 0.65).toFixed(2);
+    const agriBid = (data.ledger.grid_available_capacity_mw * 0.15).toFixed(2);
+    const logisticsBid = (data.ledger.grid_available_capacity_mw * 0.05).toFixed(2);
+    const civilBid = (data.ledger.grid_available_capacity_mw * 0.65).toFixed(2);
 
     panel.innerHTML = `
         <div style="font-weight: 700; font-size: 0.85rem; color: var(--accent-color); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
             <i data-lucide="cpu" style="width: 16px; height: 16px;"></i> AI MODEL PREDICTIONS: GLOBAL MONITOR
         </div>
 
-        <!-- Global Verdict Box -->
+        <!-- AI Model Verdict Box -->
         <div style="background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.12); border-radius: 8px; padding: 10px; font-size: 0.75rem; line-height: 1.35; margin-bottom: 12px; color: var(--text-primary);">
-            <div style="font-weight: 700; color: var(--accent-color); margin-bottom: 2px;">Global Model Verdict</div>
-            <span id="right-grid-verdict-text">${verdict}</span>
+            <div style="font-weight: 700; color: var(--accent-color); margin-bottom: 4px;">Grid Agent Verdict</div>
+            <span id="ai-grid-summary-text" style="color: var(--text-secondary); font-style: italic;">Fetching from n8n AI Agent…</span>
+            <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                <span class="kpi-status green" id="ai-grid-status-badge">PENDING</span>
+                <span style="color: var(--text-secondary); font-size: 0.65rem;">Updated: <span id="ai-grid-prediction-age">—</span></span>
+            </div>
+            <div style="margin-top: 5px; display: flex; align-items: center; gap: 5px; font-size: 0.65rem; color: var(--text-secondary);">
+                <i data-lucide="refresh-cw" style="width: 10px; height: 10px; opacity: 0.6;"></i>
+                Data refreshes in <span id="ai-grid-refresh-countdown-right" style="font-family: var(--font-data); font-weight: 700; color: var(--text-secondary); margin-left: 3px;">…</span>
+            </div>
         </div>
 
+
         <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.75rem;">
+
+            <!-- Power Grid: AI Values -->
+            <div style="font-weight: 600; color: var(--accent-color); font-size: 0.7rem; text-transform: uppercase; margin-bottom: 2px;">Power Grid Model (AI)</div>
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">
-                <span style="color: var(--text-secondary);">GNN Blackout Probability</span>
-                <span id="right-ticker-blackout-risk" style="font-family: var(--font-data); font-weight: 700; color: var(--${riskColor}-accent);">${blackoutRisk.toFixed(4)}%</span>
+                <span style="color: var(--text-secondary);">Peak Blackout Risk</span>
+                <span id="ai-peak-blackout-risk-val" style="font-family: var(--font-data); font-weight: 700; color: var(--red-accent);">—</span>
             </div>
-            
-            <!-- Grid Model Section -->
-            <div style="font-weight: 600; color: var(--accent-color); font-size: 0.7rem; text-transform: uppercase; margin-top: 4px;">Power Grid Model</div>
-            <div style="display: flex; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">
+                <span style="color: var(--text-secondary);">Peak Risk Time</span>
+                <span id="ai-peak-blackout-time-val" style="font-family: var(--font-data); font-weight: 700; color: var(--yellow-accent);">—</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">
                 <span style="color: var(--text-secondary);">Available Grid Capacity</span>
-                <span id="right-ticker-grid-capacity-val" style="font-family: var(--font-data); font-weight: 700; color: var(--green-accent);">${data.ledger.grid_available_capacity_mw.toFixed(5)} MW</span>
+                <span id="ai-grid-capacity-val" style="font-family: var(--font-data); font-weight: 700; color: var(--green-accent);">—</span>
             </div>
-            <div style="display: flex; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">
                 <span style="color: var(--text-secondary);">Grid Demand Surge</span>
-                <span id="right-ticker-grid-surge-val" style="font-family: var(--font-data); font-weight: 700; color: var(--red-accent);">+${data.ledger.grid_demand_surge_pct.toFixed(5)}%</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-secondary);">Agri-Agent Allocation</span>
-                <span style="font-family: var(--font-data); font-weight: 600;">${agriBid} MW</span>
+                <span id="ai-grid-surge-val" style="font-family: var(--font-data); font-weight: 700; color: var(--red-accent);">—</span>
             </div>
 
             <!-- Agriculture Model Section -->
@@ -107,7 +271,18 @@ function renderRightAgentGridPanel(data) {
         </div>
     `;
     lucide.createIcons();
+
+    // Start (or restart) polling for AI grid predictions
+    if (data.region_key || window._activeRegionKey) {
+        startGridPredictionPolling(data.region_key || window._activeRegionKey);
+    }
+    
+    // If grid predictions were already fetched, immediately apply them
+    if (window._latestGridPredictions) {
+        applyAIGridValues(window._latestGridPredictions, window._latestGridAge);
+    }
 }
+
 
 function startVisualTicker() {
     function tick() {
@@ -126,10 +301,7 @@ function startVisualTicker() {
             // 1. Crop Health (NDVI)
             const cropHealthEl = document.getElementById('crop-health-value');
             if (cropHealthEl) {
-                const climate = latestAnalytics.climate_matrix;
-                const penalty = Math.max(0, (climate.deviation_from_baseline_celsius + tempJitter) * 0.05)
-                              + Math.max(0, (climate.wet_bulb_celsius + tempJitter - 25) * 0.02);
-                const healthIndex = Math.max(0.12, 0.85 - penalty);
+                const healthIndex = latestAnalytics.crop_health_ndvi;
                 const healthJitter = Math.sin(seed * 2.5) * 0.0001 + (Math.random() - 0.5) * 0.00001;
                 cropHealthEl.innerText = (healthIndex + healthJitter).toFixed(6);
             }
@@ -137,7 +309,7 @@ function startVisualTicker() {
             // 2. Soil Moisture
             const soilEl = document.getElementById('soil-moisture-val');
             if (soilEl) {
-                const baseMoisture = parseFloat(latestAnalytics.soil_moisture_base || 34.2);
+                const baseMoisture = latestAnalytics.soil_moisture_pct;
                 const moistureJitter = Math.sin(seed * 1.8) * 0.02 + (Math.random() - 0.5) * 0.002;
                 const soilVal = baseMoisture + moistureJitter;
                 const soilStatus = soilVal > 35 ? 'Optimal' : (soilVal > 20 ? 'Adequate' : 'Critical Low');
@@ -155,7 +327,7 @@ function startVisualTicker() {
             // 4. Water Stress & Physical Water Ledger
             const stressEl = document.getElementById('water-stress-val');
             if (stressEl) {
-                const baseStress = 1.0 - latestAnalytics.ledger.water_irrigation_efficiency_pct / 100;
+                const baseStress = latestAnalytics.water_stress_index;
                 const stressJitter = Math.sin(seed * 3.1) * 0.001 + (Math.random() - 0.5) * 0.0001;
                 const stressVal = Math.max(0, baseStress + stressJitter);
                 const stressStatus = stressVal > 0.6 ? 'Severe' : (stressVal > 0.3 ? 'Moderate' : 'Nominal');
@@ -234,44 +406,12 @@ function startVisualTicker() {
                 tickerDeviation.innerText = `${dev > 0 ? '+' : ''}${dev.toFixed(6)}°C`;
             }
 
-            // 7. Grid Tab
-            const tickerGridCapacity = document.getElementById('ticker-grid-capacity-val');
-            if (tickerGridCapacity) {
-                const cap = Math.max(0, latestAnalytics.ledger.grid_available_capacity_mw + capacityJitter);
-                tickerGridCapacity.innerText = cap.toFixed(5);
-            }
-            const tickerGridSurge = document.getElementById('ticker-grid-surge-val');
-            if (tickerGridSurge) {
-                const surge = latestAnalytics.ledger.grid_demand_surge_pct + capacityJitter * 0.05;
-                tickerGridSurge.innerText = `+${surge.toFixed(5)}%`;
-            }
-            const rightTickerGridCapacity = document.getElementById('right-ticker-grid-capacity-val');
-            if (rightTickerGridCapacity) {
-                const cap = Math.max(0, latestAnalytics.ledger.grid_available_capacity_mw + capacityJitter);
-                rightTickerGridCapacity.innerText = `${cap.toFixed(5)} MW`;
-            }
-            const rightTickerGridSurge = document.getElementById('right-ticker-grid-surge-val');
-            if (rightTickerGridSurge) {
-                const surge = latestAnalytics.ledger.grid_demand_surge_pct + capacityJitter * 0.05;
-                rightTickerGridSurge.innerText = `+${surge.toFixed(5)}%`;
-            }
-            const tickerGridLoss = document.getElementById('ticker-grid-loss-val');
-            if (tickerGridLoss) {
-                const nominal = latestAnalytics.baselines ? latestAnalytics.baselines.grid_capacity_mw : (latestAnalytics.ledger.grid_available_capacity_mw / (1.0 - latestAnalytics.ledger.grid_demand_surge_pct / 100));
-                const surge = latestAnalytics.ledger.grid_demand_surge_pct + capacityJitter * 0.05;
-                const lossMw = nominal * (surge / 100);
-                tickerGridLoss.innerText = `-${lossMw.toFixed(5)} MW`;
-            }
-            const rightTickerBlackoutRisk = document.getElementById('right-ticker-blackout-risk');
-            const tickerBlackoutRisk = document.getElementById('ticker-blackout-risk');
-            const tickerBlackoutBar = document.getElementById('ticker-blackout-bar');
-            if (rightTickerBlackoutRisk || tickerBlackoutRisk) {
-                const surge = latestAnalytics.ledger.grid_demand_surge_pct + capacityJitter * 0.05;
-                const blackoutRisk = (surge / 60) * 100;
-                if (rightTickerBlackoutRisk) rightTickerBlackoutRisk.innerText = `${blackoutRisk.toFixed(4)}%`;
-                if (tickerBlackoutRisk) tickerBlackoutRisk.innerText = `${blackoutRisk.toFixed(4)}%`;
-                if (tickerBlackoutBar) tickerBlackoutBar.style.width = `${blackoutRisk}%`;
-            }
+
+            // 7. Grid Tab — values are set exclusively by the AI prediction poller (applyAIGridValues)
+            // Do NOT write to ticker-grid-capacity-val, ticker-grid-surge-val, ticker-blackout-risk,
+            // ticker-blackout-bar, ticker-grid-loss-val here — the poller overwrites from n8n every 60s.
+
+
 
             // Right panel dynamic tickers (Agri & Logistics)
             const rightTickerSprinklerEff = document.getElementById('right-ticker-sprinkler-eff');
@@ -363,9 +503,11 @@ export function updateUIElements(apiData) {
         startVisualTicker();
     }
 
-    // Region name
+    // Region name with coordinates, diurnal cycle badge, and risk metrics
     const regionNameEl = document.getElementById('current-region-name');
-    if (regionNameEl) regionNameEl.innerText = apiData.region_name;
+    if (regionNameEl) {
+        regionNameEl.innerText = `${apiData.region_name} (${apiData.latitude.toFixed(2)}°, ${apiData.longitude.toFixed(2)}°) [${apiData.diurnal_cycle}] | Risk: ${apiData.risk_level} (Score: ${apiData.mission_criticality_score})`;
+    }
 
     const climate  = apiData.climate_matrix;
     const telemetry = apiData.telemetry;
@@ -380,23 +522,21 @@ export function updateUIElements(apiData) {
     else                                           systemStatusEl.classList.add('red');
 
     // Crop health KPI
-    const penalty      = Math.max(0, climate.deviation_from_baseline_celsius * 0.05)
-                       + Math.max(0, (climate.wet_bulb_celsius - 25) * 0.02);
-    const healthIndex  = Math.max(0.12, 0.85 - penalty);
+    const healthIndex = apiData.crop_health_ndvi;
     document.getElementById('crop-health-value').innerText = healthIndex.toFixed(2);
 
     // Radar data
     const radarData = [
         Math.max(0.1, 0.85 - (climate.vapor_pressure_deficit_kpa * 0.15)),
         parseFloat(healthIndex.toFixed(2)),
-        Math.max(0.1, 0.75 - (climate.vapor_pressure_deficit_kpa * 0.12)),
-        Math.max(0.2, 0.80 - (penalty * 0.5)),
+        parseFloat((apiData.soil_moisture_pct / 50.0).toFixed(2)),
+        Math.max(0.2, 0.80 - ((0.85 - healthIndex) * 0.5)),
         Math.max(0.3, 0.90 - (climate.deviation_from_baseline_celsius * 0.03)),
     ];
     updateRadarChart(radarData, healthIndex);
 
     // Soil moisture
-    const soilMoisturePct = (radarData[2] * 50).toFixed(1);
+    const soilMoisturePct = apiData.soil_moisture_pct.toFixed(1);
     const soilStatus      = soilMoisturePct > 35 ? 'Optimal' : (soilMoisturePct > 20 ? 'Adequate' : 'Critical Low');
     const soilEl = document.getElementById('soil-moisture-val');
     soilEl.innerText  = `${soilMoisturePct}% (${soilStatus})`;
@@ -408,14 +548,14 @@ export function updateUIElements(apiData) {
     document.getElementById('irrigation-demand-val').innerText = `${demandVolume} m³/hectare`;
 
     // Disease risk
-    const diseaseRisk  = Math.round(telemetry.humidity_percentage * 0.4);
+    const diseaseRisk  = Math.round(apiData.disease_risk_pct);
     const riskStatus   = diseaseRisk > 30 ? 'High' : (diseaseRisk > 15 ? 'Medium' : 'Low');
     const riskEl = document.getElementById('disease-risk-val');
     riskEl.innerText  = `${riskStatus} (${diseaseRisk}%)`;
     riskEl.className  = `data-value ${diseaseRisk > 30 ? 'red' : (diseaseRisk > 15 ? 'yellow' : 'green')}`;
 
     // Water stress
-    const waterStressVal = (1.0 - ledger.water_irrigation_efficiency_pct / 100).toFixed(2);
+    const waterStressVal = apiData.water_stress_index.toFixed(2);
     const stressStatus   = waterStressVal > 0.6 ? 'Severe' : (waterStressVal > 0.3 ? 'Moderate' : 'Nominal');
     const stressEl = document.getElementById('water-stress-val');
     stressEl.innerText  = `${waterStressVal} (${stressStatus})`;
@@ -465,7 +605,21 @@ export function updateUIElements(apiData) {
 
     // Chat system notification
     document.getElementById('system-notification-text').innerText =
-        `Weather models processed for ${apiData.region_name}. System status matches ${apiData.system_status} with current temperature at ${telemetry.temperature_celsius}°C. Adjusting domain policies accordingly.`;
+        `Weather models processed for ${apiData.region_name}. System status matches ${apiData.system_status} with current temperature at ${telemetry.temperature_celsius}°C. Risk Level: ${apiData.risk_level} (Criticality Score: ${apiData.mission_criticality_score}/100). Adjusting domain policies accordingly.`;
+
+    // Refresh the currently active side panel so that changing regions updates all tab contents instantly
+    if (_currentPanelTab && !document.getElementById('general-info-panel').classList.contains('hidden')) {
+        renderPanelContent(_currentPanelTab, apiData);
+        const rightAgentGridPanel = document.getElementById('agent-grid-intelligence-panel');
+        if (rightAgentGridPanel) {
+            if (_currentPanelTab === 'grid') {
+                rightAgentGridPanel.classList.remove('hidden');
+                renderRightAgentGridPanel(apiData);
+            } else {
+                rightAgentGridPanel.classList.add('hidden');
+            }
+        }
+    }
 }
 
 // ── renderPanelContent() — shared by cache-hit and post-fetch paths ──────────
@@ -575,110 +729,79 @@ function renderPanelContent(tabName, data) {
     } else if (tabName === 'grid') {
         titleEl.innerText = 'Power Grid Status';
         iconEl.setAttribute('data-lucide', 'zap');
-        
-        // Calculate GNN-to-LLM derivatives
-        const nominal = data.baselines ? data.baselines.grid_capacity_mw : (data.ledger.grid_available_capacity_mw / (1.0 - data.ledger.grid_demand_surge_pct / 100));
-        const lossMw = nominal * (data.ledger.grid_demand_surge_pct / 100);
-        const blackoutRisk = (data.ledger.grid_demand_surge_pct / 60) * 100;
-        
-        // Bids
-        const agriBid = (nominal * 0.15).toFixed(2);
-        const logisticsBid = (nominal * 0.05).toFixed(2);
-        const civilBid = (nominal * 0.65).toFixed(2);
-        
-        // Verdict
-        let verdict = '';
-        let riskColor = 'green';
-        if (blackoutRisk > 80) {
-            verdict = 'CRITICAL: Severe heat anomaly has spiked demand to critical ceilings. Cascading failure risk is extreme. Switch off non-essential agricultural feeders immediately.';
-            riskColor = 'red';
-        } else if (blackoutRisk > 40) {
-            verdict = 'WARNING: Moderate thermal surge active. Substation temperatures are elevated. Implement demand-response limits on heavy motors.';
-            riskColor = 'yellow';
-        } else {
-            verdict = 'NORMAL: Grid frequency is stable. Supply capacity satisfies all active operational agent bids.';
-        }
+
+        // Use physics values only as fallback labels; real values come from AI prediction cache
+        const physicsCapacity = data.ledger.grid_available_capacity_mw.toFixed(2);
 
         content = `
             <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- Verdict Box -->
+
+                <!-- AI Verdict Box -->
                 <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 8px; padding: 12px; font-size: 0.75rem; color: var(--text-primary); line-height: 1.4;">
                     <div style="font-weight: 700; color: var(--accent-color); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                        <i data-lucide="info" style="width: 14px; height: 14px;"></i> SYSTEM VERDICT
+                        <i data-lucide="cpu" style="width: 14px; height: 14px;"></i> AI GRID AGENT VERDICT
                     </div>
-                    <span id="grid-verdict-text">${verdict}</span>
+                    <span id="grid-verdict-text" style="color: var(--text-secondary); font-style: italic;">Fetching from n8n AI Agent…</span>
+                    <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span class="kpi-status green" id="grid-ai-status-badge">PENDING</span>
+                        <span style="color: var(--text-secondary); font-size: 0.65rem;">Updated: <span id="grid-ai-age">—</span></span>
+                    </div>
+                    <div style="margin-top: 5px; display: flex; align-items: center; gap: 5px; font-size: 0.65rem; color: var(--text-secondary);">
+                        <i data-lucide="refresh-cw" style="width: 10px; height: 10px; opacity: 0.6;"></i>
+                        Data refreshes in <span id="ai-grid-refresh-countdown-left" style="font-family: var(--font-data); font-weight: 700; margin-left: 3px;">…</span>
+                    </div>
                 </div>
 
-                <!-- Blackout Risk -->
+                <!-- Peak Blackout Risk (AI) -->
+                <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 8px; padding: 12px; font-size: 0.75rem; color: var(--text-primary); line-height: 1.4;">
+                    <div style="font-weight: 700; color: var(--red-accent); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="trending-up" style="width: 14px; height: 14px;"></i> PEAK BLACKOUT RISK
+                    </div>
+                    <span>Predicted Peak Risk: <strong id="grid-peak-risk-val" style="color: var(--red-accent);">—</strong> at <strong id="grid-peak-time-val">—</strong> local runtime.</span>
+                </div>
+
+                <!-- GNN Blackout Risk KPI (AI) -->
                 <div class="kpi-section" style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.01);">
-                    <div class="kpi-header" style="font-size: 0.75rem; color: var(--text-secondary);">GNN Blackout Risk Probability</div>
+                    <div class="kpi-header" style="font-size: 0.75rem; color: var(--text-secondary);">GNN Blackout Risk Probability (AI)</div>
                     <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
-                        <span id="ticker-blackout-risk" style="font-family: var(--font-data); font-size: 1.25rem; font-weight: 700; color: var(--${riskColor}-accent);">${blackoutRisk.toFixed(4)}%</span>
+                        <span id="ticker-blackout-risk" style="font-family: var(--font-data); font-size: 1.25rem; font-weight: 700; color: var(--red-accent);">—</span>
                         <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
-                            <div id="ticker-blackout-bar" style="width: ${blackoutRisk}%; height: 100%; background: var(--${riskColor}-accent); transition: width 0.3s;"></div>
+                            <div id="ticker-blackout-bar" style="width: 0%; height: 100%; background: var(--red-accent); transition: width 0.8s ease;"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tickers -->
+                <!-- Tickers (AI values) -->
                 <ul class="data-grid">
                     <li class="data-row">
-                        <span class="data-label">Nominal Grid Baseline</span>
-                        <span class="data-value" id="ticker-grid-nominal-val">${nominal.toFixed(2)} MW</span>
+                        <span class="data-label">Peak Blackout Risk</span>
+                        <span class="data-value red" id="grid-peak-risk-val-row">—</span>
                     </li>
                     <li class="data-row">
-                        <span class="data-label">Available Capacity</span>
-                        <span class="data-value green" id="ticker-grid-capacity-val">${data.ledger.grid_available_capacity_mw.toFixed(5)} MW</span>
+                        <span class="data-label">Peak Risk Time</span>
+                        <span class="data-value" id="grid-peak-time-val-row" style="color: var(--yellow-accent);">—</span>
                     </li>
                     <li class="data-row">
-                        <span class="data-label">Heat-Induced Power Loss</span>
-                        <span class="data-value red" id="ticker-grid-loss-val">-${lossMw.toFixed(5)} MW</span>
+                        <span class="data-label">Available Grid Capacity</span>
+                        <span class="data-value green" id="ticker-grid-capacity-val">—</span>
                     </li>
                     <li class="data-row">
                         <span class="data-label">Grid Demand Surge</span>
-                        <span class="data-value red" id="ticker-grid-surge-val">+${data.ledger.grid_demand_surge_pct.toFixed(5)}%</span>
+                        <span class="data-value red" id="ticker-grid-surge-val">—</span>
+                    </li>
+                    <li class="data-row">
+                        <span class="data-label">Thermal Overhead (AI)</span>
+                        <span class="data-value red" id="ticker-thermal-overhead-val">—</span>
+                    </li>
+                    <li class="data-row">
+                        <span class="data-label">Physics Baseline Capacity</span>
+                        <span class="data-value" style="opacity:0.5;">${physicsCapacity} MW</span>
                     </li>
                 </ul>
 
-                <!-- Allocations -->
-                <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
-                    <h4 style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Active AI Agent Bids</h4>
-                    <ul class="data-grid">
-                        <li class="data-row">
-                            <span class="data-label">Agri-Agent Allocation</span>
-                            <span class="data-value" id="ticker-grid-agri-bid">${agriBid} MW</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Logistics-Agent Allocation</span>
-                            <span class="data-value" id="ticker-grid-logistics-bid">${logisticsBid} MW</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Regulator-Agent Allocation</span>
-                            <span class="data-value" id="ticker-grid-civil-bid">${civilBid} MW</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- 72H Forecast -->
-                <div style="border-top: 1px solid var(--border-color); padding-top: 12px;">
-                    <h4 style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">72H Power Surge Forecast</h4>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
-                            <span>Day 1 (Next 24h) Peak</span>
-                            <span id="ticker-grid-f1" style="font-family: var(--font-data); font-weight: 600;">+${(data.ledger.grid_demand_surge_pct * 0.9).toFixed(4)}%</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
-                            <span>Day 2 (Next 48h) Peak</span>
-                            <span id="ticker-grid-f2" style="font-family: var(--font-data); font-weight: 600;">+${(data.ledger.grid_demand_surge_pct * 1.3).toFixed(4)}%</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
-                            <span>Day 3 (Next 72h) Peak</span>
-                            <span id="ticker-grid-f3" style="font-family: var(--font-data); font-weight: 600; color: var(--red-accent);">+${(data.ledger.grid_demand_surge_pct * 1.8).toFixed(4)}%</span>
-                        </div>
-                    </div>
-                </div>
             </div>
         `;
+
     } else if (tabName === 'logistics') {
         titleEl.innerText = 'Logistics Reserves';
         iconEl.setAttribute('data-lucide', 'truck');
@@ -697,23 +820,26 @@ function renderPanelContent(tabName, data) {
                 </li>
             </ul>
         `;
+
+
+
     } else if (tabName === 'research') {
         titleEl.innerText = 'State Vector & Research';
         iconEl.setAttribute('data-lucide', 'microscope');
         content = `
-            <div style="font-family: 'JetBrains Mono'; font-size: 0.7rem; white-space: pre-wrap;
-                        background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.04);
-                        border-top: 1px solid rgba(255, 255, 255, 0.1); border-left: 1px solid rgba(255, 255, 255, 0.06);
-                        border-radius: 8px; padding: 10px; max-height: 250px; overflow-y: auto; color: #a5f3fc;
-                        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-                        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02), 0 4px 12px rgba(0, 0, 0, 0.15);">
-${data.llm_state_vector}
+            <div style="max-height: 650px; overflow-y: auto; padding-right: 5px;">
+                ${renderStateVectorHTML(data.llm_state_vector)}
             </div>
         `;
     }
 
     contentEl.innerHTML = content;
     lucide.createIcons();
+
+    // If grid predictions were already fetched, immediately apply them to the placeholders
+    if (tabName === 'grid' && window._latestGridPredictions) {
+        applyAIGridValues(window._latestGridPredictions, window._latestGridAge);
+    }
 }
 
 // Tracks which tab triggered the most recent showGeneralInfoPanel call.
@@ -926,3 +1052,248 @@ function renderBottomAgentsContent() {
     `;
     lucide.createIcons();
 }
+
+function renderStateVectorHTML(text) {
+    if (!text) return '';
+
+    const lines = text.split('\n');
+    let html = '';
+
+    let zone = '';
+    let status = '';
+    let riskLevel = '';
+    let criticality = '';
+
+    let currentSection = '';
+    let thermalMatrix = [];
+    let rlvrConstraints = [];
+    let ledger = { water: [], grid: [], fuel: [] };
+    let activeLedgerSub = '';
+    let gcc = '';
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        if (line.startsWith('ZONE')) {
+            zone = line.split(':')[1]?.trim() || '';
+        } else if (line.startsWith('STATUS')) {
+            status = line.split(':')[1]?.trim() || '';
+            if (lines[i+1] && lines[i+1].trim().startsWith('[')) {
+                status += ' ' + lines[i+1].trim();
+                i++;
+            }
+        } else if (line.startsWith('RISK LEVEL')) {
+            riskLevel = line.split(':')[1]?.trim() || '';
+        } else if (line.startsWith('CRITICALITY')) {
+            criticality = line.split(':')[1]?.trim() || '';
+        } else if (line === '[THERMAL MATRIX]') {
+            currentSection = 'thermal';
+        } else if (line === '[RLVR VERIFIER CONSTRAINTS]') {
+            currentSection = 'rlvr';
+        } else if (line.startsWith('[SYNTHETIC RESOURCE LEDGER')) {
+            currentSection = 'ledger';
+        } else if (line.startsWith('[GLOBAL COOPERATION CONSTRAINT')) {
+            currentSection = 'gcc';
+        } else {
+            if (currentSection === 'thermal') {
+                if (line.startsWith('-')) {
+                    const parts = line.substring(1).split(':');
+                    thermalMatrix.push({ label: parts[0]?.trim(), val: parts[1]?.trim() });
+                }
+            } else if (currentSection === 'rlvr') {
+                if (line.startsWith('-')) {
+                    const parts = line.substring(1).split(':');
+                    rlvrConstraints.push({ label: parts[0]?.trim(), val: parts[1]?.trim() });
+                } else {
+                    if (rlvrConstraints.length > 0) {
+                        rlvrConstraints[rlvrConstraints.length - 1].desc = line;
+                    }
+                }
+            } else if (currentSection === 'ledger') {
+                if (line.startsWith('*')) {
+                    activeLedgerSub = line.substring(1).trim().toLowerCase();
+                } else if (line.startsWith('-') && activeLedgerSub) {
+                    const parts = line.substring(1).split(':');
+                    ledger[activeLedgerSub].push({ label: parts[0]?.trim(), val: parts[1]?.trim() });
+                }
+            } else if (currentSection === 'gcc') {
+                gcc += line + ' ';
+            }
+        }
+    }
+
+    const statusClass = status.includes('CRITICAL') ? 'red' : status.includes('WARNING') ? 'yellow' : 'green';
+    const riskClass = riskLevel.includes('CRITICAL') || riskLevel.includes('HIGH') ? 'red' : riskLevel.includes('MEDIUM') ? 'yellow' : 'green';
+    const criticalityVal = parseInt(criticality.split('/')[0]) || 50;
+
+    return `
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- Zone & Status Card -->
+            <div style="background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 12px;">
+                <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 4px;">Operational Zone</div>
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; line-height: 1.3;">${zone}</div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 10px;">
+                    <div>
+                        <div style="font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 4px;">Anomaly Status</div>
+                        <span class="kpi-status ${statusClass}" style="font-size: 0.65rem; font-weight: 700; display: inline-block; padding: 2px 6px;">${status}</span>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 4px;">Risk Level</div>
+                        <span class="kpi-status ${riskClass}" style="font-size: 0.65rem; font-weight: 700; display: inline-block; padding: 2px 6px;">${riskLevel}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Criticality Score -->
+            <div style="background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.7rem; font-weight: 600; color: var(--text-secondary);">Mission Criticality Score</span>
+                    <span style="font-size: 0.85rem; font-family: var(--font-data); font-weight: 700; color: var(--yellow-accent);">${criticality}</span>
+                </div>
+                <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${criticalityVal}%; height: 100%; background: linear-gradient(90deg, var(--green-accent), var(--yellow-accent), var(--red-accent)); border-radius: 3px;"></div>
+                </div>
+            </div>
+
+            <!-- Thermal Matrix -->
+            <div>
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="thermometer" style="width: 12px; height: 12px; color: var(--yellow-accent);"></i> Thermal Matrix
+                </div>
+                <ul class="data-grid">
+                    ${thermalMatrix.map(item => `
+                        <li class="data-row">
+                            <span class="data-label">${item.label}</span>
+                            <span class="data-value" style="font-family: var(--font-data); font-weight: 600; color: var(--text-primary);">${item.val}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+
+            <!-- RLVR Verifier Constraints -->
+            <div>
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="shield-check" style="width: 12px; height: 12px; color: var(--green-accent);"></i> RLVR Physics Verifier
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.01); border: 1px solid rgba(16, 185, 129, 0.08); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    ${rlvrConstraints.map(item => `
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <span style="font-size: 0.7rem; color: var(--text-secondary);">${item.label}</span>
+                                <span style="font-size: 0.75rem; font-family: var(--font-data); font-weight: 700; color: var(--green-accent);">${item.val}</span>
+                            </div>
+                            ${item.desc ? `<div style="font-size: 0.65rem; color: var(--text-secondary); opacity: 0.75; font-style: italic; line-height: 1.3; margin-top: 2px;">${item.desc}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- Synthetic Resource Ledger -->
+            <div>
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="database" style="width: 12px; height: 12px; color: var(--blue-accent);"></i> Resource Ledger
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    ${Object.entries(ledger).filter(([_, items]) => items.length > 0).map(([sec, items]) => `
+                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 8px; padding: 10px;">
+                            <div style="font-size: 0.65rem; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                                <span style="width: 6px; height: 6px; border-radius: 50%; background: ${sec === 'water' ? 'var(--blue-accent)' : sec === 'grid' ? 'var(--yellow-accent)' : 'var(--red-accent)'};"></span>
+                                ${sec}
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                ${items.map(item => `
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 0.65rem; color: var(--text-secondary);">${item.label}</span>
+                                        <span style="font-size: 0.65rem; font-family: var(--font-data); font-weight: 600; color: var(--text-primary);">${item.val}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- GCC Alert -->
+            <div style="background: rgba(239, 68, 68, 0.02); border: 1px solid rgba(239, 68, 68, 0.08); border-radius: 8px; padding: 10px; font-size: 0.65rem; color: var(--text-secondary); line-height: 1.4;">
+                <div style="font-weight: 700; color: var(--red-accent); margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                    <i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> GLOBAL COOPERATION CONSTRAINT (GCC)
+                </div>
+                <span>${gcc}</span>
+            </div>
+        </div>
+    `;
+}
+
+export function toggleAgricultureReport() {
+    const reportSec = document.getElementById('agriculture-report-section');
+    if (!reportSec) return;
+
+    // Always ensure report section is visible when clicking generate
+    reportSec.classList.remove('hidden');
+
+    const reportContentEl = document.getElementById('agri-report-content');
+    if (!reportContentEl) return;
+
+    // Show "Generating report..." spinner
+    reportContentEl.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 10px; color: var(--text-secondary);">
+            <i class="refresh-spinner" data-lucide="refresh-cw" style="width: 20px; height: 20px; animation: spin 1s linear infinite; color: var(--accent-color);"></i>
+            <span style="font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px;">Generating report…</span>
+        </div>
+    `;
+    lucide.createIcons();
+
+    // Scroll down to the report section immediately so the loader is visible
+    const panelBody = reportSec.closest('.panel-body');
+    if (panelBody) {
+        setTimeout(() => {
+            panelBody.scrollTo({
+                top: panelBody.scrollHeight,
+                behavior: 'smooth'
+            });
+        }, 50);
+    }
+
+    // Call the model backend!
+    const regionKey = window._activeRegionKey || 'pakistan_punjab';
+    const query = "Generate a detailed, technical agronomic report for the region based on the current telemetry. Focus on soil moisture, NDVI, disease risk, reservoir capacity, and sprinkler viability. Return the report in clean HTML format with subheadings and clear bullet points. Do not include conversational greetings or conversational closings, begin directly with the HTML report body.";
+    
+    sendChatSimulation(regionKey, query).then(res => {
+        if (!res || !res.reply) {
+            reportContentEl.innerHTML = '<p style="color:var(--text-secondary);font-size:0.75rem;">Error: Model did not respond. Please try again.</p>';
+            return;
+        }
+
+        let html = res.reply;
+        // Clean markdown wraps if the model wrapped it in ```html ... ``` or ``` ... ```
+        html = html.replace(/^```html\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/, '');
+        
+        // Standard markdown to HTML paragraph/bullet replacements if model outputs plain MD
+        if (!html.includes('<div') && !html.includes('<p') && !html.includes('<h')) {
+            html = html
+                .replace(/^### (.*$)/gim, '<div style="border-bottom: 1px solid rgba(255,255,255,0.06); padding-top: 6px; padding-bottom: 6px; font-weight: 700; color: var(--accent-color); font-size: 0.75rem;">$1</div>')
+                .replace(/^## (.*$)/gim, '<div style="border-bottom: 1px solid rgba(255,255,255,0.06); padding-top: 6px; padding-bottom: 6px; font-weight: 700; color: var(--accent-color); font-size: 0.75rem;">$1</div>')
+                .replace(/^\* (.*$)/gim, '<li style="margin-left: 10px; color: var(--text-primary); list-style-type: square;">$1</li>')
+                .replace(/^(?!<li|<div|<p)(.*$)/gim, '<p>$1</p>');
+        }
+
+        reportContentEl.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.72rem; line-height: 1.45; color: var(--text-primary); animation: fadeIn 0.3s ease-out;">
+                ${html}
+            </div>
+        `;
+
+        if (panelBody) {
+            panelBody.scrollTo({
+                top: panelBody.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }).catch(err => {
+        console.error(err);
+        reportContentEl.innerHTML = '<p style="color:var(--text-secondary);font-size:0.75rem;">Error contacting simulation model.</p>';
+    });
+}
+
