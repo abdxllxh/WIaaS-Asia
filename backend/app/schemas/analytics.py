@@ -25,6 +25,31 @@ class ResourceLedger(BaseModel):
 
 
 
+
+class HourlyPrediction(BaseModel):
+    time: str
+    blackout_risk_pct: float
+    available_capacity_mw: float
+
+
+class M2MTrigger(BaseModel):
+    action_required: bool
+    recommended_mitigation: str
+
+
+class AnalyticsSummary(BaseModel):
+    max_blackout_risk_pct: float
+    peak_surge_hour: str
+    grid_status: str
+    m2m_trigger: M2MTrigger
+
+
+class GridPredictionMatrix(BaseModel):
+    timeline_24h: list[HourlyPrediction]
+    analytics_summary: AnalyticsSummary
+
+
+
 class AnalyticsResponse(BaseModel):
     region_name: str
     system_status: str
@@ -42,8 +67,7 @@ class AnalyticsResponse(BaseModel):
     llm_state_vector: str
     risk_level: str
     mission_criticality_score: int
-
-
+    grid_predictions: GridPredictionMatrix
 
 
 class ChatRequest(BaseModel):

@@ -1,5 +1,8 @@
+"""Endpoints for the v1 API."""
 from __future__ import annotations
-
+import os
+import json
+import requests
 from fastapi import APIRouter, HTTPException
 
 from app.core.config import REGIONS
@@ -7,10 +10,10 @@ from app.engines.analytics import ClimateAnomalyEngine
 from app.engines.ledger import SyntheticResourceLedger
 from app.schemas.analytics import (
     AnalyticsResponse,
-    ClimateTelemetry,
-    ResourceLedger,
     ChatRequest,
     ChatResponse,
+    ClimateTelemetry,
+    ResourceLedger,
 )
 from app.services.pipeline import WeatherIntelligencePipeline
 from app.services.grid_predictor import grid_predictor
@@ -19,7 +22,59 @@ import json
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-N8N_WEBHOOK_URL = "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisis-simulation"
+
+N8N_WEBHOOK_URL = os.getenv(
+    "N8N_WEBHOOK_URL",
+    "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisis-simulation"
+)
+
+
+def _extract_webhook_reply(resp_json: object) -> str:
+    """Extrait le texte de réponse depuis les formats JSON renvoyés par n8n."""
+    if isinstance(resp_json, list) and resp_json:
+        first_item = resp_json[0]
+        if isinstance(first_item, dict):
+            return first_item.get(
+                "output",
+                first_item.get("message", first_item.get("text", str(first_item))),
+            )
+        return str(first_item)
+
+    if isinstance(resp_json, dict):
+        return resp_json.get(
+            "output",
+            resp_json.get("message", resp_json.get("text", str(resp_json))),
+        )
+
+    return str(resp_json)
+
+
+def _build_telemetry(region: dict, live: dict | None) -> ClimateTelemetry:
+    """Construit la télémétrie à partir de l'API live ou du baseline régional."""
+    if live:
+        return ClimateTelemetry(
+            temperature_celsius=live.get("temperature_2m", region["expected_max_baseline"]),
+            humidity_percentage=live.get("relative_humidity_2m", 50.0),
+            wind_speed_kmh=live.get("wind_speed_10m", 10.0),
+            wind_direction_degrees=live.get("wind_direction_10m", 180),
+        )
+    return ClimateTelemetry(
+        temperature_celsius=region["expected_max_baseline"],
+        humidity_percentage=50.0,
+        wind_speed_kmh=10.0,
+        wind_direction_degrees=180,
+    )
+
+
+@router.get("/", response_model=dict)
+def get_all_regions() -> dict:
+    """Liste les clés de région disponibles et leurs noms lisibles."""
+    available_regions = {key: data.get("name", key) for key, data in REGIONS.items()}
+    return {
+        "status": "success",
+        "count": len(available_regions),
+        "regions": available_regions,
+    }
 
 
 def check_and_register_dynamic_region(region_key: str, name: str | None = None) -> None:
@@ -81,6 +136,19 @@ def analyze_region(region_key: str, name: str | None = None) -> AnalyticsRespons
     # Store grid predictions synchronously from this payload
     grid_predictor.request_refresh(region_key, payload)
 
+    region = REGIONS[region_key]
+    ledger_engine = SyntheticResourceLedger(region["resource_baselines"])
+    analysis = {
+        "deviation_celsius": deviation,
+        "vapor_pressure_deficit_kpa": vpd,
+    }
+
+    # 3. Calculation of the 24h predictions
+    grid_predictions = ledger_engine.compute_24h_predictions(
+        deviation_celsius=analysis["deviation_celsius"],
+        vpd_kpa=analysis["vapor_pressure_deficit_kpa"]
+    )
+
     return AnalyticsResponse(
         region_name=payload["monitored_region"],
         system_status=payload["system_status"],
@@ -103,7 +171,8 @@ def analyze_region(region_key: str, name: str | None = None) -> AnalyticsRespons
         longitude=payload["_meta"]["coordinates"]["longitude"],
         llm_state_vector=payload["llm_state_vector"],
         risk_level=payload["risk_level"],
-        mission_criticality_score=payload["mission_criticality_score"]
+        mission_criticality_score=payload["mission_criticality_score"],
+        grid_predictions=grid_predictions,
     )
 
 
@@ -190,11 +259,12 @@ def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None
 
     if not payload:
         return ChatResponse(
-            reply="[System] Could not generate region telemetry payload. Please try again in a moment.",
-            raw_data=None
+            reply=(
+                "[System] Could not generate region telemetry payload. "
+                "Live weather API may be temporarily unavailable. Please try again in a moment."
+            ),
+            raw_data=None,
         )
-
-
 
     # Intercept agronomic report requests to generate local model output
     q_lower = request.query.lower()
@@ -203,39 +273,36 @@ def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None
         return ChatResponse(reply=report_text, raw_data={"source": "local_agri_model", "output": report_text})
 
     payload["user_query"] = request.query
+    payload["chatInput"] = request.query
 
     try:
+        print(f"Sending payload to n8n: {N8N_WEBHOOK_URL}")
         response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=(10, 60))
         response.raise_for_status()
         try:
             resp_json = response.json()
-            reply_text = ""
-            if isinstance(resp_json, list) and len(resp_json) > 0:
-                first_item = resp_json[0]
-                if isinstance(first_item, dict):
-                    reply_text = first_item.get("output", first_item.get("message", first_item.get("text", str(first_item))))
-                else:
-                    reply_text = str(first_item)
-            elif isinstance(resp_json, dict):
-                reply_text = resp_json.get("output", resp_json.get("message", resp_json.get("text", str(resp_json))))
-            else:
-                reply_text = str(resp_json)
+            reply_text = _extract_webhook_reply(resp_json)
             if not reply_text:
                 reply_text = json.dumps(resp_json)
-            return ChatResponse(reply=reply_text, raw_data=resp_json if isinstance(resp_json, dict) else {"data": resp_json})
+
+            raw_data = resp_json if isinstance(resp_json, dict) else {"data": resp_json}
+            return ChatResponse(reply=reply_text, raw_data=raw_data)
         except ValueError:
             return ChatResponse(reply=response.text, raw_data=None)
     except requests.exceptions.Timeout:
         print(f"Webhook timeout for region: {region_key}")
         return ChatResponse(
-            reply="[System] The AI Swarm is processing a complex analysis and took too long to respond. Please try again.",
-            raw_data=None
+            reply=(
+                "[System] The AI Swarm is processing a complex analysis and took too long to respond. "
+                "Please try again — it may respond faster on retry."
+            ),
+            raw_data=None,
         )
     except requests.exceptions.RequestException as e:
-        print(f"Webhook error: {e}")
+        print(f"Webhook error detail: {e}")
         return ChatResponse(
-            reply="[System] Unable to reach the AI Swarm at this time. Please check the n8n workflow is active and retry.",
-            raw_data=None
+            reply=f"[System] Unable to reach the AI Swarm. Error details: {e}",
+            raw_data=None,
         )
 
 

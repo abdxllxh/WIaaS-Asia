@@ -12,6 +12,8 @@ Sections:
     REGIONS             — Monitored zones with historical baselines and resource inventories
 """
 from __future__ import annotations
+import json
+import os
 
 # ─── Fundamental Physics Constants ─────────────────────────────────────────────
 
@@ -211,3 +213,35 @@ REGIONS: dict[str, dict] = {
         },
     },
 }
+
+# ─── Dynamic Registry Injection ────────────────────────────────────────────────
+# Loads optional extended regions from core/regions_registry.json at startup.
+_json_path = os.path.join(os.path.dirname(__file__), "regions_registry.json")
+
+if os.path.exists(_json_path):
+    try:
+        with open(_json_path, "r", encoding="utf-8") as _f:
+            _extended_regions = json.load(_f)
+            REGIONS.update(_extended_regions)
+            print(f"[WIaaS Config] Injected {len(_extended_regions)} cities from registry.")
+    except Exception as _e:
+        print(f"[WIaaS Config] Failed to parse regions_registry.json ({_e})")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deployment / Docker Configuration
+# All deployment-specific values are loaded from environment variables.
+# This keeps the application portable across local development, Docker,
+# AMD Developer Cloud, and production environments.
+# ─────────────────────────────────────────────────────────────────────────────
+
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8000"))
+
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
+N8N_BASE_URL = os.getenv(
+    "N8N_BASE_URL",
+    "http://localhost:5678"
+)
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
