@@ -59,64 +59,51 @@ class GNNToLLMBridge:
         # Irrigation directive block varies based on whether the penalty threshold is breached.
         if analysis["overhead_irrigation_efficiency"] < 0.5:
             irrigation_block = (
-                f"  Overhead Sprinkler Efficiency : {irrig_eff_pct}%\n"
-                f"  [!] HARD PENALTY ACTIVE\n"
-                f"     {irrig_loss_pct}% of deployed water is lost before reaching soil.\n"
-                f"     The RLVR engine will apply a NEGATIVE REWARD to any agent\n"
-                f"     proposing standard overhead systems.\n"
-                f"     MANDATE: Drip or sub-surface irrigation ONLY."
+                f"- Overhead Sprinkler Efficiency: {irrig_eff_pct}%\n"
+                f"  [⚠ HARD PENALTY ACTIVE]\n"
+                f"  {irrig_loss_pct}% of deployed water is lost before reaching soil.\n"
+                f"  The RLVR engine will apply a NEGATIVE REWARD to any agent proposing standard overhead systems.\n"
+                f"  MANDATE: Drip or sub-surface irrigation ONLY."
             )
         else:
             irrigation_block = (
-                f"  Overhead Sprinkler Efficiency : {irrig_eff_pct}%\n"
+                f"- Overhead Sprinkler Efficiency: {irrig_eff_pct}%\n"
                 f"  Standard overhead irrigation is viable under current conditions."
             )
 
         vector = f"""
-╔══════════════════════════════════════════════════════════════════╗
-║       PHYSICS-CONSTRAINED STATE VECTOR  //  WIaaS RUNTIME       ║
-╚══════════════════════════════════════════════════════════════════╝
-ZONE     : {region_name}
-STATUS   : {analysis['status']}  [{analysis['intensity']}]
+=== WIaaS PHYSICS-CONSTRAINED STATE VECTOR ===
+ZONE       : {region_name}
+STATUS     : {analysis['status']} [{analysis['intensity']}]
+RISK LEVEL : {analysis.get('risk_level', 'NOMINAL')}
+CRITICALITY: {analysis.get('mission_criticality_score', 50)}/100
 
-┌─ [THERMAL MATRIX] ──────────────────────────────────────────────┐
-  Temperature            : {telemetry['temperature_celsius']}°C  (raw sensor)
-  Baseline Excess        : +{analysis['deviation_celsius']}°C  above regional ceiling
-  Heat Index             : {analysis['heat_index_celsius']}°C  (perceived thermal load)
-  Wet-Bulb Temperature   : {analysis['wet_bulb_celsius']}°C  (biological stress indicator)
-  Vapor Pressure Deficit : {analysis['vapor_pressure_deficit_kpa']} kPa  (evaporation driver)
-  Relative Humidity      : {telemetry['humidity_percentage']}%
-  Wind Speed             : {telemetry['wind']['speed_kmh']} km/h @ {telemetry['wind']['direction_degrees']}°
-└─────────────────────────────────────────────────────────────────┘
+[THERMAL MATRIX]
+- Temperature            : {telemetry['temperature_celsius']:.2f}°C
+- Baseline Excess        : {analysis['deviation_celsius']:.2f}°C
+- Heat Index             : {analysis['heat_index_celsius']:.2f}°C
+- Wet-Bulb Temperature   : {analysis['wet_bulb_celsius']:.2f}°C
+- Vapor Pressure Deficit : {analysis['vapor_pressure_deficit_kpa']:.2f} kPa
+- Relative Humidity      : {telemetry['humidity_percentage']:.1f}%
+- Wind Speed             : {telemetry['wind']['speed_kmh']:.1f} km/h @ {telemetry['wind']['direction_degrees']}°
 
-┌─ [RLVR VERIFIER CONSTRAINTS] ───────────────────────────────────┐
-  These are physical laws. Non-compliance earns a hard negative
-  reward regardless of strategic reasoning quality.
-
+[RLVR VERIFIER CONSTRAINTS]
 {irrigation_block}
-└─────────────────────────────────────────────────────────────────┘
 
-┌─ [SYNTHETIC RESOURCE LEDGER — AGENT BID CEILING] ───────────────┐
-  WATER
-    Gross Reservoir      : {ledger['water_gross_reservoir_m3']:>14,} m³
-    Surface Evap Loss    : {ledger['water_surface_evap_loss_pct']:>8.2f}%    (VPD-driven)
-    Deliverable Volume   : {ledger['water_deliverable_m3']:>14,} m³  ← bid ceiling
+[SYNTHETIC RESOURCE LEDGER — AGENT BID CEILINGS]
+* WATER
+  - Gross Reservoir      : {ledger['water_gross_reservoir_m3']:,} m³
+  - Surface Evap Loss    : {ledger['water_surface_evap_loss_pct']:.2f}%
+  - Deliverable Volume   : {ledger['water_deliverable_m3']:,} m³ (bid ceiling)
+* GRID
+  - Available Capacity   : {ledger['grid_available_capacity_mw']} MW
+  - Demand Surge         : +{ledger['grid_demand_surge_pct']:.2f}%
+* FUEL
+  - Available Reserve    : {ledger['fuel_available_liters']:,} L
+  - Thermal Overhead     : +{ledger['fuel_thermal_overhead_pct']:.2f}%
 
-  GRID
-    Available Capacity   : {ledger['grid_available_capacity_mw']:>8} MW
-    Demand Surge         : +{ledger['grid_demand_surge_pct']:>7.2f}%    (heat-driven AC load)
-
-  FUEL
-    Available Reserve    : {ledger['fuel_available_liters']:>14,} L
-    Thermal Overhead     : +{ledger['fuel_thermal_overhead_pct']:>7.2f}%    (logistics cooling)
-└─────────────────────────────────────────────────────────────────┘
-
-┌─ [GLOBAL COOPERATION CONSTRAINT (GCC)] ─────────────────────────┐
-  Agent bids MUST NOT collectively exceed any ledger ceiling.
-  A resource collapse in ANY single sector triggers a systemic
-  penalty: ALL agent rewards reset to ZERO.
-  Sacrifice a local optimum to preserve the global survival baseline.
-└─────────────────────────────────────────────────────────────────┘
-""".strip()
+[GLOBAL COOPERATION CONSTRAINT (GCC)]
+Agent bids must not collectively exceed ledger ceilings. A resource collapse in any single sector triggers a systemic penalty: all agent rewards reset to zero.
+""".strip().strip()
 
         return vector

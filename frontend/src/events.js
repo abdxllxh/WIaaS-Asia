@@ -7,22 +7,31 @@ import {
     activeRegionKey,
     setActiveRegionKey,
     regionsTelemetryCache,
+    activeLeftTab,
+    setActiveLeftTab,
+    bottomPanelMode,
+    setBottomPanelMode,
 } from './state.js';
 import { fetchRegionAnalytics, fetchAllRegions } from './api.js';
 import { buildGlobePins } from './globe.js';
-import { updateUIElements, showGeneralInfoPanel } from './ui.js';
+import { updateUIElements, showGeneralInfoPanel, updateBottomPanelVisibility, toggleAgricultureReport } from './ui.js';
 import { handleUserMessage } from './chat.js';
+import citiesManager from './cities.js';
+import { refreshCityUI } from './ui-cities.js';
 
 // ── setupEventListeners() ────────────────────────────────────────────────────
 export function setupEventListeners() {
     // Left Docker
-    document.getElementById('toggle-left-dock').addEventListener('click', () => {
-        const sidebar  = document.getElementById('left-sidebar');
-        const iconEl   = document.getElementById('left-dock-icon');
-        const isVisible = sidebar.classList.toggle('visible');
-        iconEl.setAttribute('data-lucide', isVisible ? 'chevron-left' : 'chevron-right');
-        lucide.createIcons();
-    });
+    const leftDockBtn = document.getElementById('toggle-left-dock');
+    if (leftDockBtn) {
+        leftDockBtn.addEventListener('click', () => {
+            const sidebar  = document.getElementById('left-sidebar');
+            const iconEl   = document.getElementById('left-dock-icon');
+            const isVisible = sidebar.classList.toggle('visible');
+            iconEl.setAttribute('data-lucide', isVisible ? 'chevron-left' : 'chevron-right');
+            lucide.createIcons();
+        });
+    }
 
     // Right Docker
     document.getElementById('toggle-right-dock').addEventListener('click', () => {
@@ -42,6 +51,23 @@ export function setupEventListeners() {
     document.getElementById('close-left-panel').addEventListener('click', () => {
         closeLeftSidebar();
     });
+
+    // Generate Agriculture Report button
+    const genAgriBtn = document.getElementById('generate-agri-report-btn');
+    if (genAgriBtn) {
+        genAgriBtn.addEventListener('click', () => {
+            toggleAgricultureReport();
+        });
+    }
+
+    // Close Agriculture Report button
+    const closeAgriBtn = document.getElementById('close-agri-report');
+    if (closeAgriBtn) {
+        closeAgriBtn.addEventListener('click', () => {
+            const reportSec = document.getElementById('agriculture-report-section');
+            if (reportSec) reportSec.classList.add('hidden');
+        });
+    }
 
     // Close general info panel
     document.getElementById('close-general-panel').addEventListener('click', () => {
@@ -75,6 +101,7 @@ export function setupEventListeners() {
             const isAlreadyActive = tab.classList.contains('active');
 
             if (['region', 'physics', 'agriculture', 'grid', 'logistics', 'research', 'globe-analysis'].includes(selectedTab)) {
+                setActiveLeftTab(selectedTab);
                 if (isAlreadyActive) {
                     tab.classList.remove('active');
                     closeLeftSidebar();
@@ -84,13 +111,33 @@ export function setupEventListeners() {
                     document.getElementById('left-sidebar').classList.add('visible');
                     document.getElementById('left-dock-icon').setAttribute('data-lucide', 'chevron-left');
 
+                    // City Explorer only shown on the Region tab
+                    const cityPanel = document.getElementById('city-search-panel');
+                    if (cityPanel) {
+                        if (selectedTab === 'region') {
+                            cityPanel.classList.remove('hidden');
+                        } else {
+                            cityPanel.classList.add('hidden');
+                        }
+                    }
+
                     if (selectedTab === 'agriculture') {
                         document.getElementById('agriculture-panel').classList.remove('hidden');
                         document.getElementById('general-info-panel').classList.add('hidden');
                     } else {
+                        document.getElementById('agriculture-panel').classList.add('hidden');
+                        document.getElementById('general-info-panel').classList.remove('hidden');
                         showGeneralInfoPanel(selectedTab);
+                        
+                        const reportSec = document.getElementById('agriculture-report-section');
+                        if (reportSec) reportSec.classList.add('hidden');
                     }
                     lucide.createIcons();
+                }
+
+                // If currently showing AI Agents in the bottom panel, refresh it for the new active left tab!
+                if (bottomPanelMode === 'agents') {
+                    updateBottomPanelVisibility();
                 }
             } else if (selectedTab === 'agents') {
                 if (isAlreadyActive) {
@@ -102,15 +149,23 @@ export function setupEventListeners() {
                     tab.classList.add('active');
                     document.getElementById('right-sidebar').classList.add('visible');
                     document.getElementById('right-dock-icon').setAttribute('data-lucide', 'chevron-right');
+                    
+                    // Switch bottom panel mode to 'agents' and expand
+                    setBottomPanelMode('agents');
+                    updateBottomPanelVisibility();
                     document.getElementById('bottom-panel').classList.remove('collapsed');
                     document.getElementById('bottom-toggle-icon').setAttribute('data-lucide', 'chevron-down');
                 }
                 lucide.createIcons();
             } else if (selectedTab === 'analytics') {
+                // Switch bottom panel mode to 'analytics' and expand
+                setBottomPanelMode('analytics');
+                updateBottomPanelVisibility();
+                
                 const panel = document.getElementById('bottom-panel');
                 const iconEl = document.getElementById('bottom-toggle-icon');
-                const collapsed = panel.classList.toggle('collapsed');
-                iconEl.setAttribute('data-lucide', collapsed ? 'chevron-up' : 'chevron-down');
+                panel.classList.remove('collapsed');
+                iconEl.setAttribute('data-lucide', 'chevron-down');
                 lucide.createIcons();
             }
         });
@@ -133,8 +188,9 @@ export async function loadRegionData(regionKey) {
     const data = await fetchRegionAnalytics(regionKey);
     if (!data) return;
     regionsTelemetryCache[regionKey] = data;
-    buildGlobePins();
+    buildGlobePins(citiesManager.getAllCities());
     updateUIElements(data);
+    refreshCityUI();
 }
 
 // ── loadAllRegionsForGlobe() ─────────────────────────────────────────────────
@@ -143,13 +199,16 @@ export async function loadAllRegionsForGlobe(regionsList) {
     results.forEach((data, key) => {
         regionsTelemetryCache[key] = data;
     });
-    buildGlobePins();
+    buildGlobePins(citiesManager.getAllCities());
 }
 
 // ── selectActiveRegion() — exposed globally via window.__wiaas ───────────────
 export function selectActiveRegion(regionKey) {
     setActiveRegionKey(regionKey);
     loadRegionData(regionKey);
+    // Show City Explorer when switching region programmatically
+    const cityPanel = document.getElementById('city-search-panel');
+    if (cityPanel) cityPanel.classList.remove('hidden');
     showGeneralInfoPanel('region');
 }
 
@@ -159,5 +218,11 @@ function closeLeftSidebar() {
     const iconEl = document.getElementById('left-dock-icon');
     if (iconEl) iconEl.setAttribute('data-lucide', 'chevron-right');
     document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+    const cityPanel = document.getElementById('city-search-panel');
+    if (cityPanel) cityPanel.classList.add('hidden');
+    
+    const reportSec = document.getElementById('agriculture-report-section');
+    if (reportSec) reportSec.classList.add('hidden');
+    
     lucide.createIcons();
 }

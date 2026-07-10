@@ -39,11 +39,13 @@ class WeatherIntelligencePipeline:
     def __init__(self, output_filename: str = "live_weather_stream.json"):
         self.output_filename = output_filename
 
-    # ── Stage 1: Telemetry Ingestion ─────────────────────────────────────────
+    _telemetry_cache = {}
 
     def fetch_api_telemetry(self, lat: float, lon: float) -> dict | None:
         """
-        Fetches live meteorological telemetry from Open-Meteo.
+        Fetches live meteorological telemetry from Open-Meteo with caching
+        to support safe high-frequency polling. Adds sub-second fluctuations
+        to simulate active streaming.
 
         In production, this endpoint is replaced by the GraphCast GNN inference
         layer, which provides the same field names as multi-dimensional spatial
@@ -52,29 +54,54 @@ class WeatherIntelligencePipeline:
         Returns:
             Raw current-conditions dict, or None on any failure variant.
         """
-        params = {
-            "latitude":  lat,
-            "longitude": lon,
-            "current":   self._TELEMETRY_VARS,
-            "timezone":  "auto",
-        }
-        # Added production standard User-Agent header to avoid edge cloud firewalls during hackathon execution
-        headers = {
-            "User-Agent": "WeatherIntelligencePipeline/1.1.0 (Hackathon Context Engine)",
-            "Accept": "application/json"
-        }
-        try:
-            response = requests.get(
-                self._API_BASE_URL, params=params, headers=headers, timeout=self._REQUEST_TIMEOUT
-            )
-            response.raise_for_status()
-            return response.json()["current"]
-        except requests.exceptions.Timeout:
-            print(f"[TIMEOUT]  API request exceeded {self._REQUEST_TIMEOUT}s limit.")
-        except requests.exceptions.HTTPError as e:
-            print(f"[HTTP {e.response.status_code}]  Telemetry API error: {e}")
-        except (requests.exceptions.RequestException, KeyError, ValueError) as e:
-            print(f"[ERROR]    Telemetry ingestion failed: {e}")
+        import time
+        import random
+        
+        cache_key = (lat, lon)
+        now = time.time()
+        cache_duration = 30.0  # cache API responses for 30s
+        
+        cached = self._telemetry_cache.get(cache_key)
+        if cached and (now - cached["time"] < cache_duration):
+            raw = cached["data"].copy()
+        else:
+            params = {
+                "latitude":  lat,
+                "longitude": lon,
+                "current":   self._TELEMETRY_VARS,
+                "timezone":  "auto",
+            }
+            # Added production standard User-Agent header to avoid edge cloud firewalls during hackathon execution
+            headers = {
+                "User-Agent": "WeatherIntelligencePipeline/1.1.0 (Hackathon Context Engine)",
+                "Accept": "application/json"
+            }
+            try:
+                response = requests.get(
+                    self._API_BASE_URL, params=params, headers=headers, timeout=self._REQUEST_TIMEOUT
+                )
+                response.raise_for_status()
+                raw = response.json()["current"]
+                self._telemetry_cache[cache_key] = {"time": now, "data": raw}
+            except requests.exceptions.Timeout:
+                print(f"[TIMEOUT]  API request exceeded {self._REQUEST_TIMEOUT}s limit. Checking cache/baseline.")
+                raw = cached["data"] if cached else None
+            except requests.exceptions.HTTPError as e:
+                print(f"[HTTP {e.response.status_code}]  Telemetry API error: {e}. Checking cache/baseline.")
+                raw = cached["data"] if cached else None
+            except (requests.exceptions.RequestException, KeyError, ValueError) as e:
+                print(f"[ERROR]    Telemetry ingestion failed: {e}. Checking cache/baseline.")
+                raw = cached["data"] if cached else None
+
+        if raw:
+            # Inject tiny random fluctuations to simulate second-by-second updates
+            raw = raw.copy()
+            raw["temperature_2m"] += random.uniform(-0.04, 0.04)
+            raw["relative_humidity_2m"] = max(0.0, min(100.0, raw["relative_humidity_2m"] + random.uniform(-0.1, 0.1)))
+            raw["wind_speed_10m"] = max(0.0, raw["wind_speed_10m"] + random.uniform(-0.08, 0.08))
+            raw["wind_direction_10m"] = (raw["wind_direction_10m"] + random.randint(-1, 1)) % 360
+            return raw
+            
         return None
 
     # ── Main Execution ───────────────────────────────────────────────────────
@@ -141,7 +168,7 @@ class WeatherIntelligencePipeline:
         # ── Stage 3: Physics-Degraded Resource Ledger ─────────────────────────
         ledger_engine = SyntheticResourceLedger(region["resource_baselines"])
         ledger: dict = ledger_engine.compute(
-            deviation_celsius     = analysis["deviation_celsius"],
+            current_temp          = telemetry["temperature_celsius"],
             vpd_kpa               = analysis["vapor_pressure_deficit_kpa"],
             irrigation_efficiency = analysis["overhead_irrigation_efficiency"],
         )
@@ -178,6 +205,8 @@ class WeatherIntelligencePipeline:
             },
             "monitored_region": region["name"],
             "system_status":    analysis["status"],
+            "risk_level":       analysis["risk_level"],
+            "mission_criticality_score": analysis["mission_criticality_score"],
             "climate_matrix": {
                 "intensity_level":                 analysis["intensity"],
                 "deviation_from_baseline_celsius": analysis["deviation_celsius"],
@@ -194,31 +223,26 @@ class WeatherIntelligencePipeline:
             "synthetic_resource_ledger": ledger,
             "llm_state_vector": state_vector,
         }
-
-        # Couche de compatibilité n8n / routage M2M (champs aplatis pour les webhooks)
-        vxr_compatibility = {
-            "region_name":                    payload["monitored_region"],
-            "system_status":                  payload["system_status"],
-            "climate_matrix": {
-                "vapor_pressure_deficit_kpa":      payload["climate_matrix"]["vapor_pressure_deficit_kpa"],
-                "heat_index_celsius":              payload["climate_matrix"]["heat_index_celsius"],
-                "wet_bulb_celsius":                payload["climate_matrix"]["wet_bulb_celsius"],
-                "water_surface_evap_loss_pct":     payload["synthetic_resource_ledger"]["water_surface_evap_loss_pct"],
-                "water_irrigation_efficiency_pct": payload["synthetic_resource_ledger"]["water_irrigation_efficiency_pct"]
-            },
-            "ledger": {
-                "grid_available_capacity_mw":      payload["synthetic_resource_ledger"]["grid_available_capacity_mw"],
-                "grid_demand_surge_pct":           payload["synthetic_resource_ledger"]["grid_demand_surge_pct"],
-                "fuel_thermal_overhead_pct":       payload["synthetic_resource_ledger"]["fuel_thermal_overhead_pct"]
-            },
-            "telemetry": {
-                "temperature_celsius":             payload["climate_matrix"]["telemetry"]["temperature_celsius"],
-                "humidity_percentage":             payload["climate_matrix"]["telemetry"]["humidity_percentage"],
-                "wind_speed_kmh":                  payload["climate_matrix"]["telemetry"]["wind"]["speed_kmh"]
-            }
+        # ── ADDED: n8n Compatibility Layer for vxr (Non-destructive) ────────────────
+        payload["region_name"] = payload["monitored_region"]
+        payload["climate_matrix"].update({
+            "vapor_pressure_deficit_kpa":      payload["climate_matrix"]["vapor_pressure_deficit_kpa"],
+            "heat_index_celsius":              payload["climate_matrix"]["heat_index_celsius"],
+            "wet_bulb_celsius":                payload["climate_matrix"]["wet_bulb_celsius"],
+            "water_surface_evap_loss_pct":     payload["synthetic_resource_ledger"]["water_surface_evap_loss_pct"],
+            "water_irrigation_efficiency_pct": payload["synthetic_resource_ledger"]["water_irrigation_efficiency_pct"]
+        })
+        payload["ledger"] = {
+            "grid_available_capacity_mw":      payload["synthetic_resource_ledger"]["grid_available_capacity_mw"],
+            "grid_demand_surge_pct":           payload["synthetic_resource_ledger"]["grid_demand_surge_pct"],
+            "fuel_thermal_overhead_pct":       payload["synthetic_resource_ledger"]["fuel_thermal_overhead_pct"]
         }
-
-        payload.update(vxr_compatibility)
+        payload["telemetry"] = {
+            "temperature_celsius":             payload["climate_matrix"]["telemetry"]["temperature_celsius"],
+            "humidity_percentage":             payload["climate_matrix"]["telemetry"]["humidity_percentage"],
+            "wind_speed_kmh":                  payload["climate_matrix"]["telemetry"]["wind"]["speed_kmh"],
+            "wind_direction_degrees":          payload["climate_matrix"]["telemetry"]["wind"]["direction_degrees"]
+        }
         payload_bytes = len(json.dumps(payload))
         print(f"[5/6] OK Payload          {payload_bytes:,} bytes assembled")
 

@@ -177,6 +177,7 @@ let _standardMaterial, _heatmapMaterial;
 let _windHelpers  = [];
 let _rainHelpers  = [];
 let _cityMarkers  = [];
+let _starfield1, _starfield2;
 let _zoomDistance = 4.5;
 
 const MIN_ZOOM = 2.3;
@@ -199,6 +200,38 @@ function createDotTexture(rgb) {
     const tex = new THREE.CanvasTexture(canvas);
     tex.needsUpdate = true;
     return tex;
+}
+
+// ── Helper: generate a starfield points mesh ─────────────────────────────────
+function createStarfield(count, minRadius, maxRadius, color, size) {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    
+    for (let i = 0; i < count; i++) {
+        const u = Math.random();
+        const v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        const r = minRadius + Math.random() * (maxRadius - minRadius);
+        
+        positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+    }
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    
+    const texture = createDotTexture('255, 255, 255');
+    const material = new THREE.PointsMaterial({
+        color: color,
+        size: size,
+        map: texture,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+    });
+    
+    return new THREE.Points(geometry, material);
 }
 
 // ── initGlobe() ──────────────────────────────────────────────────────────────
@@ -298,6 +331,12 @@ export function initGlobe() {
     _globe.add(_pinsGroup);
     buildGlobePins();
 
+    // Starfield background layers for parallax depth
+    _starfield1 = createStarfield(400, 15, 30, 0x7dd3fc, 0.16); // Closer, cyan stars
+    _starfield2 = createStarfield(800, 35, 60, 0xffffff, 0.08); // Farther, white stars
+    _scene.add(_starfield1);
+    _scene.add(_starfield2);
+
     // Export refs to state
     setGlobeRefs({
         scene:            _scene,
@@ -387,6 +426,7 @@ export function initGlobe() {
 
     function animate() {
         requestAnimationFrame(animate);
+        if (document.hidden) return; // Skip rendering and updates when the tab is backgrounded
         pulseTime      += 0.05;
         autoSpinAngle  += 0.0012;
         _globe.rotation.y = autoSpinAngle + userRotationOffset.y;
@@ -396,6 +436,16 @@ export function initGlobe() {
         if (cs) {
             cs.rotation.y = autoSpinAngle * 1.08 + userRotationOffset.y;
             cs.rotation.x = userRotationOffset.x;
+        }
+
+        // Parallax starfield rotations
+        if (_starfield1) {
+            _starfield1.rotation.y = autoSpinAngle * 0.08 + userRotationOffset.y * 0.12;
+            _starfield1.rotation.x = userRotationOffset.x * 0.12;
+        }
+        if (_starfield2) {
+            _starfield2.rotation.y = autoSpinAngle * 0.02 + userRotationOffset.y * 0.04;
+            _starfield2.rotation.x = userRotationOffset.x * 0.04;
         }
 
         if (precipitationActive && _rainHelpers.length > 0) {

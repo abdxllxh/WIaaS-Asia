@@ -21,6 +21,14 @@
     <link rel="stylesheet" href="/src/styles/main.css">
 </head>
 <body>
+    <!-- Custom Sci-Fi Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loader-content">
+            <div class="loader-title">WIaaS</div>
+            <div class="loader-subtitle">WEATHER INTELLIGENCE AS A SERVICE</div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Top Left: Active Region and Local Time Widget -->
         <div class="active-region-widget">
@@ -77,10 +85,6 @@
                     <i data-lucide="bar-chart-3"></i>
                     <span>Analytics</span>
                 </button>
-                <button class="nav-item" data-tab="alerts">
-                    <i data-lucide="megaphone"></i>
-                    <span>Alerts</span>
-                </button>
             </nav>
         </header>
 
@@ -93,25 +97,25 @@
                 <svg id="globe-popup-connector" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">
                     <path id="connector-path" d="" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,4" fill="none" />
                 </svg>
-                <div id="globe-popup-box" class="glass-card" style="position: absolute; pointer-events:auto; width:220px; background: rgba(13, 13, 18, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 14px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.6); backdrop-filter: blur(12px); font-family: var(--font-ui);">
-                    <button class="popup-close-btn" onclick="closeGlobePopup()" style="position: absolute; top: 8px; right: 10px; background:none; border:none; color:var(--text-secondary); font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
-                    <div class="popup-header" style="font-size:0.8rem; font-weight:700; color:var(--text-primary); margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:6px;">Punjab, Pakistan</div>
-                    <div class="popup-body" style="display:flex; flex-direction:column; gap:8px;">
-                        <div class="popup-row" style="display:flex; justify-content:space-between; font-size:0.7rem;">
-                            <span class="popup-label" style="color:var(--text-secondary);">Temperature</span>
-                            <span id="popup-temp-val" class="popup-val" style="color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">47°C</span>
+                <div id="globe-popup-box" class="globe-popup-box">
+                    <button class="popup-close-btn" onclick="closeGlobePopup()">&times;</button>
+                    <div class="popup-header">Punjab, Pakistan</div>
+                    <div class="popup-body">
+                        <div class="popup-row">
+                            <span class="popup-label">Temperature</span>
+                            <span id="popup-temp-val" class="popup-val">47°C</span>
                         </div>
-                        <div class="popup-row" style="display:flex; justify-content:space-between; font-size:0.7rem;">
-                            <span class="popup-label" style="color:var(--text-secondary);">Relative Humidity</span>
-                            <span id="popup-humidity-val" class="popup-val" style="color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">50%</span>
+                        <div class="popup-row">
+                            <span class="popup-label">Relative Humidity</span>
+                            <span id="popup-humidity-val" class="popup-val">50%</span>
                         </div>
-                        <div class="popup-row" style="display:flex; justify-content:space-between; font-size:0.7rem;">
-                            <span class="popup-label" style="color:var(--text-secondary);">Wind Speed</span>
-                            <span id="popup-wind-val" class="popup-val" style="color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">12 km/h</span>
+                        <div class="popup-row">
+                            <span class="popup-label">Wind Speed</span>
+                            <span id="popup-wind-val" class="popup-val">12 km/h</span>
                         </div>
-                        <div class="popup-row" style="display:flex; justify-content:space-between; font-size:0.7rem;">
-                            <span class="popup-label" style="color:var(--text-secondary);">Climate Status</span>
-                            <span id="popup-status-val" class="popup-val warning" style="font-weight:600; font-family:var(--font-ui);">CRITICAL</span>
+                        <div class="popup-row">
+                            <span class="popup-label">Climate Status</span>
+                            <span id="popup-status-val" class="popup-val warning">CRITICAL</span>
                         </div>
                     </div>
                 </div>
@@ -128,12 +132,24 @@
                         <h2>Agriculture Intelligence</h2>
                     </div>
                     <div class="header-actions">
+                        <button class="action-btn" id="generate-agri-report-btn" title="Generate Detailed Report"><i data-lucide="file-text"></i></button>
                         <button class="action-btn" title="View Next"><i data-lucide="chevron-right"></i></button>
                         <button class="action-btn" id="refresh-data-btn" title="Sync Data"><i data-lucide="refresh-cw"></i></button>
                         <button class="action-btn" id="close-left-panel" title="Close"><i data-lucide="x"></i></button>
                     </div>
                 </div>
                 <div class="panel-body">
+                    <!-- AI Recommendation Box moved to top -->
+                    <div class="ai-recommendation" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); box-shadow: 0 0 15px rgba(56, 189, 248, 0.1); margin-bottom: 16px; border-radius: 10px; padding: 14px;">
+                        <div class="rec-header" style="color: var(--accent-color); font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <i data-lucide="bot" style="width: 18px; height: 18px;"></i>
+                            <span>AI RECOMMENDATION</span>
+                        </div>
+                        <p class="rec-text" id="ai-recommendation-text" style="font-size: 0.78rem; line-height: 1.45; color: var(--text-primary); margin: 0;">
+                            Soil saturation will reach maximum capacity in 18 hours due to micro front accumulation. Suspend automated irrigation in Sector 4B to minimize runoff.
+                        </p>
+                    </div>
+
                     <div class="kpi-section">
                         <div class="kpi-header">
                             <span>Mean Crop Health Index</span>
@@ -167,16 +183,41 @@
                             <span class="data-label">Water Stress Index</span>
                             <span class="data-value" id="water-stress-val">0.18 (Nominal)</span>
                         </li>
+                        <li class="data-row">
+                            <span class="data-label">Gross Reservoir Storage</span>
+                            <span class="data-value green" id="gross-reservoir-val">0 m³</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Deliverable Water Volume</span>
+                            <span class="data-value green" id="deliverable-water-val">0 m³</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Reservoir Evaporative Loss</span>
+                            <span class="data-value red" id="reservoir-evap-loss-val">0%</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Overhead Irrigation Viability</span>
+                            <span class="data-value green" id="irrigation-viability-val">Viable</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Evaporative Waste Penalty</span>
+                            <span class="data-value green" id="waste-penalty-val">Inactive</span>
+                        </li>
                     </ul>
 
-                    <div class="ai-recommendation">
-                        <div class="rec-header">
-                            <i data-lucide="bot"></i>
-                            <span>AI RECOMMENDATION</span>
+                    <!-- Detailed Agriculture Report (Hidden by default) -->
+                    <div id="agriculture-report-section" class="hidden" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                            <span style="font-weight: 700; font-size: 0.8rem; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                                <i data-lucide="clipboard-list" style="width: 14px; height: 14px;"></i>
+                                Detailed Agricultural Report
+                            </span>
+                            <button class="action-btn" id="close-agri-report" style="padding: 2px; border-radius: 4px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary);"><i data-lucide="x" style="width: 12px; height: 12px;"></i></button>
                         </div>
-                        <p class="rec-text" id="ai-recommendation-text">
-                            Soil saturation will reach maximum capacity in 18 hours due to micro front accumulation. Suspend automated irrigation in Sector 4B to minimize runoff.
-                        </p>
+                        
+                        <div style="background: rgba(56, 189, 248, 0.015); border: 1px solid rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+                            <div id="agri-report-content"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -214,6 +255,7 @@
                     </div>
                 </div>
                 <div class="panel-body chat-body" id="chat-messages-container">
+                    <div id="agent-grid-intelligence-panel" class="hidden"></div>
                     <div class="chat-message agent-msg">
                         <div class="msg-header">
                             <span class="agent-tag"><i data-lucide="cpu"></i> WIaaS-SWARM-V1.0</span>
@@ -244,24 +286,32 @@
                 <div class="panel-header">
                     <div class="header-title">
                         <i data-lucide="cpu" class="accent-icon"></i>
-                        <h2>ROCm Multi-Agent Inference Details</h2>
+                        <h2 id="bottom-panel-title">ROCm Multi-Agent Inference Details</h2>
                     </div>
                     <div class="header-actions">
                         <button class="action-btn" id="toggle-bottom-panel" title="Toggle Panel"><i data-lucide="chevron-up" id="bottom-toggle-icon"></i></button>
                     </div>
                 </div>
-                <div class="panel-body bottom-charts-row">
-                    <div class="bottom-chart-col">
-                        <h3>VRAM ALLOCATION BY AGENT (GB)</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="vramChart"></canvas>
+                <div class="panel-body bottom-charts-row" style="position: relative;">
+                    <!-- Analytics Container -->
+                    <div id="bottom-analytics-container" style="display: flex; width: 100%; gap: 20px;">
+                        <div class="bottom-chart-col" style="flex: 1;">
+                            <h3>VRAM ALLOCATION BY AGENT (GB)</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="vramChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bottom-chart-col" style="flex: 1;">
+                            <h3>CORE TEMPERATURE & POWER LEVEL</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="tempPowerChart"></canvas>
+                            </div>
                         </div>
                     </div>
-                    <div class="bottom-chart-col">
-                        <h3>CORE TEMPERATURE & POWER LEVEL</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="tempPowerChart"></canvas>
-                        </div>
+                    
+                    <!-- Agents Container -->
+                    <div id="bottom-agents-container" class="hidden" style="width: 100%;">
+                        <!-- Dynamic agent info injected here -->
                     </div>
                 </div>
             </div>
