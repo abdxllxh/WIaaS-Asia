@@ -118,6 +118,13 @@ Instead of asking *"What will happen?"*, WIaaS answers:
 - **Which sector should respond first?**
 - **How should multiple stakeholders coordinate?**
 
+###  Hardware Acceleration: Powered by AMD Instinct™
+
+WIaaS is architected to leverage **AMD Instinct™ MI300X** accelerators through the **ROCm™** open software platform. 
+
+- **Memory-Intensive Swarm Orchestration:** Running parallel specialized cognitive agents alongside real-time physics simulation layers demands massive VRAM capacity. AMD's 192GB HBM3 memory allows full co-location of climate GNNs (Neural-LAM) and LLM swarms on a single node.
+- **High-Throughput Ingestion:** Ramping up from our demo to 420+ live simulated economic zones utilizes AMD's massive parallel compute cores to execute matrix operations for diurnal grid and agricultural risk forecasting simultaneously.
+
 This transforms climate intelligence into practical operational decision support.
 ##  Featured Demo Regions
 
@@ -131,7 +138,7 @@ The following regions demonstrate the flexibility of WIaaS across diverse climat
 | 🌎 Template Region | Configurable | User-defined Scenario | Rapid experimentation and testing |
 ##  Dashboard Preview
 
-> **Screenshot Coming Soon**
+> **Dashboard Screenshot**
 
 The dashboard provides an interactive view of climate intelligence and simulation results.
 
@@ -144,16 +151,14 @@ The dashboard provides an interactive view of climate intelligence and simulatio
 -  AI-Generated Recommendations
 
 <p align="center">
-
-<img src="https://placehold.co/1200x650?text=Dashboard+Screenshot+Coming+Soon" width="90%"/>
-
+  <img src="assets/image.png" width="90%"/>
 </p>
 
 ---
 
 ##  Multi-Agent Chat Interface
 
-> **Screenshot Coming Soon**
+> **Multi-Agent AI Swarm**
 
 The AI Swarm enables users to communicate with multiple specialized AI agents that collaboratively generate climate mitigation strategies.
 
@@ -165,9 +170,7 @@ The AI Swarm enables users to communicate with multiple specialized AI agents th
 -  Explainable Decision Making
 
 <p align="center">
-
-<img src="https://placehold.co/1200x650?text=AI+Chat+Interface+Coming+Soon" width="90%"/>
-
+  <img src="assets/systeme_architecture.png" width="90%"/>
 </p>
 
 ## Tech Stack
