@@ -1,75 +1,251 @@
 # WIaaS: Weather Intelligence as a Service
-### Physics-Constrained Cooperative Simulation Engine for Multi-Variable Climate Risks
+
+## 🌍 About WIaaS
+
+**Weather Intelligence as a Service (WIaaS)** is a next-generation climate intelligence platform that transforms deterministic weather forecasts into explainable, AI-driven mitigation strategies.
+
+Unlike traditional weather dashboards, WIaaS combines **real-time weather data**, **physics-constrained simulation**, **FastAPI**, **n8n workflow automation**, and a **collaborative multi-agent AI swarm** to analyze complex climate events and generate actionable recommendations for governments, emergency responders, utility providers, and agricultural stakeholders.
+
+The platform emphasizes **physics-grounded reasoning**, ensuring that every recommendation is evaluated against real-world environmental constraints rather than relying solely on generative AI predictions.
+
+By integrating simulation, automation, and collaborative AI decision-making, WIaaS delivers transparent, scalable, and intelligent climate-risk management.
+
+
+## Badges
+
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
+
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+
+![React](https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+
+![Vite](https://img.shields.io/badge/Vite-Frontend-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+
+![n8n](https://img.shields.io/badge/n8n-Automation-EA4B71?style=for-the-badge&logo=n8n&logoColor=white)
+
+![Open-Meteo](https://img.shields.io/badge/Open--Meteo-Weather_API-0051A8?style=for-the-badge&logo=open-meteo&logoColor=white)
+
+![AMD Instinct](https://img.shields.io/badge/AMD-MI300X-ED1C24?style=for-the-badge&logo=amd&logoColor=white)
+
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
+
+##  Live Demo
+
+> **Demo Coming Soon**
+
+The production deployment is currently under active development.
+
+Once deployed, this section will include:
+
+-  Live Application
+-  Demonstration Video
+-  Interactive Dashboard
+-  Multi-Agent Chat Interface
+-  API Documentation
+
+Stay tuned for the official public release.
+
+
+##  Key Features
+
+-  **Physics-Constrained Weather Intelligence** powered by deterministic climate forecasts.
+-  **Collaborative Multi-Agent AI Swarm** for domain-specific decision making.
+-  **FastAPI Backend** providing scalable simulation APIs.
+-  **n8n Workflow Automation** for intelligent event orchestration.
+-  **Neural-LAM Integration** for physics-grounded weather forecasting.
+-  **Interactive Dashboard** for visual climate intelligence.
+-  **AI Chat Interface** for explainable climate recommendations.
+-  **Multi-Region Simulation Support** across diverse climate baselines.
+-  **Physics-Based Verification Engine** to reduce hallucinations and improve reliability.
+-  **Designed for AMD Instinct™ MI300X** accelerated computing.
+
+
+## System Architecture
+
+```mermaid
+flowchart LR
+
+A[🌦 Weather Data Sources]
+
+A --> B[open meteo API]
+
+B --> C[FastAPI Backend]
+
+C --> D[Physics Engine]
+
+D --> E[n8n Cloud Webhook]
+
+E --> F[Multi-Agent AI Swarm]
+
+F --> G1[🌾 Agriculture Agent]
+
+F --> G2[⚡ Energy Agent]
+
+F --> G3[🚚 Logistics Agent]
+
+F --> G4[🏛️ Civil Regulator]
+
+G1 --> H[Consensus Decision]
+
+G2 --> H
+
+G3 --> H
+
+G4 --> H
+
+H --> I[Interactive Dashboard]
+
+I --> J[Risk Analysis]
+
+I --> K[Mitigation Recommendations]
+
+I --> L[AI Chat Interface]
+```
+##  Why WIaaS?
+
+Traditional weather platforms primarily provide forecasts, leaving critical decision-making to human operators.
+
+WIaaS goes beyond forecasting by combining deterministic weather models, physics-constrained reasoning, and a collaborative AI swarm to generate explainable, actionable mitigation strategies.
+
+Instead of asking *"What will happen?"*, WIaaS answers:
+
+- **What is happening?**
+- **Why is it happening?**
+- **What actions should be taken?**
+- **Which sector should respond first?**
+- **How should multiple stakeholders coordinate?**
+
+###  Hardware Acceleration: Powered by AMD Instinct™
+
+WIaaS is architected to leverage **AMD Instinct™ MI300X** accelerators through the **ROCm™** open software platform. 
+
+- **Memory-Intensive Swarm Orchestration:** Running parallel specialized cognitive agents alongside real-time physics simulation layers demands massive VRAM capacity. AMD's 192GB HBM3 memory allows full co-location of climate GNNs (Neural-LAM) and LLM swarms on a single node.
+- **High-Throughput Ingestion:** Ramping up from our demo to 420+ live simulated economic zones utilizes AMD's massive parallel compute cores to execute matrix operations for diurnal grid and agricultural risk forecasting simultaneously.
+
+This transforms climate intelligence into practical operational decision support.
+##  Featured Demo Regions
+
+The following regions demonstrate the flexibility of WIaaS across diverse climate conditions.
+
+| Region | Climate Type | Primary Risk | AI Simulation Focus |
+|---------|--------------|--------------|---------------------|
+| 🇮🇳 Jaipur, India | Arid Desert | Heatwaves & Water Scarcity | Water allocation and agricultural resilience |
+| 🇹🇬 Lomé, Togo | Tropical Coastal | Flooding & Storm Surge | Disaster response and evacuation planning |
+| 🇺🇸 Boston, USA | Temperate Coastal | Winter Storms & Urban Flooding | Grid stability and emergency logistics |
+| 🌎 Template Region | Configurable | User-defined Scenario | Rapid experimentation and testing |
+##  Dashboard Preview
+
+> **Dashboard Screenshot**
+
+The dashboard provides an interactive view of climate intelligence and simulation results.
+
+### Planned Dashboard Features
+
+-  Regional Climate Analytics
+-  Live Weather Intelligence
+-  Risk Assessment Dashboard
+-  Environmental Metrics
+-  AI-Generated Recommendations
+
+<p align="center">
+  <img src="assets/image.png" width="90%"/>
+</p>
 
 ---
 
-## 1. Executive Architectural Vision
+##  Multi-Agent Chat Interface
 
-WIaaS is not a predictive weather dashboard; it is a **Physics-Constrained Cooperative Simulation**.
+> **Multi-Agent AI Swarm**
 
-While modern AI enterprise solutions rely on single-model generative text, WIaaS introduces a multi-agent reinforcement learning architecture grounded strictly in planetary physics. By deploying a suite of lightweight, domain-specific AI agents on AMD Instinct™ MI300X hardware, the system translates deterministic Graph Neural Network (GNN) forecasts into an autonomous, emergent crisis-mitigation engine.
+The AI Swarm enables users to communicate with multiple specialized AI agents that collaboratively generate climate mitigation strategies.
 
-This repository houses the core pipeline infrastructures, translation bridges, and reward verifiers that allow the system to process multi-variable climate threats and output verifiable, machine-executable survival protocols.
+### Planned Interface
 
-**Backend documentation:** see [docs/architecture.md](docs/architecture.md) for module layout, pipeline stages, API routes, and JSON payload format.
+-  Interactive AI Conversation
+-  Multi-Agent Collaboration
+-  Region-Specific Recommendations
+-  Explainable Decision Making
 
----
+<p align="center">
+  <img src="assets/systeme_architecture.png" width="90%"/>
+</p>
 
-## 2. System Architecture & Core Innovations
+## Tech Stack
 
-[ Raw Meteo Data ] ──> [ Google GraphCast (GNN) ] ──> Multi-Dimensional Tensors
-│
-┌──────────────────────────────────────────────────────────┘
-▼
-[ GNN-to-LLM Bridge ] ──> Bounded Text-State Vectors (Physics Constraints)
-│
-┌──────────────────────────────────────────────────────────┘
-▼
-[ AMD MI300X vLLM Instance ] ── (LoRA Multiplexing: Agri, Grid, Logistics, Regulator)
-│
-├─> [ M-GRPO Engine ] ──> Evaluates Agent Bids against Global Cooperation Constraints (GCC)
-│
-└─> [ RLVR Verifier ] ──> Physics Enforcement via Deterministic Python Evaluator
-│
-▼
-[ M2M Actuation via n8n ]
+### Frontend
 
-### A. The GNN-to-LLM Translation Bridge (Physics-Constrained Reasoning)
-The architecture bridges the gap between predictive physics and generative reasoning.
-* **The Structure:** The predictive layer utilizes Google's GraphCast (GNN) compiled natively for AMD ROCm™. GraphCast maps atmospheric dynamics into multi-dimensional spatial tensors.
-* **The Function:** Instead of standard text prompting, these spatial tensors (representing heat, humidity, and pressure deltas) are algorithmically translated into a bounded text-state vector. The LLM agents do not "guess" the weather; they are fed absolute, mathematical environmental constraints to form their reasoning context.
+- React
+- Vite
+- JavaScript
+- HTML5
+- CSS3
 
-### B. M-GRPO with Global Cooperation Constraints (GCC)
-To prevent agents from optimizing solely for their own domain at the expense of systemic stability, the architecture employs a custom Multi-Agent Group Relative Policy Optimization (M-GRPO) framework.
-* **The Structure:** The training environment replaces standard individual reward scalars with a Global Cooperation Constraint (GCC).
-* **The Function:** If the Grid-Agent secures power but the local water reservoir collapses, the GCC applies a systemic penalty, dropping all agents' reward scores to zero. This forces the system to learn *Emergent Cooperative Sacrifice*—where agents mathematically calculate that sacrificing a low-value asset in one sector is the optimal move to preserve the global survival baseline.
+### Backend
 
-### C. RLVR (Reinforcement Learning with Verifiable Rewards) Engine
-To eliminate LLM hallucinations and ensure enterprise-grade reliability, the architecture removes subjective human-in-the-loop scoring.
-* **The Structure:** A deterministic Python Verifier acts as the absolute ground truth, utilizing the exact spatial tensors generated by the GNN.
-* **The Function:** When an agent proposes a mitigation step (e.g., standard overhead irrigation), the Verifier calculates the thermodynamic reality using the GNN's heat tensor. If the physics dictate that 80% of the water will evaporate before reaching the soil, the RLVR engine applies a massive negative reward. The AI is graded entirely by the laws of physics.
+- Python
+- FastAPI
+- Pydantic
+- Uvicorn
 
-### D. Dr. MAS vLLM Multiplexing on AMD MI300X
-Running a multi-agent simulation requires massive concurrency. Loading multiple large language models is computationally unfeasible and inefficient.
-* **The Structure:** The system leverages a single base model (Llama-3.2-3B) loaded into VRAM via a ROCm-optimized vLLM instance.
-* **The Function:** Utilizing the Dr. MAS (Multi-Agent System) orchestration recipe, the architecture dynamically mounts lightweight LoRA (Low-Rank Adaptation) weights representing the specific personas (Agri, Grid, Logistics, Regulator). vLLM batches the simultaneous inference requests, swapping the LoRA matrices at the compute layer. This prevents gradient collapse during cooperative training and delivers massive token throughput at near-zero latency.
+### AI & Machine Learning
 
----
+- Google GraphCast
+- Multi-Agent AI
+- Reinforcement Learning
+- Physics-Constrained Simulation
 
-## 3. System Capabilities & Applied Logic
+### Automation
 
-### The Synthetic Resource Ledger
-The operational heart of the multi-agent arena is a strictly enforced ledger tracking finite physical assets (Water Volume, Power Load, Logistical Throughput).
-* **Application:** When the GNN inputs a climate anomaly, the ledger mathematically degrades available resources based on thermal and atmospheric physics. Every agent's proposed action acts as a "bid" against this ledger. If the combined bids exceed the physical reality of the ledger, the Civil-Regulator agent enforces a compromise, guaranteeing that the final output is 100% executable within real-world physical limits.
+- n8n Cloud Webhooks
 
-### Machine-to-Machine (M2M) Actuation via n8n
-The architecture is designed to close the loop from intelligence generation to physical execution without human bottlenecking.
-* **Application:** The Civil-Regulator agent is trained to format its final, consensus-driven mitigation strategy as a strict JSON array. This payload is directly ingested by the n8n automation backend. The LLM effectively acts as an autonomous routing script, triggering external webhooks to alter supply chain GPS routes, adjust smart-grid loads, or command IoT agricultural hardware in real-time.
+### Infrastructure
 
----
+- Docker
+- AMD Instinct™ MI300X
+- GitHub
 
-## 4. The Unicorn Track Thesis
 
-This architecture proves a fundamental shift in enterprise AI. We demonstrate that the future of complex logistical optimization does not require routing sensitive data to a massive, generalized 120B+ parameter model.
 
-By utilizing domain-specific LoRA multiplexing, M-GRPO with global constraints, and GNN-driven verifiable rewards, WIaaS proves that a localized hive of small, mathematically optimized agents running on **AMD Instinct™** hardware can out-reason and out-perform monolithic models in high-stakes, physics-bound environments.
+## Roadmap
+
+- [x] FastAPI Backend
+- [x] Physics Simulation Engine
+- [x] n8n Workflow Integration
+- [x] Multi-Agent AI Architecture
+- [X] Interactive Dashboard
+- [X] AI Chat Interface
+- [X] Live Weather Integration
+- [X] Explainable AI Decision Traces
+- [x] Public Cloud Deployment
+
+## Authors
+
+- **Prince** — Team Lead; Backend Lead & Physics Engine
+- **biswadeep_infinity** — Frontend Developer & UI/UX Design
+- **vxr** — AI Swarm Architect & Automation
+- **Siraj Ahmed** —Technical Documentation & Simulation Scenario Design
+
+
+## Acknowledgements
+
+Special thanks to the following technologies and communities:
+
+- AMD AI Developer Challenge
+- Google GraphCast
+- FastAPI
+- n8n
+- React
+- Docker
+- Open Source Community
+
+
+## Support
+
+If you have questions, suggestions, or would like to contribute:
+
+- Open a GitHub Issue
+- Submit a Pull Request
+- Contact the project team
