@@ -102,6 +102,11 @@ export function setPrecipitationActive(val) { precipitationActive = val; }
 export let bottomPanelMode = 'analytics'; // 'analytics' or 'agents'
 export function setBottomPanelMode(val) { bottomPanelMode = val; }
 
+// ── Chat Panel Mode ───────────────────────────────────────────────────────────
+export let chatMode = 'assistant'; // 'assistant' or 'crisislens'
+export function setChatMode(val) { chatMode = val; }
+
+
 // ── Globe Object References (set by globe.js) ─────────────────────────────────
 export let globeScene            = null;
 export let globeCamera           = null;

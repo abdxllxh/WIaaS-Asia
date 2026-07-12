@@ -64,3 +64,35 @@ export async function sendChatSimulation(regionKey, query) {
     }
 }
 
+/**
+ * Send a chat message to the CrisisLens webhook directly.
+ * @param {string} message 
+ * @returns {Promise<Object|null>} 
+ */
+export async function sendCrisisLensChat(message) {
+    try {
+        let sessionId = sessionStorage.getItem('crisislens_session_id');
+        if (!sessionId) {
+            sessionId = 'session-' + Math.random().toString(36).substring(2, 15);
+            sessionStorage.setItem('crisislens_session_id', sessionId);
+        }
+        const response = await fetch('/analytics/crisislens/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: message,
+                session_id: sessionId,
+                user_id: 'user-123',
+            }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error('[api] sendCrisisLensChat failed:', error);
+        return null;
+    }
+}
+
+

@@ -247,6 +247,60 @@ def generate_dynamic_agri_report(payload: dict) -> str:
     return report.strip()
 
 
+@router.post("/crisislens/chat")
+def proxy_crisislens_chat(payload: dict) -> dict:
+    """Proxy requests to the CrisisLens n8n webhook to prevent CORS issues in the frontend."""
+    url = "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisislens"
+    try:
+        response = requests.post(url, json=payload, timeout=(3.0, 5.0))
+        response.raise_for_status()
+        try:
+            return response.json()
+        except ValueError:
+            return {"reply": response.text}
+    except requests.exceptions.RequestException as e:
+        print(f"[endpoints] CrisisLens Proxy error: {e}")
+        # Generate a high-quality offline fallback response
+        q = payload.get("message", "").lower()
+        
+        reply_text = (
+            "### ⚠️ CrisisLens Local Fallback Active\n\n"
+            "The remote n8n CrisisLens workflow is currently unreachable (Connection Timeout). "
+            "Deploying local rule-based safety directives:\n\n"
+        )
+        
+        if "sylhet" in q:
+            reply_text += (
+                "**Location:** Sylhet Region\n\n"
+                "*   **Farmers:** Implement flash flood drainage procedures. Move harvested crops to elevated storage.\n"
+                "*   **Public:** Avoid low-lying riverbanks near the Surma/Kushiyara rivers. Store clean drinking water.\n"
+                "*   **Grid Teams:** Monitor substations in flood-prone zones; prepare for load-shedding if water levels breach safety limits.\n"
+                "*   **Logistics:** Reroute transport away from national highway N2; expect localized road inundation."
+            )
+        elif "punjab" in q:
+            reply_text += (
+                "**Location:** Punjab Region\n\n"
+                "*   **Farmers:** Suspend overhead sprinkler irrigation to avoid high-temperature evaporation loss. Rely on root-zone drip feeds.\n"
+                "*   **Public:** Minimize direct sun exposure between 11 AM and 4 PM. Stay hydrated.\n"
+                "*   **Grid Teams:** Anticipate high demand surge from agricultural tube-well pumps; activate peak-load sharing protocols.\n"
+                "*   **Logistics:** Ensure air-conditioned cargo compartments are active for heat-sensitive goods."
+            )
+        elif "paris" in q:
+            reply_text += (
+                "**Location:** Paris Region\n\n"
+                "*   **Farmers:** Adjust vineyard irrigation grids to compensate for unexpected vapor pressure deficit (VPD) surges.\n"
+                "*   **Public:** Monitor local municipal ozone levels and heat advisory feeds.\n"
+                "*   **Grid Teams:** Run thermal overhead capacity assessments on urban underground transmission lines.\n"
+                "*   **Logistics:** Expect cargo scheduling adjustments due to high temperature restrictions on rail lines."
+            )
+        else:
+            reply_text += (
+                "Greetings! The CrisisLens Agent is running in offline fallback mode. Please specify a region (e.g., **Sylhet**, **Punjab**, or **Paris**) or ask a specific question about climate telemetry, grid load, or emergency protocols, and I will generate local safety directives for you."
+            )
+            
+        return {"reply": reply_text, "offline_fallback": True}
+
+
 @router.post("/{region_key}/chat", response_model=ChatResponse)
 def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None) -> ChatResponse:
     check_and_register_dynamic_region(region_key, name)
@@ -304,6 +358,7 @@ def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None
             reply=f"[System] Unable to reach the AI Swarm. Error details: {e}",
             raw_data=None,
         )
+
 
 
 @router.get("/{region_key}/grid-predictions")
