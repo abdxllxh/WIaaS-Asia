@@ -831,6 +831,92 @@ function renderPanelContent(tabName, data) {
                 ${renderStateVectorHTML(data.llm_state_vector)}
             </div>
         `;
+    } else if (tabName === 'crisislens') {
+        titleEl.innerText = `CrisisLens Threat Analysis - ${data.region_name}`;
+        iconEl.setAttribute('data-lucide', 'shield-alert');
+        
+        const criticality = data.mission_criticality_score || 0;
+        let severityColor = 'var(--green-accent)';
+        if (criticality > 75) {
+            severityColor = 'var(--red-accent)';
+        } else if (criticality > 40) {
+            severityColor = 'var(--yellow-accent)';
+        }
+
+        content = `
+            <div style="display: flex; flex-direction: column; gap: 16px; max-height: 650px; overflow-y: auto; padding-right: 5px;">
+                <!-- Threat Level & Criticality -->
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-top: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; padding: 14px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 4px 12px rgba(0, 0, 0, 0.15);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Crisis Severity</span>
+                        <span class="kpi-status" style="background: ${severityColor}20; color: ${severityColor}; border: 1px solid ${severityColor}40; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700;">${data.risk_level.toUpperCase()}</span>
+                    </div>
+                    <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 8px;">
+                        <span style="font-family: var(--font-data); font-size: 1.8rem; font-weight: 700; color: ${severityColor};">${criticality}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">/ 100 Criticality</span>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.72rem; color: var(--text-secondary);">
+                        System status: <strong style="color: ${severityColor};">${data.system_status}</strong>
+                    </div>
+                </div>
+
+                <!-- Climate Indicators -->
+                <div>
+                    <h4 style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Climate Risk Vectors</h4>
+                    <ul class="data-grid">
+                        <li class="data-row">
+                            <span class="data-label">Vapor Pressure Deficit (VPD)</span>
+                            <span class="data-value" style="color: var(--yellow-accent); font-weight: 600;">${data.climate_matrix.vapor_pressure_deficit_kpa} kPa</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Wet-Bulb Temperature</span>
+                            <span class="data-value" style="color: var(--red-accent); font-weight: 600;">${data.climate_matrix.wet_bulb_celsius}°C</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Heat Index</span>
+                            <span class="data-value">${data.climate_matrix.heat_index_celsius}°C</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Baseline Temp Deviation</span>
+                            <span class="data-value ${data.climate_matrix.deviation_from_baseline_celsius > 0 ? 'red' : 'green'}">
+                                +${data.climate_matrix.deviation_from_baseline_celsius}°C
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Resource Ledgers -->
+                <div>
+                    <h4 style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Resource Availability</h4>
+                    <ul class="data-grid">
+                        <li class="data-row">
+                            <span class="data-label">Deliverable Water Volume</span>
+                            <span class="data-value green">${data.ledger.water_deliverable_m3.toLocaleString()} m³</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Evaporative Rate Penalty</span>
+                            <span class="data-value red">${data.ledger.water_surface_evap_loss_pct.toFixed(2)}%</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Grid Available Capacity</span>
+                            <span class="data-value green">${data.ledger.grid_available_capacity_mw.toFixed(2)} MW</span>
+                        </li>
+                        <li class="data-row">
+                            <span class="data-label">Fuel Reserves</span>
+                            <span class="data-value green">${data.ledger.fuel_available_liters.toLocaleString()} L</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Active Routing Directives -->
+                <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 8px; padding: 12px; font-size: 0.7rem; line-height: 1.45;">
+                    <div style="font-weight: 700; color: var(--accent-color); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="shield-alert" style="width: 12px; height: 12px;"></i> CrisisLens Active Zones
+                    </div>
+                    <p style="margin: 0; color: var(--text-secondary);">Direct response routing enabled for <strong>Sylhet</strong>, <strong>Punjab</strong>, <strong>Paris</strong>, and all active telemetry zones.</p>
+                </div>
+            </div>
+        `;
     }
 
     contentEl.innerHTML = content;

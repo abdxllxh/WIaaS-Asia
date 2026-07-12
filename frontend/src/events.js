@@ -15,7 +15,7 @@ import {
 import { fetchRegionAnalytics, fetchAllRegions } from './api.js';
 import { buildGlobePins } from './globe.js';
 import { updateUIElements, showGeneralInfoPanel, updateBottomPanelVisibility, toggleAgricultureReport } from './ui.js';
-import { handleUserMessage } from './chat.js';
+import { handleUserMessage, updateChatModeUI } from './chat.js';
 import citiesManager from './cities.js';
 import { refreshCityUI } from './ui-cities.js';
 
@@ -139,16 +139,29 @@ export function setupEventListeners() {
                 if (bottomPanelMode === 'agents') {
                     updateBottomPanelVisibility();
                 }
-            } else if (selectedTab === 'agents') {
+            } else if (selectedTab === 'agents' || selectedTab === 'crisislens') {
+                const targetMode = selectedTab === 'crisislens' ? 'crisislens' : 'assistant';
+                updateChatModeUI(targetMode);
+
                 if (isAlreadyActive) {
                     tab.classList.remove('active');
                     document.getElementById('right-sidebar').classList.remove('visible');
                     document.getElementById('right-dock-icon').setAttribute('data-lucide', 'chevron-left');
+                    if (selectedTab === 'crisislens') {
+                        document.getElementById('left-sidebar').classList.remove('visible');
+                        document.getElementById('left-dock-icon').setAttribute('data-lucide', 'chevron-right');
+                    }
                 } else {
                     tabs.forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
                     document.getElementById('right-sidebar').classList.add('visible');
                     document.getElementById('right-dock-icon').setAttribute('data-lucide', 'chevron-right');
+                    
+                    if (selectedTab === 'crisislens') {
+                        document.getElementById('left-sidebar').classList.add('visible');
+                        document.getElementById('left-dock-icon').setAttribute('data-lucide', 'chevron-left');
+                        showGeneralInfoPanel('crisislens');
+                    }
                     
                     // Switch bottom panel mode to 'agents' and expand
                     setBottomPanelMode('agents');
