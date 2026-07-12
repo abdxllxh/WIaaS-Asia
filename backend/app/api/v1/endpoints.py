@@ -2,6 +2,7 @@
 from __future__ import annotations
 import os
 import json
+import asyncio
 import requests
 from fastapi import APIRouter, HTTPException
 
@@ -248,18 +249,51 @@ def generate_dynamic_agri_report(payload: dict) -> str:
 
 
 @router.post("/crisislens/chat")
-def proxy_crisislens_chat(payload: dict) -> dict:
-    """Proxy requests to the CrisisLens n8n webhook to prevent CORS issues in the frontend."""
+async def proxy_crisislens_chat(payload: dict) -> dict:
+    """Proxy requests to the CrisisLens n8n webhook to prevent CORS issues in the frontend.
+    
+    Runs the blocking HTTP call in a thread executor so uvicorn's event loop
+    is not blocked during the 25-120 second n8n AI workflow execution.
+    """
     url = "https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisislens"
+
+    def _call_n8n() -> requests.Response:
+        print(f"[crisislens] → POST {url}  payload keys={list(payload.keys())}")
+        return requests.post(url, json=payload, timeout=(15.0, 120.0))
+
+    def _extract(d: dict) -> str:
+        """Pick the reply text from whichever field n8n uses."""
+        return (
+            d.get("chat_message")
+            or d.get("regional_summary")
+            or d.get("output")
+            or d.get("message")
+            or d.get("text")
+            or d.get("reply")
+            or str(d)
+        )
+
     try:
-        response = requests.post(url, json=payload, timeout=(3.0, 5.0))
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, _call_n8n)
         response.raise_for_status()
+        print(f"[crisislens] ← {response.status_code}  ({len(response.content)} bytes)")
+        print(f"[crisislens] raw body: {response.text[:300]}")
         try:
-            return response.json()
+            data = response.json()
+            if isinstance(data, list) and data:
+                first = data[0]
+                reply = _extract(first) if isinstance(first, dict) else str(first)
+            elif isinstance(data, dict):
+                reply = _extract(data)
+            else:
+                reply = str(data)
+            print(f"[crisislens] extracted reply ({len(reply)} chars): {reply[:120]}")
+            return {"reply": reply}
         except ValueError:
             return {"reply": response.text}
     except requests.exceptions.RequestException as e:
-        print(f"[endpoints] CrisisLens Proxy error: {e}")
+        print(f"[endpoints] CrisisLens Proxy error: {type(e).__name__}: {e}")
         # Generate a high-quality offline fallback response
         q = payload.get("message", "").lower()
         
