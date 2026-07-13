@@ -90,7 +90,7 @@ export function syncDynamicCities() {
 export const regionsTelemetryCache = {};
 
 // ── Globe Layer Toggles ───────────────────────────────────────────────────────
-export let heatmapActive       = true;
+export let heatmapActive       = false;
 export let windActive          = false;
 export let precipitationActive = false;
 

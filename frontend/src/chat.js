@@ -32,7 +32,7 @@ export function updateChatModeUI(mode) {
         `;
         if (typeof lucide !== 'undefined') lucide.createIcons();
     } else {
-        if (headerTitle) headerTitle.textContent = "WIaaS AI Assistant";
+        if (headerTitle) headerTitle.textContent = "WIaaS Agent";
         if (headerIcon) {
             headerIcon.setAttribute('data-lucide', 'sparkles');
             if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -42,7 +42,7 @@ export function updateChatModeUI(mode) {
         container.innerHTML = `
             <div class="chat-message agent-msg">
                 <div class="msg-header">
-                    <span class="agent-tag"><i data-lucide="cpu"></i> WIaaS-SWARM-V1.0</span>
+                    <span class="agent-tag"><i data-lucide="cpu"></i> WIaaS Agent</span>
                     <span class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 <p class="msg-text">Greetings, Operator. I am analyzing the telemetry feed across five specialized models. What sector requires focus?</p>
@@ -100,7 +100,7 @@ export async function handleUserMessage() {
     loadingMsg.className = 'chat-message agent-msg';
     loadingMsg.innerHTML = `
         <div class="msg-header">
-            <span class="agent-tag"><i data-lucide="${chatMode === 'crisislens' ? 'shield-alert' : 'cpu'}"></i> ${chatMode === 'crisislens' ? 'CrisisLens Agent' : 'WIaaS-SWARM-V1.0'}</span>
+            <span class="agent-tag"><i data-lucide="${chatMode === 'crisislens' ? 'shield-alert' : 'cpu'}"></i> ${chatMode === 'crisislens' ? 'CrisisLens Agent' : 'WIaaS Agent'}</span>
             <span class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         <p class="msg-text" style="opacity: 0.7;"><em>${chatMode === 'crisislens' ? 'Contacting CrisisLens Webhook...' : 'Contacting n8n AI Swarm...'}</em></p>
@@ -124,7 +124,7 @@ export async function handleUserMessage() {
             }
             replyText = extractWebhookReply(data);
         } else {
-            agentTagText = "WIaaS-SWARM-V1.0 (n8n)";
+            agentTagText = "WIaaS Agent";
             agentIcon = "cpu";
             const data = await sendChatSimulation(activeRegionKey, query);
             if (!data) {

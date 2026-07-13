@@ -506,7 +506,7 @@ export function updateUIElements(apiData) {
     // Region name with coordinates, diurnal cycle badge, and risk metrics
     const regionNameEl = document.getElementById('current-region-name');
     if (regionNameEl) {
-        regionNameEl.innerText = `${apiData.region_name} (${apiData.latitude.toFixed(2)}°, ${apiData.longitude.toFixed(2)}°) [${apiData.diurnal_cycle}] | Risk: ${apiData.risk_level} (Score: ${apiData.mission_criticality_score})`;
+        regionNameEl.innerText = apiData.region_name.split(' (')[0];
     }
 
     const climate  = apiData.climate_matrix;
@@ -1075,62 +1075,62 @@ function renderBottomAgentsContent() {
     const agriBid = (nominal * 0.15).toFixed(2);
     const logisticsBid = (nominal * 0.05).toFixed(2);
     const civilBid = (nominal * 0.65).toFixed(2);
-    const availableVal = latestAnalytics.ledger.grid_available_capacity_mw.toFixed(5);
-    const surgeVal = latestAnalytics.ledger.grid_demand_surge_pct.toFixed(5);
+    const availableVal = latestAnalytics.ledger.grid_available_capacity_mw.toFixed(2);
+    const surgeVal = latestAnalytics.ledger.grid_demand_surge_pct.toFixed(2);
 
     container.innerHTML = `
-        <div style="display: flex; gap: 24px; padding: 10px 0; width: 100%;">
+        <div class="bottom-agents-row-container">
             <!-- Verdict Box -->
-            <div style="flex: 1.2; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; height: 130px;">
+            <div class="bottom-agent-card verdict-card">
                 <div>
                     <div style="font-weight: 700; font-size: 0.85rem; color: var(--accent-color); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                         <i data-lucide="info" style="width: 16px; height: 16px;"></i> ACTIVE AGENT STATUS &amp; VERDICT
                     </div>
                     <p style="font-size: 0.75rem; line-height: 1.4; color: var(--text-primary);" id="bottom-agent-verdict">${verdict}</p>
                 </div>
-                <div style="font-size: 0.7rem; color: var(--text-secondary);">
+                <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 8px;">
                     GNN Blackout Risk Probability: <span id="bottom-agent-blackout-prob" style="font-family: var(--font-data); font-weight: 700; color: var(--${riskColor}-accent);">${blackoutRisk.toFixed(4)}%</span>
                 </div>
             </div>
 
             <!-- Agent Allocations -->
-            <div style="flex: 1; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 14px; height: 130px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="bottom-agent-card">
                 <div style="font-weight: 700; font-size: 0.8rem; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
                     Multi-Agent Bandwidth Allocation
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
-                    <div style="display: flex; justify-content: space-between;">
+                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                         <span style="color: var(--text-secondary);">Agri-Agent Bid</span>
-                        <span style="font-family: var(--font-data); font-weight: 600;">${agriBid} MW</span>
+                        <span style="font-family: var(--font-data); font-weight: 600; white-space: nowrap;">${agriBid} MW</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                         <span style="color: var(--text-secondary);">Logistics-Agent Bid</span>
-                        <span style="font-family: var(--font-data); font-weight: 600;">${logisticsBid} MW</span>
+                        <span style="font-family: var(--font-data); font-weight: 600; white-space: nowrap;">${logisticsBid} MW</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                         <span style="color: var(--text-secondary);">Regulator-Agent Bid</span>
-                        <span style="font-family: var(--font-data); font-weight: 600;">${civilBid} MW</span>
+                        <span style="font-family: var(--font-data); font-weight: 600; white-space: nowrap;">${civilBid} MW</span>
                     </div>
                 </div>
             </div>
 
             <!-- Telemetry Constraints -->
-            <div style="flex: 1; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 14px; height: 130px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="bottom-agent-card">
                 <div style="font-weight: 700; font-size: 0.8rem; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
                     Telemetry Constraints
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem;">
-                    <div style="display: flex; justify-content: space-between;">
+                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                         <span style="color: var(--text-secondary);">Available Grid Capacity</span>
-                        <span id="bottom-agent-capacity" style="font-family: var(--font-data); font-weight: 700; color: var(--green-accent);">${availableVal} MW</span>
+                        <span id="bottom-agent-capacity" style="font-family: var(--font-data); font-weight: 700; color: var(--green-accent); white-space: nowrap;">${availableVal} MW</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                         <span style="color: var(--text-secondary);">Active Demand Surge</span>
-                        <span id="bottom-agent-surge" style="font-family: var(--font-data); font-weight: 700; color: var(--red-accent);">+${surgeVal}%</span>
+                        <span id="bottom-agent-surge" style="font-family: var(--font-data); font-weight: 700; color: var(--red-accent); white-space: nowrap;">+${surgeVal}%</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                         <span style="color: var(--text-secondary);">Sprinkler Irrigation Efficiency</span>
-                        <span id="bottom-agent-efficiency" style="font-family: var(--font-data); font-weight: 600; color: var(--green-accent);">${(latestAnalytics.ledger.water_irrigation_efficiency_pct).toFixed(2)}%</span>
+                        <span id="bottom-agent-efficiency" style="font-family: var(--font-data); font-weight: 600; color: var(--green-accent); white-space: nowrap;">${(latestAnalytics.ledger.water_irrigation_efficiency_pct).toFixed(2)}%</span>
                     </div>
                 </div>
             </div>

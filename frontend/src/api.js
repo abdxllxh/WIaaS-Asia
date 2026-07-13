@@ -4,7 +4,7 @@
  * In production, the HTML is served by FastAPI which also handles /analytics/*
  */
 
-import { regionNames } from './state.js';
+import { regionNames, regionsTelemetryCache } from './state.js';
 
 /**
  * Fetch analytics payload for a given region key.
@@ -49,18 +49,58 @@ export async function fetchAllRegions(regionsList) {
  */
 export async function sendChatSimulation(regionKey, query) {
     try {
-        const response = await fetch(`/analytics/${regionKey}/chat`, {
+        const cachedData = regionsTelemetryCache[regionKey] || {};
+        
+        // Assemble the full context payload exactly like backend does
+        const payload = {
+            ...cachedData,
+            user_query: query,
+            chatInput: query
+        };
+        
+        const response = await fetch('https://abdxllxh2002.app.n8n.cloud/webhook/wias-crisis-simulation', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ query }),
+            body: JSON.stringify(payload),
         });
+        
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return await response.json();
+        const n8nData = await response.json();
+        
+        // Extract the reply using common n8n response patterns
+        let extractedReply = "";
+        if (Array.isArray(n8nData) && n8nData.length > 0) {
+            const first = n8nData[0];
+            if (first && typeof first === 'object') {
+                extractedReply = first.output || first.message || first.text || first.chat_message || first.regional_summary || first.reply || JSON.stringify(first);
+            } else {
+                extractedReply = String(first);
+            }
+        } else if (n8nData && typeof n8nData === 'object') {
+            extractedReply = n8nData.output || n8nData.message || n8nData.text || n8nData.chat_message || n8nData.regional_summary || n8nData.reply || JSON.stringify(n8nData);
+        } else {
+            extractedReply = String(n8nData);
+        }
+        
+        return { reply: extractedReply, raw_data: n8nData };
     } catch (error) {
-        console.error(`[api] sendChatSimulation(${regionKey}) failed:`, error);
-        return null;
+        console.error(`[api] sendChatSimulation(${regionKey}) direct n8n call failed, falling back to local proxy:`, error);
+        try {
+            const response = await fetch(`/analytics/${regionKey}/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query }),
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return await response.json();
+        } catch (backendError) {
+            console.error(`[api] sendChatSimulation(${regionKey}) local proxy fallback failed:`, backendError);
+            return null;
+        }
     }
 }
 

@@ -17,9 +17,8 @@
     <!-- Chart.js and Three.js CDNs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-  <script type="module" crossorigin src="/assets/index.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index.css">
+
+    <link rel="stylesheet" crossorigin href="/assets/index.css">
 </head>
 <body>
     <!-- Custom Sci-Fi Loading Screen -->
@@ -75,12 +74,12 @@
                 </button>
                 <button class="nav-item" data-tab="globe-analysis">
                     <i data-lucide="layers"></i>
-                    <span>Globe Analysis</span>
+                    <span>Globe</span>
                 </button>
                 <div class="nav-divider"></div>
                 <button class="nav-item" data-tab="agents">
                     <i data-lucide="cpu"></i>
-                    <span>AI Agents</span>
+                    <span>WIaaS</span>
                 </button>
                 <button class="nav-item" data-tab="crisislens">
                     <i data-lucide="shield-alert"></i>
@@ -129,7 +128,7 @@
         </div>
 
         <!-- Left Side: Sector Panels Container -->
-        <aside class="panel left-panel visible" id="left-sidebar">
+        <aside class="panel left-panel" id="left-sidebar">
             <!-- Agriculture Intelligence Panel -->
             <div class="panel-card" id="agriculture-panel">
                 <div class="panel-header">
@@ -248,7 +247,7 @@
         </aside>
 
         <!-- Right Side: AI Assistant Chat Panel -->
-        <aside class="panel right-panel visible" id="right-sidebar">
+        <aside class="panel right-panel" id="right-sidebar">
             <div class="panel-card chat-card">
                 <div class="panel-header">
                     <div class="header-title">
@@ -300,14 +299,14 @@
                 </div>
                 <div class="panel-body bottom-charts-row" style="position: relative;">
                     <!-- Analytics Container -->
-                    <div id="bottom-analytics-container" style="display: flex; width: 100%; gap: 20px;">
-                        <div class="bottom-chart-col" style="flex: 1;">
+                    <div id="bottom-analytics-container" class="bottom-analytics-container">
+                        <div class="bottom-chart-col">
                             <h3>VRAM ALLOCATION BY AGENT (GB)</h3>
                             <div class="chart-wrapper">
                                 <canvas id="vramChart"></canvas>
                             </div>
                         </div>
-                        <div class="bottom-chart-col" style="flex: 1;">
+                        <div class="bottom-chart-col">
                             <h3>CORE TEMPERATURE & POWER LEVEL</h3>
                             <div class="chart-wrapper">
                                 <canvas id="tempPowerChart"></canvas>
@@ -325,10 +324,10 @@
 
         <!-- Left/Right Sidebar Docking Controls -->
         <button class="slider-btn left-btn" id="toggle-left-dock" title="Toggle Sidebar">
-            <i data-lucide="chevron-left" id="left-dock-icon"></i>
+            <i data-lucide="chevron-right" id="left-dock-icon"></i>
         </button>
         <button class="slider-btn right-btn" id="toggle-right-dock" title="Toggle Chat">
-            <i data-lucide="chevron-right" id="right-dock-icon"></i>
+            <i data-lucide="chevron-left" id="right-dock-icon"></i>
         </button>
 
         <!-- Bottom-most ROCm Status & Metric Bar -->
@@ -355,7 +354,7 @@
                     </div>
                     <div class="metric">
                         <span class="m-label">ACTIVE AGENTS</span>
-                        <span class="m-value green" id="active-agents-val">6 Swarm</span>
+                        <span class="m-value green" id="active-agents-val">10 Swarm</span>
                     </div>
                     <div class="metric">
                         <span class="m-label">LATENCY</span>
@@ -373,6 +372,7 @@
             </div>
         </div>
     </div>
-
+
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
