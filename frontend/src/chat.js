@@ -456,7 +456,13 @@ export function updateChatModeUI(mode) {
     const chatInput = document.getElementById('chat-input');
     const container = document.getElementById('chat-history');
     const region = getActiveRegion() || {};
-    const selectedPlace = region.name || region.city || region.country || 'your selected Asian region';
+    const hasExplicitSelection = window._hasExplicitRegionSelection === true;
+    const selectedPlace = hasExplicitSelection
+        ? (region.name || region.city || region.country || 'your selected Asian region')
+        : 'Central, East, South, and West Asia';
+    const selectedPlaceUr = hasExplicitSelection
+        ? selectedPlace
+        : 'وسطی، مشرقی، جنوبی اور مغربی ایشیا';
     const isUrdu = getCurrentAppLanguage() === 'ur';
 
     if (mode === 'crisislens') {
@@ -471,7 +477,7 @@ export function updateChatModeUI(mode) {
         }
 
         const greetingEn = `Hello — I’m CrisisLens. I’m ready to help you understand risks around **${selectedPlace}** without burying you in technical language.\n\nTell me what concerns you, or ask for threats, evidence, severity, or practical actions for people, farms, grids, and logistics.`;
-        const greetingUr = `السلام علیکم — میں کرائسس لینز ہوں۔ میں **${selectedPlace}** کے موسمی خطرات اور ان کے حل کو آسان زبان میں سمجھانے کے لیے تیار ہوں۔\n\nآپ مجھے اپنی تشویش بتا سکتے ہیں، یا ممکنہ خطرات، شواہد، شدت اور عملی اقدامات کے بارے میں پوچھ سکتے ہیں۔`;
+        const greetingUr = `السلام علیکم — میں کرائسس لینز ہوں۔ میں **${selectedPlaceUr}** کے موسمی خطرات اور ان کے حل کو آسان زبان میں سمجھانے کے لیے تیار ہوں۔\n\nآپ مجھے اپنی تشویش بتا سکتے ہیں، یا ممکنہ خطرات، شواہد، شدت اور عملی اقدامات کے بارے میں پوچھ سکتے ہیں۔`;
 
         const notifTitleEn = "CrisisLens Active";
         const notifTitleUr = "کرائسس لینز فعال";
@@ -493,7 +499,7 @@ export function updateChatModeUI(mode) {
         `;
         appendSpeechControls(container?.querySelector('.agent-msg'), {
             en: `Hello. I’m CrisisLens. I’m ready to help you understand risks around ${selectedPlace}. Tell me what concerns you, or ask for threats, evidence, severity, or practical actions.`,
-            ur: `السلام علیکم۔ میں کرائسس لینز ہوں۔ میں ${selectedPlace} کے خطرات، شواہد، شدت اور عملی اقدامات سمجھنے میں آپ کی مدد کر سکتا ہوں۔`,
+            ur: `السلام علیکم۔ میں کرائسس لینز ہوں۔ میں ${selectedPlaceUr} کے خطرات، شواہد، شدت اور عملی اقدامات سمجھنے میں آپ کی مدد کر سکتا ہوں۔`,
         });
         if (typeof lucide !== 'undefined') lucide.createIcons();
     } else {
@@ -508,7 +514,7 @@ export function updateChatModeUI(mode) {
         }
 
         const greetingEn = `Hi! I’m your WIaaS weather-intelligence partner for **${selectedPlace}**.\n\nYou can speak naturally—tell me what you’re noticing or ask about weather, agriculture, grid pressure, logistics, or research. I’ll explain the readings, what they mean, and what you can do next.`;
-        const greetingUr = `السلام علیکم! میں **${selectedPlace}** کے لیے آپ کا ڈبلیو آئی اے اے ایس ویدر انٹیلیجنس ساتھی ہوں۔\n\nآپ بلا جھجھک موسم، زراعت، بجلی کے گرڈ، لاجسٹکس یا تحقیق کے متعلق پوچھ سکتے ہیں۔ میں تمام حالات اور اگلے اقدامات آسان الفاظ میں واضح کروں گا۔`;
+        const greetingUr = `السلام علیکم! میں **${selectedPlaceUr}** کے لیے آپ کا ڈبلیو آئی اے اے ایس ویدر انٹیلیجنس ساتھی ہوں۔\n\nآپ بلا جھجھک موسم، زراعت، بجلی کے گرڈ، لاجسٹکس یا تحقیق کے متعلق پوچھ سکتے ہیں۔ میں تمام حالات اور اگلے اقدامات آسان الفاظ میں واضح کروں گا۔`;
 
         const notifTitleEn = "System Notification";
         const notifTitleUr = "نظامی اطلاع";
@@ -530,7 +536,7 @@ export function updateChatModeUI(mode) {
         `;
         appendSpeechControls(container?.querySelector('.agent-msg'), {
             en: `Hi. I’m your WIaaS weather intelligence partner for ${selectedPlace}. Ask naturally about weather, agriculture, grid pressure, logistics, or research.`,
-            ur: `السلام علیکم۔ میں ${selectedPlace} کے لیے آپ کا ویدر انٹیلیجنس ساتھی ہوں۔ آپ موسم، زراعت، بجلی، لاجسٹکس یا تحقیق کے بارے میں پوچھ سکتے ہیں۔`,
+            ur: `السلام علیکم۔ میں ${selectedPlaceUr} کے لیے آپ کا ویدر انٹیلیجنس ساتھی ہوں۔ آپ موسم، زراعت، بجلی، لاجسٹکس یا تحقیق کے بارے میں پوچھ سکتے ہیں۔`,
         });
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
