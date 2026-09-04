@@ -2130,9 +2130,13 @@ export function onRegionSearch(query) {
 
 // Global UI helper exposure
 window.__wiaas = window.__wiaas || {};
-window.__wiaas.toggleHeatmap = toggleHeatmap;
-window.__wiaas.toggleWind = toggleWind;
-window.__wiaas.togglePrecipitation = togglePrecipitation;
+// Keep the legacy global hooks available for inline controls, but point them
+// at the current MapLibre layer implementations. The old helper names were
+// removed during the globe purge; referencing them here threw during module
+// evaluation and prevented the Asia map from initializing at all.
+window.__wiaas.toggleHeatmap = toggleThermalLayer;
+window.__wiaas.toggleWind = toggleWindLayer;
+window.__wiaas.togglePrecipitation = toggleRainLayer;
 window.__wiaas.setSubregionFilter = setSubregionFilter;
 window.__wiaas.onRegionSearch = onRegionSearch;
 
