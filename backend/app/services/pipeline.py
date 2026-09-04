@@ -1,13 +1,13 @@
 """
-Core Backend Orchestrator — WIaaS Physics Pipeline.
+Core Backend Orchestrator -- WIaaS Physics Pipeline.
 
 Coordinates the full ingestion-to-vector pipeline across six explicit stages:
-    Stage 1 ➔ Live telemetry ingestion (Open-Meteo API / GraphCast GNN)
-    Stage 2 ➔ Multi-variable climate analysis  (ClimateAnomalyEngine)
-    Stage 3 ➔ Physics-degraded resource computation  (SyntheticResourceLedger)
-    Stage 4 ➔ Bounded text-state vector construction  (GNNToLLMBridge)
-    Stage 5 ➔ Structured JSON payload assembly
-    Stage 6 ➔ Atomic file commit
+    Stage 1 -> Live telemetry ingestion (Open-Meteo API / GraphCast GNN)
+    Stage 2 -> Multi-variable climate analysis  (ClimateAnomalyEngine)
+    Stage 3 -> Physics-degraded resource computation  (SyntheticResourceLedger)
+    Stage 4 -> Bounded text-state vector construction  (GNNToLLMBridge)
+    Stage 5 -> Structured JSON payload assembly
+    Stage 6 -> Atomic file commit
 
 The final payload serves two consumers:
     - The vLLM inference layer, which injects the `llm_state_vector` as the
@@ -18,6 +18,20 @@ The final payload serves two consumers:
 """
 
 from __future__ import annotations
+
+import sys
+
+# Ensure stdout and stderr handle arbitrary unicode without crashing on Windows cp1252
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 import json
 import requests
@@ -122,7 +136,7 @@ class WeatherIntelligencePipeline:
             return None
 
         region = REGIONS[region_key]
-        print(f"\n[INIT]  Pipeline active ➔ {region['name']}")
+        print(f"\n[INIT]  Pipeline active -> {region['name']}")
         print("-" * 66)
 
         # ── Stage 1: Live Telemetry ───────────────────────────────────────────
@@ -249,7 +263,7 @@ class WeatherIntelligencePipeline:
         # ── Stage 6: Atomic File Commit ───────────────────────────────────────
         with open(self.output_filename, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=4, ensure_ascii=False)
-        print(f"[6/6] OK Committed       ➔ {self.output_filename}")
+        print(f"[6/6] OK Committed       -> {self.output_filename}")
 
         print(f"\n{'-' * 66}\n{state_vector}\n")
         return payload

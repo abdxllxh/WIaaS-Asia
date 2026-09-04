@@ -2,129 +2,199 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <title>WIaaS - Weather Intelligence as a Service</title>
     <meta name="description" content="WIaaS — Real-time weather intelligence dashboard for agriculture, power grid, logistics, and climate research powered by AI agents.">
-    
+
     <!-- Google Fonts: Outfit (UI) & JetBrains Mono (Data) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
-    
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
+
     <!-- Chart.js and Three.js CDNs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <link rel="stylesheet" crossorigin href="/assets/index.css">
+    <style>
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100vw !important;
+            min-width: 100% !important;
+            height: 100vh !important;
+            min-height: 100% !important;
+            overflow: hidden !important;
+            background: #000000 !important;
+        }
+        #loading-screen {
+            position: fixed !important;
+            inset: 0 !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            min-width: 100% !important;
+            height: 100vh !important;
+            min-height: 100% !important;
+            background: #000000 !important;
+            z-index: 999999 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+    </style>
+  <script type="module" crossorigin src="/assets/index.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index.css">
 </head>
 <body>
+    <!-- Mobile Backdrop Scrim for Sidebars & Drawers -->
+    <div id="mobile-backdrop" class="mobile-backdrop" aria-hidden="true"></div>
+
     <!-- Custom Sci-Fi Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
+    <div id="loading-screen" class="loading-screen" style="position: fixed; inset: 0; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; min-width: 100%; height: 100vh; min-height: 100%; background: #000000; z-index: 999999; margin: 0; padding: 0;">
         <div class="loader-content">
             <div class="loader-title">WIaaS</div>
             <div class="loader-subtitle">WEATHER INTELLIGENCE AS A SERVICE</div>
         </div>
     </div>
+    <script>
+        // Fail-safe automatic dismiss in case network or external resources delay
+        setTimeout(function() {
+            var loader = document.getElementById('loading-screen');
+            if (loader && !loader.dataset.dismissed) {
+                loader.dataset.dismissed = 'true';
+                loader.classList.add('zoom-out', 'fade-out');
+                setTimeout(function() { if (loader && loader.parentNode) loader.remove(); }, 1200);
+            }
+        }, 2200);
+    </script>
 
     <div class="app-container">
-        <!-- Top Left: Active Region and Local Time Widget -->
-        <div class="active-region-widget">
-            <div class="region-info">
-                <i data-lucide="map-pin" class="accent-icon"></i>
-                <div class="region-meta">
-                    <span class="region-label">ACTIVE MONITORING ZONE</span>
-                    <span class="region-name" id="current-region-name">Punjab Region, Pakistan</span>
+        <!-- Unified Top Header Bar (Symmetric layout: equal distance from left badge to nav, and nav to right widget) -->
+        <header class="top-header-bar" id="top-header-bar">
+            <!-- Left Header Item: Map Agro-Zone Badge -->
+            <div class="header-slot header-slot-left">
+                <div class="map-agro-badge" id="map-agro-badge">
+                    <div class="map-badge-dot"></div>
+                    <span id="map-agro-zone-text">Zone III-B: Cotton & Mango Belt (Punjab)</span>
                 </div>
             </div>
-            <div class="region-time">
-                <span class="time-label">LOCAL RUNTIME</span>
-                <span class="time-value" id="current-region-time">00:00:00</span>
-            </div>
-        </div>
 
-        <!-- Top Navigation Bar -->
-        <header class="top-nav-container">
-            <nav class="top-nav">
-                <button class="nav-item" data-tab="region">
-                    <i data-lucide="globe"></i>
-                    <span>Region</span>
-                </button>
-                <button class="nav-item" data-tab="physics">
-                    <i data-lucide="thermometer"></i>
-                    <span>Physics</span>
-                </button>
-                <button class="nav-item active" data-tab="agriculture">
-                    <i data-lucide="sprout"></i>
-                    <span>Agriculture</span>
-                </button>
-                <button class="nav-item" data-tab="grid">
-                    <i data-lucide="zap"></i>
-                    <span>Grid</span>
-                </button>
-                <button class="nav-item" data-tab="logistics">
-                    <i data-lucide="truck"></i>
-                    <span>Logistics</span>
-                </button>
-                <button class="nav-item" data-tab="research">
-                    <i data-lucide="microscope"></i>
-                    <span>Research</span>
-                </button>
-                <button class="nav-item" data-tab="globe-analysis">
-                    <i data-lucide="layers"></i>
-                    <span>Globe</span>
-                </button>
-                <div class="nav-divider"></div>
-                <button class="nav-item" data-tab="agents">
-                    <i data-lucide="cpu"></i>
-                    <span>WIaaS</span>
-                </button>
-                <button class="nav-item" data-tab="crisislens">
-                    <i data-lucide="shield-alert"></i>
-                    <span>CrisisLens</span>
-                </button>
+            <!-- Center Header Item: Top Nav Bar (Centered at exact 50%) -->
+            <div class="header-slot header-slot-center">
+                <nav class="top-nav" aria-label="Main Navigation">
+                    <!-- Mobile / Tablet Modules Selector Trigger (Active on <= 1100px) -->
+                    <button class="nav-item mobile-modules-btn" id="mobile-modules-trigger" aria-label="Open Operational Modules Sheet" aria-haspopup="dialog" aria-expanded="false">
+                        <i data-lucide="layout-grid"></i>
+                        <span class="modules-btn-label" data-i18n="Modules">Modules</span>
+                        <span class="active-module-indicator" id="active-module-pill">Region</span>
+                    </button>
+                    <div class="nav-divider mobile-modules-divider"></div>
 
-                <button class="nav-item" data-tab="analytics">
-                    <i data-lucide="bar-chart-3"></i>
-                    <span>Analytics</span>
-                </button>
-            </nav>
-        </header>
+                    <button class="nav-item desktop-sector-item" data-tab="region" aria-label="Region">
+                        <i data-lucide="map"></i>
+                        <span data-i18n="Region">Region</span>
+                    </button>
+                    <button class="nav-item desktop-sector-item" data-tab="physics" aria-label="Physics">
+                        <i data-lucide="thermometer"></i>
+                        <span data-i18n="Physics">Physics</span>
+                    </button>
+                    <button class="nav-item desktop-sector-item" data-tab="agriculture" aria-label="Agriculture">
+                        <i data-lucide="sprout"></i>
+                        <span data-i18n="Agriculture">Agriculture</span>
+                    </button>
+                    <button class="nav-item desktop-sector-item" data-tab="grid" aria-label="Grid">
+                        <i data-lucide="zap"></i>
+                        <span data-i18n="Grid">Grid</span>
+                    </button>
+                    <button class="nav-item desktop-sector-item" data-tab="logistics" aria-label="Logistics">
+                        <i data-lucide="truck"></i>
+                        <span data-i18n="Logistics">Logistics</span>
+                    </button>
+                    <button class="nav-item desktop-sector-item" data-tab="research" aria-label="Research">
+                        <i data-lucide="microscope"></i>
+                        <span data-i18n="Research">Research</span>
+                    </button>
+                    <button class="nav-item desktop-sector-item" data-tab="location-analysis" aria-label="Location">
+                        <i data-lucide="crosshair"></i>
+                        <span data-i18n="Location">Location</span>
+                    </button>
+                    <div class="nav-divider desktop-sector-divider"></div>
+                    <button class="nav-item" data-tab="agents" aria-label="WIaaS">
+                        <i data-lucide="cpu"></i>
+                        <span data-i18n="WIaaS">WIaaS</span>
+                    </button>
+                    <button class="nav-item" data-tab="crisislens" aria-label="CrisisLens">
+                        <i data-lucide="shield-alert"></i>
+                        <span class="nav-text-full" data-i18n="CrisisLens">CrisisLens</span>
+                        <span class="nav-text-short" data-i18n="Crisis">Crisis</span>
+                    </button>
+                    <button class="nav-item desktop-sector-item" data-tab="analytics" aria-label="Analytics">
+                        <i data-lucide="bar-chart-3"></i>
+                        <span data-i18n="Analytics">Analytics</span>
+                    </button>
 
-        <!-- Main Workspace (Three.js Globe Canvas) -->
-        <div id="globe-container" style="position: relative;">
-            <!-- Three.js Canvas mounts here -->
-            
-            <!-- Floating Region Details Overlay -->
-            <div id="globe-popup-overlay" class="hidden" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;">
-                <svg id="globe-popup-connector" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">
-                    <path id="connector-path" d="" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,4" fill="none" />
-                </svg>
-                <div id="globe-popup-box" class="globe-popup-box">
-                    <button class="popup-close-btn" onclick="closeGlobePopup()">&times;</button>
-                    <div class="popup-header">Punjab, Pakistan</div>
-                    <div class="popup-body">
-                        <div class="popup-row">
-                            <span class="popup-label">Temperature</span>
-                            <span id="popup-temp-val" class="popup-val">47°C</span>
-                        </div>
-                        <div class="popup-row">
-                            <span class="popup-label">Relative Humidity</span>
-                            <span id="popup-humidity-val" class="popup-val">50%</span>
-                        </div>
-                        <div class="popup-row">
-                            <span class="popup-label">Wind Speed</span>
-                            <span id="popup-wind-val" class="popup-val">12 km/h</span>
-                        </div>
-                        <div class="popup-row">
-                            <span class="popup-label">Climate Status</span>
-                            <span id="popup-status-val" class="popup-val warning">CRITICAL</span>
+                    <!-- Hackathon Smart Agri Quick Controls -->
+                    <div class="nav-divider"></div>
+                    <div class="voice-advisory-wrapper">
+                        <button class="nav-control-pill voice-advisory-pill" id="voice-advisory-btn" aria-label="Play Voice Advisory" aria-pressed="false">
+                            <i data-lucide="volume-2"></i>
+                            <span id="voice-btn-label" data-i18n="Voice Advisory">Voice Advisory</span>
+                            <div class="audio-waves" id="audio-waves"><span></span><span></span><span></span></div>
+                        </button>
+                        <div class="voice-advisory-card" id="voice-advisory-card">
+                            <div class="vac-header">
+                                <div class="vac-pulse-dot"></div>
+                                <span class="vac-badge">LIVE VOICE ADVISORY</span>
+                                <span class="vac-lang-indicator" id="vac-lang-indicator">EN · اردو</span>
+                            </div>
+                            <h4 class="vac-title" data-i18n="Voice Advisory">Voice Advisory</h4>
+                            <p class="vac-description">
+                                Natural spoken situational briefing for the active region. Automatically speaks in fluent Urdu when switching to اردو mode or English in EN mode.
+                            </p>
+                            <div class="vac-footer">
+                                <div class="vac-target">
+                                    <i data-lucide="map-pin" class="vac-pin"></i>
+                                    <span id="vac-target-city">Current Region</span>
+                                </div>
+                                <span class="vac-action-tag">Click to Listen</span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                    <button class="nav-control-pill lang-pill" id="lang-toggle-btn" title="Switch Language / زبان تبدیل کریں">
+                        <span class="lang-tag active" id="lang-tag-en">EN</span>
+                        <span class="lang-sep">|</span>
+                        <span class="lang-tag" id="lang-tag-ur">اردو</span>
+                    </button>
+                </nav>
             </div>
+
+            <!-- Right Header Item: Selected Region Local Time Widget (Equal distance to Nav) -->
+            <div class="header-slot header-slot-right">
+                <section class="active-region-widget hidden" id="active-region-widget" aria-label="Selected region local time">
+                    <div class="region-info">
+                        <i data-lucide="map-pin" class="region-clock-icon" aria-hidden="true"></i>
+                        <div class="region-meta">
+                            <span class="region-label" data-i18n="Selected region">Selected region</span>
+                            <span class="region-name" id="current-region-name"></span>
+                        </div>
+                    </div>
+                    <div class="region-time">
+                        <span class="time-label" id="current-region-time-label"></span>
+                        <time class="time-value" id="current-region-time"></time>
+                    </div>
+                </section>
+            </div>
+        </header>
+
+        <!-- Main Workspace (Full-Asia HD Satellite Map) -->
+        <div id="globe-container">
         </div>
 
         <!-- Left Side: Sector Panels Container -->
@@ -134,95 +204,35 @@
                 <div class="panel-header">
                     <div class="header-title">
                         <i data-lucide="sprout" class="accent-icon"></i>
-                        <h2>Agriculture Intelligence</h2>
+                        <h2 data-i18n="Agriculture Intelligence">Agriculture Intelligence</h2>
                     </div>
                     <div class="header-actions">
-                        <button class="action-btn" id="generate-agri-report-btn" title="Generate Detailed Report"><i data-lucide="file-text"></i></button>
-                        <button class="action-btn" title="View Next"><i data-lucide="chevron-right"></i></button>
-                        <button class="action-btn" id="refresh-data-btn" title="Sync Data"><i data-lucide="refresh-cw"></i></button>
+                        <button class="action-btn" id="generate-agri-report-btn" title="Open Action Advisory Card"><i data-lucide="file-text"></i></button>
+                        <button class="action-btn" id="share-advisory-btn" title="Copy Advisory for WhatsApp / Social Media"><i data-lucide="share-2"></i></button>
+                        <button class="action-btn" id="refresh-data-btn" title="Reload Agriculture Intelligence Data"><i data-lucide="refresh-cw"></i></button>
                         <button class="action-btn" id="close-left-panel" title="Close"><i data-lucide="x"></i></button>
                     </div>
                 </div>
-                <div class="panel-body">
-                    <!-- AI Recommendation Box moved to top -->
-                    <div class="ai-recommendation" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); box-shadow: 0 0 15px rgba(56, 189, 248, 0.1); margin-bottom: 16px; border-radius: 10px; padding: 14px;">
-                        <div class="rec-header" style="color: var(--accent-color); font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                            <i data-lucide="bot" style="width: 18px; height: 18px;"></i>
-                            <span>AI RECOMMENDATION</span>
-                        </div>
-                        <p class="rec-text" id="ai-recommendation-text" style="font-size: 0.78rem; line-height: 1.45; color: var(--text-primary); margin: 0;">
-                            Soil saturation will reach maximum capacity in 18 hours due to micro front accumulation. Suspend automated irrigation in Sector 4B to minimize runoff.
-                        </p>
-                    </div>
 
-                    <div class="kpi-section">
-                        <div class="kpi-header">
-                            <span>Mean Crop Health Index</span>
-                            <i data-lucide="sparkles" class="kpi-spark"></i>
-                        </div>
-                        <div class="kpi-value-row">
-                            <span class="kpi-value" id="crop-health-value">0.82</span>
-                            <span class="kpi-unit">NDVI</span>
-                        </div>
-                        <div class="kpi-status green" id="crop-health-status">Highly Productive</div>
-                    </div>
+                <!-- Agriculture Sub-Navigation Tabs -->
+                <div class="agri-subnav">
+                    <button class="agri-subtab active" id="subtab-diagnostics" data-subview="diagnostics">
+                        <i data-lucide="activity"></i>
+                        <span data-i18n="Diagnostics">Diagnostics</span>
+                    </button>
+                    <button class="agri-subtab" id="subtab-simulator" data-subview="simulator">
+                        <i data-lucide="sliders"></i>
+                        <span data-i18n="What-If Simulator">What-If Simulator</span>
+                    </button>
+                    <button class="agri-subtab" id="subtab-swarm" data-subview="swarm">
+                        <i data-lucide="cpu"></i>
+                        <span data-i18n="Agent Swarm">Agent Swarm (4)</span>
+                    </button>
+                </div>
 
-                    <div class="chart-container">
-                        <canvas id="radarChart"></canvas>
-                    </div>
-
-                    <ul class="data-grid">
-                        <li class="data-row">
-                            <span class="data-label">Soil Moisture (0-30cm)</span>
-                            <span class="data-value green" id="soil-moisture-val">34.2% (Optimal)</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Irrigation Demand</span>
-                            <span class="data-value" id="irrigation-demand-val">120 m³/hectare</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Disease Risk Index</span>
-                            <span class="data-value green" id="disease-risk-val">Low (8%)</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Water Stress Index</span>
-                            <span class="data-value" id="water-stress-val">0.18 (Nominal)</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Gross Reservoir Storage</span>
-                            <span class="data-value green" id="gross-reservoir-val">0 m³</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Deliverable Water Volume</span>
-                            <span class="data-value green" id="deliverable-water-val">0 m³</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Reservoir Evaporative Loss</span>
-                            <span class="data-value red" id="reservoir-evap-loss-val">0%</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Overhead Irrigation Viability</span>
-                            <span class="data-value green" id="irrigation-viability-val">Viable</span>
-                        </li>
-                        <li class="data-row">
-                            <span class="data-label">Evaporative Waste Penalty</span>
-                            <span class="data-value green" id="waste-penalty-val">Inactive</span>
-                        </li>
-                    </ul>
-
-                    <!-- Detailed Agriculture Report (Hidden by default) -->
-                    <div id="agriculture-report-section" class="hidden" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 15px; display: flex; flex-direction: column; gap: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                            <span style="font-weight: 700; font-size: 0.8rem; color: var(--accent-color); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-                                <i data-lucide="clipboard-list" style="width: 14px; height: 14px;"></i>
-                                Detailed Agricultural Report
-                            </span>
-                            <button class="action-btn" id="close-agri-report" style="padding: 2px; border-radius: 4px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary);"><i data-lucide="x" style="width: 12px; height: 12px;"></i></button>
-                        </div>
-                        
-                        <div style="background: rgba(56, 189, 248, 0.015); border: 1px solid rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 12px;">
-                            <div id="agri-report-content"></div>
-                        </div>
+                <div class="panel-body scrollable">
+                    <div id="agriculture-panel-content">
+                        <!-- Dynamic content injected via JS -->
                     </div>
                 </div>
             </div>
@@ -235,7 +245,8 @@
                         <h2 id="general-panel-title">Sector Intelligence</h2>
                     </div>
                     <div class="header-actions">
-                        <button class="action-btn" id="close-general-panel"><i data-lucide="x"></i></button>
+                        <button class="action-btn" id="reset-general-panel-btn" title="Refresh Live Telemetry Signals"><i data-lucide="rotate-ccw"></i></button>
+                        <button class="action-btn" id="close-general-panel" title="Close"><i data-lucide="x"></i></button>
                     </div>
                 </div>
                 <div class="panel-body scrollable">
@@ -259,120 +270,197 @@
                         <button class="action-btn" id="close-right-panel" title="Close"><i data-lucide="x"></i></button>
                     </div>
                 </div>
-                <div class="panel-body chat-body" id="chat-messages-container">
-                    <div id="agent-grid-intelligence-panel" class="hidden"></div>
-                    <div class="chat-message agent-msg">
+                <div class="chat-body" id="chat-history">
+                    <div class="chat-message agent-msg" data-text-en="Hello! I am your AI weather intelligence copilot for Asian regional analytics. Ask me about weather physics, agro telemetry, grid forecasting, or multimodal route conditions." data-text-ur="السلام علیکم! میں ایشیائی علاقائی تجزیات کے لیے آپ کا اے آئی ویدر انٹیلیجنس معاون ہوں۔" lang="en" dir="ltr">
                         <div class="msg-header">
-                            <span class="agent-tag"><i data-lucide="cpu"></i> WIaaS-SWARM-V1.0</span>
-                            <span class="msg-time" id="msg-start-time">07:28</span>
+                            <span class="agent-tag"><i data-lucide="cpu"></i> WIaaS Agent</span>
+                            <span class="msg-time">Just now</span>
                         </div>
-                        <p class="msg-text">Greetings, Operator. I am analyzing the telemetry feed across five specialized models. What sector requires focus?</p>
-                        <div class="system-notification">
-                            <span class="notif-title">System Notification</span>
-                            <p class="notif-body" id="system-notification-text">Global weather models have just compiled a new ensemble forecast for the Next 72 Hours. Focus is recommended on Sector West Grid.</p>
-                        </div>
+                        <div class="msg-text">Hello! I am your AI weather intelligence copilot for Asian regional analytics. Ask me about weather physics, agro telemetry, grid forecasting, or multimodal route conditions.</div>
                     </div>
                 </div>
-                <div class="chat-footer">
-                    <div class="input-wrapper">
-                        <input type="text" id="chat-input" placeholder="Ask WIaaS agent swarm anything...">
-                        <div class="input-actions">
-                            <button class="icon-btn" title="Voice Input"><i data-lucide="mic"></i></button>
-                            <button class="icon-btn send-btn" id="send-chat-btn" title="Send message"><i data-lucide="send-horizontal"></i></button>
-                        </div>
-                    </div>
+                <div class="chat-input-area">
+                    <form id="chat-form">
+                        <label class="sr-only" for="chat-input">Message the selected WIaaS agent</label>
+                        <input type="text" id="chat-input" placeholder="Ask about weather, crops, grid, or climate..." autocomplete="off">
+                        <button type="button" id="voice-input-btn" class="chat-composer-btn voice-input-btn" aria-label="Start voice input" aria-pressed="false" title="Start voice input"><i data-lucide="mic"></i></button>
+                        <button type="submit" id="send-chat-btn" aria-label="Send Message"><i data-lucide="send"></i></button>
+                    </form>
+                    <span id="voice-input-status" class="voice-input-status" aria-live="polite"></span>
                 </div>
             </div>
         </aside>
 
-        <!-- Bottom Side: ROCm Multi-Agent Inference Details (Collapsible) -->
-        <footer class="bottom-panel collapsed" id="bottom-panel">
-            <div class="panel-card bottom-card">
-                <div class="panel-header">
-                    <div class="header-title">
-                        <i data-lucide="cpu" class="accent-icon"></i>
-                        <h2 id="bottom-panel-title">ROCm Multi-Agent Inference Details</h2>
-                    </div>
-                    <div class="header-actions">
-                        <button class="action-btn" id="toggle-bottom-panel" title="Toggle Panel"><i data-lucide="chevron-up" id="bottom-toggle-icon"></i></button>
-                    </div>
-                </div>
-                <div class="panel-body bottom-charts-row" style="position: relative;">
-                    <!-- Analytics Container -->
-                    <div id="bottom-analytics-container" class="bottom-analytics-container">
-                        <div class="bottom-chart-col">
-                            <h3>VRAM ALLOCATION BY AGENT (GB)</h3>
-                            <div class="chart-wrapper">
-                                <canvas id="vramChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="bottom-chart-col">
-                            <h3>CORE TEMPERATURE & POWER LEVEL</h3>
-                            <div class="chart-wrapper">
-                                <canvas id="tempPowerChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Agents Container -->
-                    <div id="bottom-agents-container" class="hidden" style="width: 100%;">
-                        <!-- Dynamic agent info injected here -->
-                    </div>
-                </div>
-            </div>
-        </footer>
-
-        <!-- Left/Right Sidebar Docking Controls -->
-        <button class="slider-btn left-btn" id="toggle-left-dock" title="Toggle Sidebar">
-            <i data-lucide="chevron-right" id="left-dock-icon"></i>
-        </button>
-        <button class="slider-btn right-btn" id="toggle-right-dock" title="Toggle Chat">
-            <i data-lucide="chevron-left" id="right-dock-icon"></i>
+        <!-- Left Dock / Sidebar Expand & Collapse Handle -->
+        <button class="slider-btn left-slider-btn" id="toggle-left-dock" title="Toggle Sector Analytics Panel" aria-label="Toggle Sector Analytics Panel">
+            <i id="left-dock-icon" data-lucide="chevron-right"></i>
         </button>
 
-        <!-- Bottom-most ROCm Status & Metric Bar -->
-        <div class="status-bar-container">
-            <div class="status-bar">
-                <div class="rocm-branding">
-                    <span class="dot"></span>
-                    <span class="branding-title">ROCm</span>
-                    <span class="branding-sub">Multi-Agent Inference Hub</span>
-                    <span class="branding-details">AMD Instinct™ MI300X | ROCm 6.1 Accelerated</span>
+        <!-- Right Dock / Sidebar Expand & Collapse Handle -->
+        <button class="slider-btn right-slider-btn" id="toggle-right-dock" title="Toggle AI Assistant Panel" aria-label="Toggle AI Assistant Panel">
+            <i id="right-dock-icon" data-lucide="chevron-left"></i>
+        </button>
+
+        <!-- WhatsApp / Printable Action Advisory Card Modal -->
+        <div class="modal-overlay hidden" id="advisory-modal">
+            <div class="modal-backdrop" id="advisory-modal-backdrop"></div>
+            <div class="advisory-card-modal">
+                <div class="advisory-modal-header">
+                    <div class="adv-badge"><i data-lucide="sprout"></i> WIaaS Farmer Action Advisory</div>
+                    <button class="action-btn" id="close-advisory-modal-btn"><i data-lucide="x"></i></button>
                 </div>
-                <div class="performance-metrics">
-                    <div class="metric">
-                        <span class="m-label">CPU UTILIZATION</span>
-                        <span class="m-value" id="cpu-util-val">81.1%</span>
+                <div class="advisory-card-content" id="printable-advisory-card">
+                    <div class="adv-card-banner">
+                        <div class="adv-gov-seal" id="adv-card-seal"><i data-lucide="shield-check"></i> SMART AGRICULTURE ADVISORY</div>
+                        <div class="adv-date" id="adv-card-date">September 2026 · Kharif Season</div>
                     </div>
-                    <div class="metric">
-                        <span class="m-label">VRAM USAGE</span>
-                        <span class="m-value" id="vram-usage-val">160.5 / 192 GB</span>
+                    <div class="adv-region-hero">
+                        <h3 id="adv-card-region">Multan District, Punjab</h3>
+                        <span class="adv-zone-pill" id="adv-card-zone">Zone III-B: Cotton & Mango Belt</span>
                     </div>
-                    <div class="metric">
-                        <span class="m-label">INFERENCE SPEED</span>
-                        <span class="m-value" id="inf-speed-val">4,335 T/s</span>
+                    <div class="adv-metrics-pills">
+                        <div class="adv-metric-item">
+                            <span class="adv-m-lbl">Current Temp</span>
+                            <strong class="adv-m-val" id="adv-card-temp">38.4°C</strong>
+                        </div>
+                        <div class="adv-metric-item">
+                            <span class="adv-m-lbl">Soil Saturation</span>
+                            <strong class="adv-m-val green" id="adv-card-soil">34.2%</strong>
+                        </div>
+                        <div class="adv-metric-item">
+                            <span class="adv-m-lbl">Crop NDVI</span>
+                            <strong class="adv-m-val green" id="adv-card-ndvi">0.82</strong>
+                        </div>
+                        <div class="adv-metric-item">
+                            <span class="adv-m-lbl">Spray Safety</span>
+                            <strong class="adv-m-val green" id="adv-card-spray">Safe Window</strong>
+                        </div>
                     </div>
-                    <div class="metric">
-                        <span class="m-label">ACTIVE AGENTS</span>
-                        <span class="m-value green" id="active-agents-val">10 Swarm</span>
+                    <div class="adv-action-checklist">
+                        <h4><i data-lucide="clipboard-check"></i> Mandatory Action Directives (Next 24 Hours)</h4>
+                        <ul id="adv-card-checklist">
+                            <!-- Populated dynamically per city -->
+                        </ul>
                     </div>
-                    <div class="metric">
-                        <span class="m-label">LATENCY</span>
-                        <span class="m-value" id="latency-val">8.4 ms</span>
-                    </div>
-                    <div class="metric">
-                        <span class="m-label">POWER DRAW</span>
-                        <span class="m-value" id="power-draw-val">656 W</span>
+                    <div class="adv-card-footer">
+                        <div class="adv-qr-sim">
+                            <i data-lucide="qr-code"></i>
+                            <span>Verified Operational Field Telemetry</span>
+                        </div>
+                        <div class="adv-powered" id="adv-card-powered">WIaaS Autonomous Climate Intelligence · National Met-Resilience Network</div>
                     </div>
                 </div>
-                <div class="hosting-status">
-                    <span>HOSTING: 5+ SPECIALISTS</span>
-                    <div class="loading-ring"></div>
+                <div class="advisory-modal-actions">
+                    <button class="adv-action-btn copy" id="copy-advisory-btn"><i data-lucide="clipboard-check"></i> Copy for WhatsApp Groups</button>
+                    <button class="adv-action-btn print" id="print-advisory-btn"><i data-lucide="printer"></i> Print / Save PDF</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script type="module" src="/src/main.js"></script>
+    <!-- Mobile / Tablet Modules Sheet Drawer -->
+    <div id="mobile-modules-sheet" class="mobile-modules-sheet" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-header">
+            <div class="sheet-header-title">
+                <i data-lucide="layers" class="sheet-accent-icon"></i>
+                <div>
+                    <h3 id="sheet-title" data-i18n="Operational Modules">Operational Modules</h3>
+                    <p class="sheet-subtitle" data-i18n="Select an Asian resilience intelligence domain">Select an Asian resilience intelligence domain</p>
+                </div>
+            </div>
+            <button class="action-btn sheet-close-btn" id="close-modules-sheet-btn" aria-label="Close Modules Sheet">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+
+        <div class="sheet-grid">
+            <button class="sheet-module-card active" data-tab="region">
+                <div class="sheet-card-icon region"><i data-lucide="map"></i></div>
+                <div class="sheet-card-info">
+                    <h4 data-i18n="Region">Asia Region Network</h4>
+                    <p data-i18n="29 Asian countries & operational zones">29 Asian countries & operational zones</p>
+                </div>
+                <span class="sheet-card-tag active">ACTIVE</span>
+            </button>
+
+            <button class="sheet-module-card" data-tab="location-analysis">
+                <div class="sheet-card-icon location"><i data-lucide="crosshair"></i></div>
+                <div class="sheet-card-info">
+                    <h4 data-i18n="Location">Location & Layers</h4>
+                    <p data-i18n="Thermal, Doppler radar & wind flow">Thermal, Doppler radar & wind flow</p>
+                </div>
+                <span class="sheet-card-tag">RADAR</span>
+            </button>
+
+            <button class="sheet-module-card" data-tab="physics">
+                <div class="sheet-card-icon physics"><i data-lucide="thermometer"></i></div>
+                <div class="sheet-card-info">
+                    <h4 data-i18n="Physics">Physics & VPD</h4>
+                    <p data-i18n="Tetens vapor deficit & wet bulb">Tetens vapor deficit & wet bulb</p>
+                </div>
+                <span class="sheet-card-tag">PHYSICS</span>
+            </button>
+
+            <button class="sheet-module-card" data-tab="agriculture">
+                <div class="sheet-card-icon agriculture"><i data-lucide="sprout"></i></div>
+                <div class="sheet-card-info">
+                    <h4 data-i18n="Agriculture">Agriculture Impact</h4>
+                    <p data-i18n="Crop stress, NDVI & night irrigation">Crop stress, NDVI & night irrigation</p>
+                </div>
+                <span class="sheet-card-tag">AGRI</span>
+            </button>
+
+            <button class="sheet-module-card" data-tab="grid">
+                <div class="sheet-card-icon grid"><i data-lucide="zap"></i></div>
+                <div class="sheet-card-info">
+                    <h4 data-i18n="Grid">Power Grid Status</h4>
+                    <p data-i18n="Transformer load & blackout risk">Transformer load & blackout risk</p>
+                </div>
+                <span class="sheet-card-tag">GRID</span>
+            </button>
+
+            <button class="sheet-module-card" data-tab="logistics">
+                <div class="sheet-card-icon logistics"><i data-lucide="truck"></i></div>
+                <div class="sheet-card-info">
+                    <h4 data-i18n="Logistics">Supply Chain & Fuel</h4>
+                    <p data-i18n="Corridors & thermal fuel degradation">Corridors & thermal fuel degradation</p>
+                </div>
+                <span class="sheet-card-tag">SUPPLY</span>
+            </button>
+
+            <button class="sheet-module-card" data-tab="research">
+                <div class="sheet-card-icon research"><i data-lucide="microscope"></i></div>
+                <div class="sheet-card-info">
+                    <h4 data-i18n="Research">Research Synthesis</h4>
+                    <p data-i18n="Autonomous LLM resilience brief">Autonomous LLM resilience brief</p>
+                </div>
+                <span class="sheet-card-tag">SYNTH</span>
+            </button>
+
+            <button class="sheet-module-card" data-tab="analytics">
+                <div class="sheet-card-icon analytics"><i data-lucide="bar-chart-3"></i></div>
+                <div class="sheet-card-info">
+                    <h4 data-i18n="Analytics">Threat Matrix</h4>
+                    <p data-i18n="Multi-hazard early warning ledger">Multi-hazard early warning ledger</p>
+                </div>
+                <span class="sheet-card-tag">ALERT</span>
+            </button>
+        </div>
+
+        <div class="sheet-footer">
+            <div class="sheet-agent-shortcuts">
+                <button class="sheet-agent-btn wiaas" data-tab="agents">
+                    <i data-lucide="cpu"></i>
+                    <span>WIaaS Agent</span>
+                </button>
+                <button class="sheet-agent-btn crisis" data-tab="crisislens">
+                    <i data-lucide="shield-alert"></i>
+                    <span>CrisisLens AI</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

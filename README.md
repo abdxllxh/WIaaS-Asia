@@ -32,21 +32,68 @@ By integrating simulation, automation, and collaborative AI decision-making, WIa
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 
-##  Live Demo
+## 🚀 Quickstart & Installation (Judge / Evaluator Ready)
 
-> **Demo Coming Soon**
+The entire frontend Single Page Application (SPA) is **pre-compiled and embedded** in `backend/static/`. Anyone evaluating this project **only needs Python 3.10+** — no Node.js or npm installation required to run the full interactive application!
 
-The production deployment is currently under active development.
+### ⚡ 1-Click Launch
 
-Once deployed, this section will include:
+- **Windows:** Double-click [`start.bat`](start.bat) or run:
+  ```powershell
+  .\start.bat
+  ```
+- **macOS / Linux:** Run:
+  ```bash
+  chmod +x start.sh && ./start.sh
+  ```
 
--  Live Application
--  Demonstration Video
--  Interactive Dashboard
--  Multi-Agent Chat Interface
--  API Documentation
+---
 
-Stay tuned for the official public release.
+### 🛠️ Standard Step-by-Step Installation
+
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/abdxllxh/WIAAS---Asia.git
+   cd WIAAS---Asia
+   ```
+
+2. **Install Python Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Start the Application:**
+   ```bash
+   python run.py
+   ```
+
+4. **Access the Platform:**
+   - 🌐 **Interactive Dashboard & Map:** [http://127.0.0.1:8000](http://127.0.0.1:8000)
+   - 📚 **Swagger API Documentation:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+   - 🛡️ **CrisisLens Multi-Hazard Panel:** Integrated in the dashboard
+
+---
+
+### 🧪 Automated Verification Suite
+
+To verify that the atmospheric physics models, multi-hazard classifiers, and self-healing dual-agent responses are operating with 100% accuracy:
+```bash
+python scripts/verify_crisislens_questions.py
+```
+*(All 12 specialized intelligence categories execute with automated verification asserting physical units: °C, %, kPa, MW, m³).*
+
+---
+
+### 💻 (Optional) Frontend Development with Hot Reloading
+
+If you wish to modify the frontend source code and use Vite hot-reloading:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+The Vite development server will launch on `http://localhost:5173` with automated API proxying to the FastAPI backend.
+
 
 
 ##  Key Features
@@ -172,6 +219,58 @@ The AI Swarm enables users to communicate with multiple specialized AI agents th
 <p align="center">
   <img src="assets/systeme_architecture.png" width="90%"/>
 </p>
+
+## 📂 Project Directory Structure
+
+```text
+WlaaS/
+├── backend/                  # FastAPI Application & Simulation Engine
+│   ├── app/
+│   │   ├── api/v1/           # API endpoints (telemetry, grid, client location, TTS)
+│   │   ├── core/             # Configuration, regional climate registries, baselines
+│   │   ├── engines/          # Atmospheric physics (Tetens, VPD) & synthetic resource ledger
+│   │   ├── schemas/          # Pydantic data validation schemas
+│   │   ├── services/         # Open-Meteo telemetry pipeline & GNN-to-LLM bridge
+│   │   └── main.py           # FastAPI server entry point with edge-tts neural proxy
+│   ├── static/               # Compiled SPA production assets served by FastAPI
+│   └── Dockerfile            # Container definition for backend service
+│
+├── frontend/                 # Vite Single-Page Application (SPA)
+│   ├── src/
+│   │   ├── asia-map.js       # 60 FPS MapLibre GL Thermographic Asia Map engine
+│   │   ├── dynamic-visualizer.js # 1-second dynamic HTML5 canvas telemetry oscilloscope
+│   │   ├── chat.js           # Bilingual AI copilot interface & voice speech controls
+│   │   ├── ui.js             # Drawer management, navigation state, and tab renderers
+│   │   ├── ui-agriculture.js # Agro-climatic diagnostics, action directives, radar chart
+│   │   ├── events.js         # Navigation triggers, mobile modules sheet controller
+│   │   └── styles/main.css   # Master design system & responsive media queries
+│   ├── index.html            # Application HTML shell
+│   └── vite.config.js        # Vite production build bundler configuration
+│
+├── n8n/                      # Multi-Agent Workflow Orchestration
+│   └── exports/
+│       ├── WIAAS-Asia.json   # Primary WIaaS decision graph (Agri, Grid, Logistics, Research)
+│       └── WIaaS-CrisisLens-Asia.json # Emergency multi-hazard crisis response workflow
+│
+├── docs/                     # Documentation, Reports & Design Artifacts
+│   ├── architecture.md       # High-level system architecture specification
+│   ├── globe-verification/   # Screenshot test records across Asian metropolises
+│   └── reports/              # Field atlas, executive PDF/DOCX reports, and handoffs
+│
+├── scripts/                  # Automation & Operational Maintenance
+│   └── update_n8n_asia_workflows.mjs # Synchronizes and patches n8n workflow decision graphs
+│
+├── assets/                   # Architecture diagrams & visual identity media
+│
+├── AGENTS.md                 # Authoritative permanent memory, turn logs & decisions
+├── SECURITY.md               # API protection, input sanitization & rate limiting policies
+├── SKILLS.md                 # Thermodynamic formulas, GIS standards & developer skills
+├── PITCH_DECK.md             # Hackathon pitch deck and value propositions
+├── README.md                 # Project overview, setup instructions & directory map
+└── docker-compose.yml        # Multi-container local deployment configuration
+```
+
+---
 
 ## Tech Stack
 

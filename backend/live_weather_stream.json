@@ -1,0 +1,64 @@
+{
+    "_meta": {
+        "pipeline_version": "1.1.0",
+        "generated_at_utc": "2026-09-04T11:58:58.848658+00:00",
+        "region_key": "pakistan_gwadar",
+        "timezone": "GMT+5 (PKT - Pakistan Standard Time)",
+        "coordinates": {
+            "latitude": 25.1264,
+            "longitude": 62.3226
+        },
+        "diurnal_cycle": "DAY"
+    },
+    "monitored_region": "Gwadar Coastal Port, Balochistan, Pakistan",
+    "system_status": "HEALTHY",
+    "risk_level": "MEDIUM",
+    "mission_criticality_score": 70,
+    "climate_matrix": {
+        "intensity_level": "SEASONAL_NORM",
+        "deviation_from_baseline_celsius": -13.22,
+        "vapor_pressure_deficit_kpa": 1.1102,
+        "heat_index_celsius": 32.59,
+        "wet_bulb_celsius": 24.75,
+        "telemetry": {
+            "temperature_celsius": 28.779340936593865,
+            "humidity_percentage": 71.9292322073663,
+            "wind": {
+                "speed_kmh": 25.139325238700057,
+                "direction_degrees": 223
+            }
+        },
+        "water_surface_evap_loss_pct": 2.0,
+        "water_irrigation_efficiency_pct": 86.7
+    },
+    "rlvr_constraints": {
+        "overhead_irrigation_efficiency": 0.867,
+        "overhead_irrigation_viable": true,
+        "irrigation_penalty_active": false
+    },
+    "synthetic_resource_ledger": {
+        "water_gross_reservoir_m3": 764413,
+        "water_deliverable_m3": 662746,
+        "water_surface_evap_loss_pct": 2.0,
+        "water_irrigation_efficiency_pct": 86.7,
+        "grid_available_capacity_mw": 277.2,
+        "grid_demand_surge_pct": 10.58,
+        "grid_peak_surge_pct": 15.87,
+        "grid_peak_surge_time": "18:03",
+        "fuel_available_liters": 90692,
+        "fuel_thermal_overhead_pct": 4.54
+    },
+    "llm_state_vector": "=== WIaaS PHYSICS-CONSTRAINED STATE VECTOR ===\nZONE       : Gwadar Coastal Port, Balochistan, Pakistan\nSTATUS     : HEALTHY [SEASONAL_NORM]\nRISK LEVEL : MEDIUM\nCRITICALITY: 70/100\n\n[THERMAL MATRIX]\n- Temperature            : 28.78°C\n- Baseline Excess        : -13.22°C\n- Heat Index             : 32.59°C\n- Wet-Bulb Temperature   : 24.75°C\n- Vapor Pressure Deficit : 1.11 kPa\n- Relative Humidity      : 71.9%\n- Wind Speed             : 25.1 km/h @ 223°\n\n[RLVR VERIFIER CONSTRAINTS]\n- Overhead Sprinkler Efficiency: 86.7%\n  Standard overhead irrigation is viable under current conditions.\n\n[SYNTHETIC RESOURCE LEDGER — AGENT BID CEILINGS]\n* WATER\n  - Gross Reservoir      : 764,413 m³\n  - Surface Evap Loss    : 2.00%\n  - Deliverable Volume   : 662,746 m³ (bid ceiling)\n* GRID\n  - Available Capacity   : 277.2 MW\n  - Demand Surge         : +10.58%\n* FUEL\n  - Available Reserve    : 90,692 L\n  - Thermal Overhead     : +4.54%\n\n[GLOBAL COOPERATION CONSTRAINT (GCC)]\nAgent bids must not collectively exceed ledger ceilings. A resource collapse in any single sector triggers a systemic penalty: all agent rewards reset to zero.",
+    "region_name": "Gwadar Coastal Port, Balochistan, Pakistan",
+    "ledger": {
+        "grid_available_capacity_mw": 277.2,
+        "grid_demand_surge_pct": 10.58,
+        "fuel_thermal_overhead_pct": 4.54
+    },
+    "telemetry": {
+        "temperature_celsius": 28.779340936593865,
+        "humidity_percentage": 71.9292322073663,
+        "wind_speed_kmh": 25.139325238700057,
+        "wind_direction_degrees": 223
+    }
+}

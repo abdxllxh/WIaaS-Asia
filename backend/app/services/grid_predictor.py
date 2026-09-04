@@ -60,7 +60,12 @@ def _extract_from_payload(payload: dict, region_key: str) -> dict:
         result['grid_status'] = 'STABLE'
 
     # --- Build a real summary from model fields ---
-    zone = payload.get('_meta', {}).get('region_name', region_key)
+    zone = (
+        payload.get('monitored_region')
+        or payload.get('region_name')
+        or payload.get('_meta', {}).get('region_name')
+        or region_key
+    )
     sys_status = payload.get('system_status', 'OPERATIONAL')
     
     # Safely get temperature

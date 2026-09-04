@@ -1,3 +1,4 @@
+import { showToast } from './toast.js';
 /**
  * ui-cities.js — UI components and event handlers for city search and management.
  * Provides the interface for users to search, add, and remove cities dynamically.
@@ -53,7 +54,7 @@ function injectCitySearchPanel() {
                 <input 
                     type="text" 
                     id="city-search-input" 
-                    placeholder="Search city (e.g., Paris, Mumbai, Lagos)..."
+                    placeholder="Search an Asian city (e.g., Lahore, Mumbai, Tokyo)..."
                     autocomplete="off"
                     class="city-search-input"
                 />
@@ -163,7 +164,7 @@ function wireupCitySearchEvents() {
     refreshGlobeBtn?.addEventListener('click', async () => {
         const cities = citiesManager.getAllCities();
         if (cities.length === 0) {
-            alert('No cities selected. Search and add cities first.');
+            showToast('No cities selected. Search and add cities first.', 'warning');
             return;
         }
         await buildGlobePins(cities);
@@ -233,7 +234,7 @@ async function performCitySearch() {
                     await buildGlobePins(citiesManager.getAllCities());
                     console.log('[ui-cities] Added city:', selectedCity.name);
                 } else {
-                    alert('City already added or limit reached.');
+                    showToast('City already added or limit reached.', 'warning');
                 }
             });
         });

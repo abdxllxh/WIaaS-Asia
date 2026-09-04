@@ -1,0 +1,247 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 680" width="100%" height="100%" style="background:#F4EFEA; font-family:'JetBrains Mono', 'Space Grotesk', -apple-system, sans-serif;">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(30, 41, 59, 0.05)" stroke-width="1"/>
+    </pattern>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#DC2626"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#0284C7"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#7C3AED"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#D97706"/>
+    </marker>
+    <filter id="node-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.12" flood-color="#0F172A"/>
+    </filter>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#F4EFEA"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Outer Plate Border -->
+  <rect x="16" y="16" width="1568" height="648" rx="10" fill="none" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- Header Plate Annotations -->
+  <text x="36" y="46" font-size="11" font-weight="700" fill="#64748B" letter-spacing="1.5">CRISISLENS EMERGENCY MULTI-HAZARD DECISION GRAPH · N8N ENGINE (BUILT VIA QODER)</text>
+  <text x="1320" y="46" font-size="11" font-weight="700" fill="#DC2626" letter-spacing="1.5">50 NODES · 4 AI AGENTS · 4-SOURCE FUSION</text>
+
+  <!-- Connection Pathways -->
+  <!-- Webhook to Memory -->
+  <path d="M 90 320 L 130 320" stroke="#DC2626" stroke-width="2" fill="none" marker-end="url(#arrow-red)"/>
+  <!-- Memory to Parser -->
+  <path d="M 210 320 L 250 320" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow-blue)"/>
+  <!-- Parser to Router -->
+  <path d="M 330 320 L 370 320" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow-blue)"/>
+
+  <!-- Router to Cached Follow-up (Direct Memory Branch) -->
+  <path d="M 400 345 C 420 480, 430 500, 480 500" stroke="#D97706" stroke-width="1.8" stroke-dasharray="4,4" fill="none" marker-end="url(#arrow-orange)"/>
+  <path d="M 560 500 L 610 500" stroke="#D97706" stroke-width="1.8" fill="none" marker-end="url(#arrow-orange)"/>
+  <path d="M 690 500 C 900 500, 1300 500, 1400 370" stroke="#D97706" stroke-width="1.8" stroke-dasharray="4,4" fill="none" marker-end="url(#arrow-orange)"/>
+
+  <!-- Router to New Assessment Geocoding -->
+  <path d="M 420 320 L 480 320" stroke="#DC2626" stroke-width="2" fill="none" marker-end="url(#arrow-red)"/>
+  <path d="M 560 320 L 600 320" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow-blue)"/>
+  <path d="M 680 320 L 720 320" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow-blue)"/>
+
+  <!-- Parallel Ingestion Fan-Out -->
+  <!-- Stream 1: Open-Meteo -->
+  <path d="M 750 295 C 770 140, 780 130, 810 130" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow-blue)"/>
+  <path d="M 890 130 L 930 130" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow-blue)"/>
+
+  <!-- Stream 2: NASA FIRMS -->
+  <path d="M 750 310 C 780 230, 780 230, 810 230" stroke="#EA580C" stroke-width="2" fill="none" marker-end="url(#arrow-red)"/>
+  <path d="M 890 230 L 930 230" stroke="#EA580C" stroke-width="1.8" fill="none" marker-end="url(#arrow-red)"/>
+
+  <!-- Stream 3: GDACS Alerts -->
+  <path d="M 750 330 C 780 330, 780 330, 810 330" stroke="#DC2626" stroke-width="2" fill="none" marker-end="url(#arrow-red)"/>
+  <path d="M 890 330 L 930 330" stroke="#DC2626" stroke-width="1.8" fill="none" marker-end="url(#arrow-red)"/>
+
+  <!-- Stream 4: GDELT News -->
+  <path d="M 750 345 C 780 430, 780 430, 810 430" stroke="#4F46E5" stroke-width="2" fill="none" marker-end="url(#arrow-purple)"/>
+  <path d="M 890 430 L 930 430" stroke="#4F46E5" stroke-width="1.8" fill="none" marker-end="url(#arrow-purple)"/>
+
+  <!-- Parallel Streams Convergence into Merge Node -->
+  <path d="M 1010 130 C 1040 130, 1040 280, 1060 280" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#arrow-blue)"/>
+  <path d="M 1010 230 C 1035 230, 1035 280, 1060 280" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#arrow-blue)"/>
+  <path d="M 1010 330 C 1035 330, 1035 280, 1060 280" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#arrow-blue)"/>
+  <path d="M 1010 430 C 1040 430, 1040 280, 1060 280" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#arrow-blue)"/>
+
+  <!-- Merge to Filter & Threat Scoring -->
+  <path d="M 1110 280 L 1140 280" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow-blue)"/>
+  <path d="M 1220 280 L 1250 280" stroke="#DC2626" stroke-width="2" fill="none" marker-end="url(#arrow-red)"/>
+
+  <!-- OSINT Correlation Agent to Threat Level & Actions -->
+  <path d="M 1330 280 L 1360 280" stroke="#7C3AED" stroke-width="2.2" fill="none" marker-end="url(#arrow-purple)"/>
+  <path d="M 1410 280 L 1440 280" stroke="#DC2626" stroke-width="2" fill="none" marker-end="url(#arrow-red)"/>
+
+  <!-- Action Agent to Strict Output -->
+  <path d="M 1490 310 C 1490 350, 1490 350, 1490 350 L 1520 350" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow-blue)"/>
+
+  <!-- ==================== NODES RENDERING ==================== -->
+
+  <!-- Node 1: Webhook Trigger -->
+  <g transform="translate(36, 296)" filter="url(#node-shadow)">
+    <rect width="56" height="48" rx="8" fill="#BE185D" stroke="#F43F5E" stroke-width="1.5"/>
+    <text x="28" y="24" font-size="8" font-weight="800" fill="#FFF" text-anchor="middle">WEBHOOK</text>
+    <text x="28" y="37" font-size="6.5" fill="#FDA4AF" text-anchor="middle">/crisislens</text>
+  </g>
+
+  <!-- Node 2: Load Memory -->
+  <g transform="translate(130, 296)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#D97706" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#FDE68A" text-anchor="middle">LOAD MEMORY</text>
+    <text x="40" y="36" font-size="6.5" fill="#F59E0B" text-anchor="middle">Session State</text>
+  </g>
+
+  <!-- Node 3: Parse Query -->
+  <g transform="translate(250, 296)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#F8FAFC" text-anchor="middle">PARSE QUERY</text>
+    <text x="40" y="36" font-size="6.5" fill="#94A3B8" text-anchor="middle">Intent Extraction</text>
+  </g>
+
+  <!-- Node 4: Conversation Router -->
+  <g transform="translate(370, 288)" filter="url(#node-shadow)">
+    <polygon points="0,32 25,0 50,32 25,64" fill="#0F172A" stroke="#F59E0B" stroke-width="1.8"/>
+    <text x="25" y="36" font-size="7" font-weight="800" fill="#F59E0B" text-anchor="middle">ROUTER</text>
+  </g>
+
+  <!-- Cached Follow-up Branch -->
+  <g transform="translate(480, 476)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#D97706" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#FDE68A" text-anchor="middle">CACHED ROUTE</text>
+    <text x="40" y="35" font-size="6.5" fill="#F59E0B" text-anchor="middle">Zero-LLM Replay</text>
+  </g>
+  <g transform="translate(610, 476)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#0F172A" stroke="#D97706" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#FCD34D" text-anchor="middle">FAST ACTION</text>
+    <text x="40" y="35" font-size="6.5" fill="#FBBF24" text-anchor="middle">&lt;50ms Response</text>
+  </g>
+
+  <!-- Deep Assessment: Geocode Region -->
+  <g transform="translate(480, 296)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#0284C7" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#BAE6FD" text-anchor="middle">GEOCODING</text>
+    <text x="40" y="36" font-size="6.5" fill="#7DD3FC" text-anchor="middle">Lat / Lon Bounds</text>
+  </g>
+
+  <!-- Parallel Query Dispatcher -->
+  <g transform="translate(600, 296)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#0F172A" stroke="#10B981" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#A7F3D0" text-anchor="middle">API DISPATCH</text>
+    <text x="40" y="36" font-size="6.5" fill="#6EE7B7" text-anchor="middle">Parallel Fan-Out</text>
+  </g>
+
+  <!-- Fan-out Splitter -->
+  <g transform="translate(720, 305)" filter="url(#node-shadow)">
+    <polygon points="0,15 15,0 30,15 15,30" fill="#0F172A" stroke="#0284C7" stroke-width="1.5"/>
+    <text x="15" y="19" font-size="6" font-weight="800" fill="#38BDF8" text-anchor="middle">FAN</text>
+  </g>
+
+  <!-- 4 Parallel Source Nodes -->
+  <!-- Stream 1: Open-Meteo -->
+  <g transform="translate(810, 106)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#0284C7" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#BAE6FD" text-anchor="middle">OPEN-METEO</text>
+    <text x="40" y="36" font-size="6.5" fill="#7DD3FC" text-anchor="middle">Temp / Wind / Rain</text>
+  </g>
+  <g transform="translate(930, 112)" filter="url(#node-shadow)">
+    <rect width="80" height="36" rx="6" fill="#0F172A" stroke="#0284C7" stroke-width="1"/>
+    <text x="40" y="22" font-size="7" fill="#E0F2FE" text-anchor="middle">Weather Norm</text>
+  </g>
+
+  <!-- Stream 2: NASA FIRMS -->
+  <g transform="translate(810, 206)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#EA580C" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#FED7AA" text-anchor="middle">NASA FIRMS</text>
+    <text x="40" y="36" font-size="6.5" fill="#FB923C" text-anchor="middle">Thermal Hotspots</text>
+  </g>
+  <g transform="translate(930, 212)" filter="url(#node-shadow)">
+    <rect width="80" height="36" rx="6" fill="#0F172A" stroke="#EA580C" stroke-width="1"/>
+    <text x="40" y="22" font-size="7" fill="#FFEDD5" text-anchor="middle">Wildfire Cluster</text>
+  </g>
+
+  <!-- Stream 3: GDACS Alerts -->
+  <g transform="translate(810, 306)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#DC2626" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#FECACA" text-anchor="middle">GDACS ALERTS</text>
+    <text x="40" y="36" font-size="6.5" fill="#F87171" text-anchor="middle">Disaster Feeds</text>
+  </g>
+  <g transform="translate(930, 312)" filter="url(#node-shadow)">
+    <rect width="80" height="36" rx="6" fill="#0F172A" stroke="#DC2626" stroke-width="1"/>
+    <text x="40" y="22" font-size="7" fill="#FEE2E2" text-anchor="middle">Flood &amp; Cyclone</text>
+  </g>
+
+  <!-- Stream 4: GDELT Intelligence -->
+  <g transform="translate(810, 406)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#4F46E5" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#C7D2FE" text-anchor="middle">GDELT NEWS</text>
+    <text x="40" y="36" font-size="6.5" fill="#818CF8" text-anchor="middle">OSINT Real-Time</text>
+  </g>
+  <g transform="translate(930, 412)" filter="url(#node-shadow)">
+    <rect width="80" height="36" rx="6" fill="#0F172A" stroke="#4F46E5" stroke-width="1"/>
+    <text x="40" y="22" font-size="7" fill="#E0E7FF" text-anchor="middle">Field Sitreps</text>
+  </g>
+
+  <!-- Multi-Stream Merge & Normalize -->
+  <g transform="translate(1060, 256)" filter="url(#node-shadow)">
+    <rect width="50" height="48" rx="8" fill="#0F172A" stroke="#0284C7" stroke-width="1.5"/>
+    <text x="25" y="22" font-size="7" font-weight="700" fill="#38BDF8" text-anchor="middle">MERGE</text>
+    <text x="25" y="34" font-size="6" fill="#BAE6FD" text-anchor="middle">4 Feeds</text>
+  </g>
+
+  <g transform="translate(1140, 256)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#0284C7" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#E0F2FE" text-anchor="middle">FILTER EVIDENCE</text>
+    <text x="40" y="36" font-size="6.5" fill="#7DD3FC" text-anchor="middle">Relevance Filter</text>
+  </g>
+
+  <!-- OSINT Correlation AI Agent (Agent 01 of CrisisLens) -->
+  <g transform="translate(1250, 254)" filter="url(#node-shadow)">
+    <rect width="80" height="52" rx="8" fill="#1E293B" stroke="#8B5CF6" stroke-width="2"/>
+    <text x="40" y="20" font-size="7.5" font-weight="800" fill="#DDD6FE" text-anchor="middle">OSINT AGENT</text>
+    <text x="40" y="32" font-size="6.5" fill="#C4B5FD" text-anchor="middle">Cross-Correlation</text>
+    <text x="40" y="44" font-size="6" fill="#A78BFA" text-anchor="middle">AI Agent 09</text>
+  </g>
+
+  <!-- Threat & Confidence Evaluation (Agent 02 of CrisisLens) -->
+  <g transform="translate(1360, 260)" filter="url(#node-shadow)">
+    <polygon points="0,20 25,0 50,20 25,40" fill="#0F172A" stroke="#DC2626" stroke-width="1.8"/>
+    <text x="25" y="24" font-size="6" font-weight="800" fill="#F87171" text-anchor="middle">SEVERITY</text>
+  </g>
+
+  <!-- Action Protocol Agent (Agent 03 of CrisisLens) -->
+  <g transform="translate(1440, 254)" filter="url(#node-shadow)">
+    <rect width="80" height="52" rx="8" fill="#1E293B" stroke="#DC2626" stroke-width="2"/>
+    <text x="40" y="20" font-size="7.5" font-weight="800" fill="#FECACA" text-anchor="middle">ACTION AGENT</text>
+    <text x="40" y="32" font-size="6.5" fill="#FCA5A5" text-anchor="middle">Evacuation Corridors</text>
+    <text x="40" y="44" font-size="6" fill="#F87171" text-anchor="middle">AI Agent 10</text>
+  </g>
+
+  <!-- Final Strict JSON Output Formatter -->
+  <g transform="translate(1520, 326)" filter="url(#node-shadow)">
+    <rect width="50" height="48" rx="8" fill="#991B1B" stroke="#EF4444" stroke-width="1.8"/>
+    <text x="25" y="22" font-size="7" font-weight="800" fill="#FFF" text-anchor="middle">CRISIS</text>
+    <text x="25" y="34" font-size="6" fill="#FECACA" text-anchor="middle">DISASTER</text>
+    <text x="25" y="42" font-size="5.5" fill="#FCA5A5" text-anchor="middle">DIRECTIVE</text>
+  </g>
+
+  <!-- Legend Bar at Bottom -->
+  <g transform="translate(36, 610)">
+    <rect x="0" y="0" width="12" height="12" rx="3" fill="#BE185D"/>
+    <text x="18" y="10" font-size="9" fill="#475569">Webhook Trigger</text>
+    <rect x="130" y="0" width="12" height="12" rx="3" fill="#1E293B" stroke="#D97706"/>
+    <text x="148" y="10" font-size="9" fill="#475569">Session State &amp; Memory</text>
+    <rect x="310" y="0" width="12" height="12" rx="3" fill="#1E293B" stroke="#0284C7"/>
+    <text x="328" y="10" font-size="9" fill="#475569">Parallel Live Data Ingestion</text>
+    <rect x="520" y="0" width="12" height="12" rx="3" fill="#8B5CF6"/>
+    <text x="538" y="10" font-size="9" fill="#475569">Specialist AI Agent (Qoder App)</text>
+    <rect x="740" y="0" width="12" height="12" rx="3" fill="#991B1B"/>
+    <text x="758" y="10" font-size="9" fill="#475569">Disaster Directive Output</text>
+  </g>
+</svg>

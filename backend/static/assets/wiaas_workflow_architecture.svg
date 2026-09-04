@@ -1,0 +1,287 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 680" width="100%" height="100%" style="background:#F4EFEA; font-family:'JetBrains Mono', 'Space Grotesk', -apple-system, sans-serif;">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(30, 41, 59, 0.05)" stroke-width="1"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#0284C7"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#D97706"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#7C3AED"/>
+    </marker>
+    <filter id="node-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.12" flood-color="#0F172A"/>
+    </filter>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#F4EFEA"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+
+  <!-- Outer Plate Border -->
+  <rect x="16" y="16" width="1568" height="648" rx="10" fill="none" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- Header Plate Annotations -->
+  <text x="36" y="46" font-size="11" font-weight="700" fill="#64748B" letter-spacing="1.5">WIAAS PRODUCTION DECISION GRAPH · N8N ENGINE (BUILT VIA QODER)</text>
+  <text x="1320" y="46" font-size="11" font-weight="700" fill="#0284C7" letter-spacing="1.5">60 NODES · 7 AI AGENTS · &lt;2,800 TOKENS</text>
+
+  <!-- Connection Lines Layer -->
+  <!-- Webhook to Parse -->
+  <path d="M 90 320 L 130 320" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <!-- Parse to Switch -->
+  <path d="M 210 320 L 250 320" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Switch to Top Greeting Branch -->
+  <path d="M 300 295 C 320 160, 330 140, 360 140" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 440 140 L 470 140" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Switch to FAQ Branch -->
+  <path d="M 300 305 C 330 220, 330 220, 360 220" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 440 220 L 470 220" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Switch to Fallback Branch -->
+  <path d="M 300 315 C 330 300, 330 300, 360 300" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 440 300 L 470 300" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Switch to Direct Fast -->
+  <path d="M 300 330 L 360 380" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Switch to Sentiment Branch -->
+  <path d="M 300 345 C 330 480, 330 480, 360 480" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 440 480 L 470 480" stroke="#0284C7" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Branches Convergence into Intent Router II -->
+  <path d="M 530 140 C 560 140, 560 340, 580 340" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3,3" fill="none"/>
+  <path d="M 530 220 C 555 220, 555 340, 580 340" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3,3" fill="none"/>
+  <path d="M 530 300 C 555 300, 555 340, 580 340" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3,3" fill="none"/>
+  <path d="M 430 380 C 510 380, 530 340, 580 340" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3,3" fill="none"/>
+  <path d="M 530 480 C 560 480, 560 340, 580 340" stroke="#64748B" stroke-width="1.5" stroke-dasharray="3,3" fill="none"/>
+
+  <!-- Intent Router II to Registry & Match -->
+  <path d="M 640 340 L 670 340" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 740 340 L 770 340" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 830 340 L 860 340" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Region Branching: Miss vs Hit -->
+  <!-- Miss Branch (Upper) -->
+  <path d="M 890 320 C 910 230, 920 200, 950 200" stroke="#EF4444" stroke-width="1.8" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 1030 200 L 1060 170" stroke="#EF4444" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 1030 200 L 1060 230" stroke="#EF4444" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Hit Branch (Lower): Analytics API Ingest -->
+  <path d="M 890 350 C 910 400, 920 400, 950 400" stroke="#10B981" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 1030 400 L 1060 400" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 1120 400 L 1150 400" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- Fast Answer vs Deep Specialist Chain -->
+  <!-- Fast Answer Direct (Upper bypass) -->
+  <path d="M 1180 380 C 1210 260, 1380 260, 1430 330" stroke="#D97706" stroke-width="1.8" stroke-dasharray="4,4" fill="none" marker-end="url(#arrow-orange)"/>
+
+  <!-- Deep Specialist Multi-Agent Pipeline (Across bottom) -->
+  <path d="M 1180 420 C 1200 490, 1220 500, 1240 500" stroke="#7C3AED" stroke-width="2.2" fill="none" marker-end="url(#arrow-purple)"/>
+  <path d="M 1290 500 L 1320 500" stroke="#7C3AED" stroke-width="2" fill="none" marker-end="url(#arrow-purple)"/>
+  <path d="M 1370 500 L 1400 500" stroke="#7C3AED" stroke-width="2" fill="none" marker-end="url(#arrow-purple)"/>
+  <path d="M 1450 500 L 1480 500" stroke="#7C3AED" stroke-width="2" fill="none" marker-end="url(#arrow-purple)"/>
+  <path d="M 1520 480 C 1530 400, 1480 370, 1460 360" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 1480 350 L 1520 350" stroke="#0284C7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- ==================== NODES RENDERING ==================== -->
+
+  <!-- Node 1: Webhook -->
+  <g transform="translate(36, 296)" filter="url(#node-shadow)">
+    <rect width="56" height="48" rx="8" fill="#BE185D" stroke="#F43F5E" stroke-width="1.5"/>
+    <text x="28" y="24" font-size="8" font-weight="800" fill="#FFF" text-anchor="middle">WEBHOOK</text>
+    <text x="28" y="37" font-size="7" fill="#FDA4AF" text-anchor="middle">/wiaas</text>
+  </g>
+
+  <!-- Node 2: Parse Input -->
+  <g transform="translate(130, 296)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="8" font-weight="700" fill="#F8FAFC" text-anchor="middle">PARSE INPUT</text>
+    <text x="40" y="36" font-size="7" fill="#94A3B8" text-anchor="middle">JSON Body &amp; Id</text>
+  </g>
+
+  <!-- Node 3: Route Switch -->
+  <g transform="translate(250, 288)" filter="url(#node-shadow)">
+    <polygon points="0,32 25,0 50,32 25,64" fill="#0F172A" stroke="#F59E0B" stroke-width="1.8"/>
+    <text x="25" y="36" font-size="8" font-weight="800" fill="#F59E0B" text-anchor="middle">ROUTER</text>
+  </g>
+
+  <!-- Top Fan-Out Nodes -->
+  <!-- Greeting -->
+  <g transform="translate(360, 116)" filter="url(#node-shadow)">
+    <rect width="80" height="46" rx="7" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5"/>
+    <text x="40" y="21" font-size="8" font-weight="700" fill="#DDD6FE" text-anchor="middle">Greeting Agent</text>
+    <text x="40" y="34" font-size="7" fill="#A78BFA" text-anchor="middle">AI Agent 01</text>
+  </g>
+  <g transform="translate(470, 116)" filter="url(#node-shadow)">
+    <rect width="60" height="46" rx="7" fill="#0F172A" stroke="#64748B" stroke-width="1"/>
+    <text x="30" y="27" font-size="7.5" font-weight="600" fill="#E2E8F0" text-anchor="middle">Quick Resp</text>
+  </g>
+
+  <!-- FAQ -->
+  <g transform="translate(360, 196)" filter="url(#node-shadow)">
+    <rect width="80" height="46" rx="7" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5"/>
+    <text x="40" y="21" font-size="8" font-weight="700" fill="#DDD6FE" text-anchor="middle">FAQ Router</text>
+    <text x="40" y="34" font-size="7" fill="#A78BFA" text-anchor="middle">AI Agent 02</text>
+  </g>
+  <g transform="translate(470, 196)" filter="url(#node-shadow)">
+    <rect width="60" height="46" rx="7" fill="#0F172A" stroke="#64748B" stroke-width="1"/>
+    <text x="30" y="27" font-size="7.5" font-weight="600" fill="#E2E8F0" text-anchor="middle">Direct FAQ</text>
+  </g>
+
+  <!-- Fallback Classifier -->
+  <g transform="translate(360, 276)" filter="url(#node-shadow)">
+    <rect width="80" height="46" rx="7" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5"/>
+    <text x="40" y="21" font-size="8" font-weight="700" fill="#DDD6FE" text-anchor="middle">Fallback Clf</text>
+    <text x="40" y="34" font-size="7" fill="#A78BFA" text-anchor="middle">AI Agent 03</text>
+  </g>
+  <g transform="translate(470, 276)" filter="url(#node-shadow)">
+    <rect width="60" height="46" rx="7" fill="#0F172A" stroke="#64748B" stroke-width="1"/>
+    <text x="30" y="27" font-size="7.5" font-weight="600" fill="#E2E8F0" text-anchor="middle">FW Model</text>
+  </g>
+
+  <!-- Direct Fast -->
+  <g transform="translate(360, 356)" filter="url(#node-shadow)">
+    <rect width="70" height="44" rx="7" fill="#0F172A" stroke="#0284C7" stroke-width="1"/>
+    <text x="35" y="26" font-size="7.5" font-weight="600" fill="#BAE6FD" text-anchor="middle">Direct Fast</text>
+  </g>
+
+  <!-- Sentiment Agent -->
+  <g transform="translate(360, 456)" filter="url(#node-shadow)">
+    <rect width="80" height="46" rx="7" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.5"/>
+    <text x="40" y="21" font-size="8" font-weight="700" fill="#DDD6FE" text-anchor="middle">Sentiment Agent</text>
+    <text x="40" y="34" font-size="7" fill="#A78BFA" text-anchor="middle">AI Agent 04</text>
+  </g>
+  <g transform="translate(470, 456)" filter="url(#node-shadow)">
+    <rect width="60" height="46" rx="7" fill="#0F172A" stroke="#64748B" stroke-width="1"/>
+    <text x="30" y="27" font-size="7.5" font-weight="600" fill="#E2E8F0" text-anchor="middle">Tone Guard</text>
+  </g>
+
+  <!-- Middle Intent Router II -->
+  <g transform="translate(580, 316)" filter="url(#node-shadow)">
+    <rect width="60" height="48" rx="8" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="30" y="23" font-size="7.5" font-weight="700" fill="#FDE68A" text-anchor="middle">INTENT II</text>
+    <text x="30" y="36" font-size="6.5" fill="#F59E0B" text-anchor="middle">Deep Routing</text>
+  </g>
+
+  <!-- Regional Catalog Resolver -->
+  <g transform="translate(670, 316)" filter="url(#node-shadow)">
+    <rect width="70" height="48" rx="8" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5"/>
+    <text x="35" y="23" font-size="7.5" font-weight="700" fill="#BAE6FD" text-anchor="middle">ASIA REGISTRY</text>
+    <text x="35" y="36" font-size="6.5" fill="#7DD3FC" text-anchor="middle">29 Territories</text>
+  </g>
+
+  <!-- Match Region Node -->
+  <g transform="translate(770, 316)" filter="url(#node-shadow)">
+    <rect width="60" height="48" rx="8" fill="#0F172A" stroke="#10B981" stroke-width="1.5"/>
+    <text x="30" y="23" font-size="7.5" font-weight="700" fill="#A7F3D0" text-anchor="middle">MATCH GEO</text>
+    <text x="30" y="36" font-size="6.5" fill="#34D399" text-anchor="middle">Coordinate Map</text>
+  </g>
+
+  <!-- Region Condition Switch -->
+  <g transform="translate(860, 320)" filter="url(#node-shadow)">
+    <polygon points="0,20 15,0 30,20 15,40" fill="#0F172A" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="15" y="24" font-size="7" font-weight="800" fill="#F59E0B" text-anchor="middle">FOUND?</text>
+  </g>
+
+  <!-- Miss Branch -->
+  <g transform="translate(950, 176)" filter="url(#node-shadow)">
+    <rect width="80" height="46" rx="7" fill="#1E293B" stroke="#EF4444" stroke-width="1.5"/>
+    <text x="40" y="22" font-size="7.5" font-weight="700" fill="#FCA5A5" text-anchor="middle">Region Fallback</text>
+    <text x="40" y="34" font-size="6.5" fill="#F87171" text-anchor="middle">Catalogue Suggest</text>
+  </g>
+  <g transform="translate(1060, 150)" filter="url(#node-shadow)">
+    <rect width="80" height="36" rx="6" fill="#0F172A" stroke="#EF4444" stroke-width="1"/>
+    <text x="40" y="22" font-size="7" fill="#FCA5A5" text-anchor="middle">Region Not Found</text>
+  </g>
+  <g transform="translate(1060, 206)" filter="url(#node-shadow)">
+    <rect width="80" height="36" rx="6" fill="#0F172A" stroke="#F59E0B" stroke-width="1"/>
+    <text x="40" y="22" font-size="7" fill="#FDE68A" text-anchor="middle">Ask Valid Region</text>
+  </g>
+
+  <!-- Hit Branch: FastAPI Analytics Ingestion -->
+  <g transform="translate(950, 376)" filter="url(#node-shadow)">
+    <rect width="80" height="48" rx="8" fill="#1E293B" stroke="#10B981" stroke-width="1.8"/>
+    <text x="40" y="23" font-size="8" font-weight="700" fill="#A7F3D0" text-anchor="middle">FASTAPI ENGINE</text>
+    <text x="40" y="36" font-size="6.5" fill="#6EE7B7" text-anchor="middle">/api/v1/analytics</text>
+  </g>
+
+  <!-- State Vector Compression -->
+  <g transform="translate(1060, 376)" filter="url(#node-shadow)">
+    <rect width="60" height="48" rx="8" fill="#0F172A" stroke="#0284C7" stroke-width="1.5"/>
+    <text x="30" y="21" font-size="7" font-weight="700" fill="#38BDF8" text-anchor="middle">COMPACT</text>
+    <text x="30" y="32" font-size="6.5" fill="#BAE6FD" text-anchor="middle">STATE</text>
+    <text x="30" y="42" font-size="5.5" fill="#7DD3FC" text-anchor="middle">&lt;350 bytes</text>
+  </g>
+
+  <!-- Fast vs Deep Router -->
+  <g transform="translate(1150, 380)" filter="url(#node-shadow)">
+    <polygon points="0,20 15,0 30,20 15,40" fill="#0F172A" stroke="#F59E0B" stroke-width="1.5"/>
+    <text x="15" y="24" font-size="6.5" font-weight="800" fill="#F59E0B" text-anchor="middle">DEPTH</text>
+  </g>
+
+  <!-- Fast Answer Formatter -->
+  <g transform="translate(1410, 326)" filter="url(#node-shadow)">
+    <rect width="50" height="44" rx="7" fill="#0F172A" stroke="#D97706" stroke-width="1.5"/>
+    <text x="25" y="22" font-size="6.5" font-weight="700" fill="#FDE68A" text-anchor="middle">FAST</text>
+    <text x="25" y="34" font-size="6" fill="#F59E0B" text-anchor="middle">&lt;200ms</text>
+  </g>
+
+  <!-- Deep Specialist Multi-Agent Pipeline (Sequential Execution) -->
+  <!-- Specialist 1: Research Agent -->
+  <g transform="translate(1240, 474)" filter="url(#node-shadow)">
+    <rect width="50" height="52" rx="7" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.8"/>
+    <text x="25" y="20" font-size="7" font-weight="700" fill="#DDD6FE" text-anchor="middle">RESEARCH</text>
+    <text x="25" y="32" font-size="6" fill="#A78BFA" text-anchor="middle">AGENT 05</text>
+    <text x="25" y="44" font-size="5.5" fill="#C4B5FD" text-anchor="middle">Brief Synthesis</text>
+  </g>
+
+  <!-- Specialist 2: Agri Agent -->
+  <g transform="translate(1320, 474)" filter="url(#node-shadow)">
+    <rect width="50" height="52" rx="7" fill="#1E293B" stroke="#10B981" stroke-width="1.8"/>
+    <text x="25" y="20" font-size="7" font-weight="700" fill="#A7F3D0" text-anchor="middle">AGRI</text>
+    <text x="25" y="32" font-size="6" fill="#34D399" text-anchor="middle">AGENT 06</text>
+    <text x="25" y="44" font-size="5.5" fill="#6EE7B7" text-anchor="middle">VPD / Soil Strat</text>
+  </g>
+
+  <!-- Specialist 3: Grid Agent -->
+  <g transform="translate(1400, 474)" filter="url(#node-shadow)">
+    <rect width="50" height="52" rx="7" fill="#1E293B" stroke="#EAB308" stroke-width="1.8"/>
+    <text x="25" y="20" font-size="7" font-weight="700" fill="#FEF08A" text-anchor="middle">GRID</text>
+    <text x="25" y="32" font-size="6" fill="#FACC15" text-anchor="middle">AGENT 07</text>
+    <text x="25" y="44" font-size="5.5" fill="#FDE047" text-anchor="middle">Load &amp; Blackout</text>
+  </g>
+
+  <!-- Specialist 4: Logistics Agent -->
+  <g transform="translate(1480, 474)" filter="url(#node-shadow)">
+    <rect width="50" height="52" rx="7" fill="#1E293B" stroke="#F59E0B" stroke-width="1.8"/>
+    <text x="25" y="20" font-size="7" font-weight="700" fill="#FED7AA" text-anchor="middle">SUPPLY</text>
+    <text x="25" y="32" font-size="6" fill="#FB923C" text-anchor="middle">AGENT 08</text>
+    <text x="25" y="44" font-size="5.5" fill="#FDBA74" text-anchor="middle">Fuel &amp; Corridor</text>
+  </g>
+
+  <!-- Output Assembler & Sanitizer -->
+  <g transform="translate(1520, 326)" filter="url(#node-shadow)">
+    <rect width="50" height="48" rx="8" fill="#059669" stroke="#34D399" stroke-width="1.8"/>
+    <text x="25" y="22" font-size="7" font-weight="800" fill="#FFF" text-anchor="middle">REPORT</text>
+    <text x="25" y="34" font-size="6" fill="#D1FAE5" text-anchor="middle">STRICT JSON</text>
+    <text x="25" y="42" font-size="5.5" fill="#A7F3D0" text-anchor="middle">&lt;2.8k Tokens</text>
+  </g>
+
+  <!-- Legend Bar at Bottom -->
+  <g transform="translate(36, 610)">
+    <rect x="0" y="0" width="12" height="12" rx="3" fill="#BE185D"/>
+    <text x="18" y="10" font-size="9" fill="#475569">Webhook Trigger</text>
+    <rect x="130" y="0" width="12" height="12" rx="3" fill="#1E293B" stroke="#38BDF8"/>
+    <text x="148" y="10" font-size="9" fill="#475569">Deterministic Code / Registry</text>
+    <rect x="330" y="0" width="12" height="12" rx="3" fill="#8B5CF6"/>
+    <text x="348" y="10" font-size="9" fill="#475569">Specialist AI Agent (Fireworks / Qoder)</text>
+    <rect x="610" y="0" width="12" height="12" rx="3" fill="#0F172A" stroke="#F59E0B"/>
+    <text x="628" y="10" font-size="9" fill="#475569">Zero-Token Router</text>
+    <rect x="770" y="0" width="12" height="12" rx="3" fill="#059669"/>
+    <text x="788" y="10" font-size="9" fill="#475569">Strict JSON Output</text>
+  </g>
+</svg>
