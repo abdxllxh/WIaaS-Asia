@@ -26,7 +26,6 @@ import {
 } from './state.js';
 import { updateRadarChart, pushTempPowerReading, fluctuateVram } from './charts.js';
 import { renderDynamicVisualizerHTML, mountDynamicVisualizer, destroyDynamicVisualizer } from './dynamic-visualizer.js';
-import { toggleHeatmap, toggleWind, togglePrecipitation } from './globe.js';
 import { fetchRegionAnalytics, sendChatSimulation } from './api.js';
 import { renderAgriculturePanel } from './ui-agriculture.js';
 import { showToast } from './toast.js';

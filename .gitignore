@@ -34,3 +34,4 @@ Thumbs.db
 scratch/
 scratch_*.js
 .pytest_cache/
+/live_weather_stream.json

@@ -6,7 +6,6 @@ import { showToast } from './toast.js';
 
 import citiesManager from './cities.js';
 import { addDynamicRegion, syncDynamicCities, regionNames, setActiveRegionKey, activeRegionKey } from './state.js';
-import { buildGlobePins } from './globe.js';
 
 /**
  * Initialize the city search panel in the left sidebar

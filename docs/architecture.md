@@ -1,76 +1,124 @@
-# Backend — Architecture et flux de données
+# WIAAS Asia — Architecture & Data Pipeline Specification
 
-Ce document décrit le backend FastAPI du service Weather Intelligence as a Service (WIaaS).
+This document details the backend architecture, deterministic physics simulation engines, and dual-agent decision orchestration for **WIAAS Asia** (Weather Intelligence as a Service — Asia Edition).
 
-## Structure des modules
+---
+
+## 1. System Architecture Overview
+
+WIAAS Asia decouples heavy generative AI reasoning from real-time physical simulation. Deterministic atmospheric physics are computed in sub-millisecond Python routines on the FastAPI backend, producing a compact state vector that feeds into two specialized n8n decision graphs.
 
 ```
-backend/app/
-├── main.py                 # Point d'entrée FastAPI, CORS, montage du frontend statique
-├── core/config.py          # Constantes physiques, seuils, régions (REGIONS)
-├── engines/
-│   ├── analytics.py        # ClimateAnomalyEngine — thermodynamique et grading d'anomalie
-│   └── ledger.py           # SyntheticResourceLedger — dégradation des ressources
-├── services/
-│   ├── pipeline.py         # WeatherIntelligencePipeline — orchestration 6 étapes
-│   ├── bridge.py           # GNNToLLMBridge — vecteur d'état textuel pour les agents LLM
-│   └── cargo_optimizer.py  # AviationCargoEngine — optimisation de chargement aérien
-├── schemas/
-│   ├── analytics.py        # Modèles API analytics / chat
-│   └── cargo.py            # Modèles API optimisation cargo
-└── api/v1/endpoints.py     # Routes REST /analytics
+┌────────────────────────────────────────────────────────────────────────┐
+│                        DATA INGESTION LAYER                            │
+│  • Open-Meteo High-Resolution Numerical Forecast & Nowcast             │
+│  • GDACS Global Disaster Alert and Coordination System Feed            │
+│  • NASA FIRMS Thermal Satellite Active Hotspot Telemetry              │
+│  • GDELT Regional OSINT Geopolitical & Emergency Risk Feed            │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│              DETERMINISTIC PHYSICS & RESOURCE LEDGER                   │
+│  • Tetens Equation: Saturation Vapor Pressure e_s(T) & VPD (kPa)       │
+│  • NOAA Heat Index & Stull Wet-Bulb Critical Human Limit (35°C)        │
+│  • Synthetic Resource Ledger: Evaporation, Thermal Transformer Load    │
+│  • Synchronous Grid Predictor: Substation Derating & Blackout Risk     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ (< 350-byte normalized state vector)
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   DUAL-AGENT COGNITIVE ORCHESTRATION                   │
+│                                                                        │
+│   [ WIaaS Agent Workflow ]              [ CrisisLens Agent Workflow ]  │
+│   • Climatological Baselines            • Multi-Hazard Risk Fusion     │
+│   • Agricultural VPD & Transpiration    • 4-Source Evidence Grading    │
+│   • Power Grid Cooling Surges           • Emergency Action Directives  │
+│   • Logistics Thermal Stress            • Evacuation Route Corridors   │
+│   • Comprehensive Synthesis Reports     • Public Safety Directives     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   PRESENTATION & CLIENT ACTUATION                      │
+│  • 60 FPS MapLibre GL Thermographic Asia Map (29 Territories, 67 Zones)│
+│  • 1-Second Telemetry Oscilloscope (Catmull-Rom Splines & Rolling HUD) │
+│  • Bilingual Neural Voice Copilot (edge-tts: en-US-Jenny & ur-PK-Uzma) │
+│  • Responsive Sheet UI & Zero-Latency Fallback Resiliency              │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Pipeline en 6 étapes
+---
 
-`WeatherIntelligencePipeline.execute(region_key)` enchaîne :
+## 2. Directory Structure
 
-| Étape | Module | Rôle |
-|-------|--------|------|
-| 1 | `pipeline.fetch_api_telemetry` | Ingestion Open-Meteo (remplaçable par GraphCast GNN) |
-| 2 | `ClimateAnomalyEngine` | VPD, heat index, wet-bulb, efficacité irrigation |
-| 3 | `SyntheticResourceLedger` | Eau, réseau électrique, carburant dégradés |
-| 4 | `GNNToLLMBridge` | Construction du `llm_state_vector` |
-| 5 | `pipeline.execute` | Assemblage JSON + couche compatibilité n8n |
-| 6 | `pipeline.execute` | Écriture atomique de `live_weather_stream.json` |
-
-En cas d'échec de l'API météo, le pipeline retombe sur les valeurs baseline de la région.
-
-## Endpoints API
-
-| Méthode | Route | Description |
-|---------|-------|-------------|
-| `GET` | `/analytics/` | Liste des régions configurées |
-| `GET` | `/analytics/{region_key}` | Analyse climatique et ledger pour une région |
-| `POST` | `/analytics/{region_key}/chat` | Exécute le pipeline complet et appelle le webhook n8n |
-
-## Format du payload JSON
-
-Le fichier `live_weather_stream.json` (et le corps envoyé à n8n) contient :
-
-- `_meta` — version, horodatage UTC, clé région, coordonnées, cycle diurne
-- `monitored_region` — nom lisible de la zone
-- `system_status` — `HEALTHY`, `ADVISORY`, `WARNING_ANOMALY` ou `CRITICAL_ANOMALY`
-- `climate_matrix` — intensité, déviation, VPD, heat index, wet-bulb, télémétrie
-- `rlvr_constraints` — efficacité et viabilité de l'irrigation overhead
-- `synthetic_resource_ledger` — plafonds eau / réseau / carburant
-- `llm_state_vector` — contexte textuel injecté dans vLLM
-- Champs aplatis (`region_name`, `ledger`, `telemetry`, …) pour les webhooks n8n
-
-## Configuration des régions
-
-Les régions de base sont définies dans `core/config.py`. Des régions supplémentaires peuvent être injectées depuis `core/regions_registry.json` au démarrage.
-
-## Lancement
-
-```bash
-pip install -r requirements.txt
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```text
+backend/
+├── app/
+│   ├── api/
+│   │   └── v1/
+│   │       └── endpoints.py     # REST endpoints (/analytics, /grid, /chat, /tts)
+│   ├── core/
+│   │   ├── config.py            # Physics constants, thresholds, baseline configs
+│   │   └── regions_registry.json# 67 Asian economic & municipal zones catalogue
+│   ├── engines/
+│   │   ├── analytics.py         # ClimateAnomalyEngine — Tetens, VPD, WBGT solvers
+│   │   └── ledger.py            # SyntheticResourceLedger — water, grid, fuel burn
+│   ├── schemas/
+│   │   └── analytics.py         # Pydantic request/response models
+│   ├── services/
+│   │   ├── bridge.py            # GNNToLLMBridge — state vector serialization
+│   │   ├── grid_predictor.py    # Zero-latency grid load & blackout estimation
+│   │   └── pipeline.py          # WeatherIntelligencePipeline — 6-stage orchestrator
+│   └── main.py                  # FastAPI application entry, CORS, SPA static mount
+├── live_weather_stream.json     # Atomically updated live telemetry snapshot
+└── requirements.txt             # Production Python dependencies
 ```
 
-Le frontend compilé (`backend/static/`) est servi à la racine `/` lorsque le build Vite a été exécuté.
+---
 
-## Optimisation cargo (module interne)
+## 3. The 6-Stage Weather Intelligence Pipeline
 
-`AviationCargoEngine` dans `services/cargo_optimizer.py` implémente la sélection de manifeste sous contraintes de poids, volume, matières dangereuses et centre de gravité. Les schémas API associés sont dans `schemas/cargo.py` et peuvent être branchés sur une route dédiée.
+When telemetry is requested for an Asian region (e.g. `pakistan_multan`, `japan_tokyo`), `WeatherIntelligencePipeline.execute(region_key)` executes:
+
+| Stage | Module | Operational Responsibility |
+|:---|:---|:---|
+| **1** | `pipeline.fetch_api_telemetry` | Ingests live Open-Meteo observations (temp, RH, wind, rain, radiation). |
+| **2** | `ClimateAnomalyEngine` | Solves Tetens VPD, NOAA Heat Index, Stull wet-bulb, and sprinkler efficiency. |
+| **3** | `SyntheticResourceLedger` | Calculates non-linear resource degradation for water, power, and fuel. |
+| **4** | `GNNToLLMBridge` | Serializes telemetry into a compressed text/array state vector (`llm_state_vector`). |
+| **5** | `pipeline.execute` | Assembles full payload with flattened n8n compatibility attributes. |
+| **6** | `pipeline.execute` | Atomically writes cache to `live_weather_stream.json` for zero-latency lookups. |
+
+---
+
+## 4. Key Mathematical Formulas
+
+### 1. Tetens Saturation Vapor Pressure
+$$e_s(T) = 0.61078 \times \exp\left(\frac{17.27 \times T}{T + 237.3}\right) \quad (\text{kPa})$$
+
+### 2. Vapor Pressure Deficit (VPD)
+$$\text{VPD} = e_s(T) \times \left(1 - \frac{RH}{100}\right)$$
+
+### 3. Critical Wet-Bulb Temperature Threshold
+When ambient wet-bulb temperature $T_{wb} \ge 35.0^\circ\text{C}$, the physical limit of human evaporative cooling is breached, triggering immediate autonomous heat-shock emergency directives.
+
+### 4. Grid Demand Surge Rate
+$$\Delta P_{\text{grid}} = (\max(0, T_{\text{ambient}} - T_{\text{baseline}})) \times 2.8\% \text{ per }^\circ\text{C}$$
+
+---
+
+## 5. API Endpoints Reference
+
+| Method | Endpoint | Description |
+|:---|:---|:---|
+| `GET` | `/health` | Application health and timestamp probe |
+| `GET` | `/analytics/` | Lists all 67 configured Asian territories and metadata |
+| `GET` | `/analytics/{region_key}` | Executes pipeline and returns live climate analysis & ledger |
+| `POST` | `/analytics/{region_key}/chat` | Orchestrates query through the primary WIaaS n8n agent |
+| `POST` | `/api/v1/crisislens/chat` | Orchestrates multi-hazard query through CrisisLens agent |
+| `GET` | `/api/v1/grid/predictions` | Real-time synchronous grid capacity, surge MW, and blackout risk |
+| `POST` | `/api/v1/tts` | High-definition neural Edge TTS synthesis (English & Urdu) |
+| `GET` | `/api/v1/client-location` | Geo-IP user location detection for localhost timeline sync |
+| `GET` | `/` | Serves pre-bundled, high-performance Vite SPA with no-cache headers |
+

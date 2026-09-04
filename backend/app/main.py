@@ -52,6 +52,16 @@ async def add_no_cache_headers(request, call_next):
         response.headers["Expires"] = "0"
     return response
 
+@app.get("/health", tags=["system"])
+def health_check() -> dict:
+    """Standard health check endpoint for monitoring, Docker, and evaluators."""
+    from datetime import datetime, timezone
+    return {
+        "status": "healthy",
+        "service": "WIAAS Asia",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
 # ── API Routes ────────────────────────────────────────────────────────────────
 app.include_router(analytics_router)
 
@@ -147,11 +157,8 @@ async def get_client_location(request: Request):
     }
 
 _STATIC_DIR.mkdir(parents=True, exist_ok=True)
-_TEXTURES_DIR = _STATIC_DIR / "textures"
-_TEXTURES_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/assets", StaticFiles(directory=str(_STATIC_DIR / "assets")), name="assets")
-app.mount("/textures", StaticFiles(directory=str(_TEXTURES_DIR)), name="textures")
 
 @app.get("/", include_in_schema=False)
 def serve_frontend() -> FileResponse:
