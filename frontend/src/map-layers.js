@@ -55,11 +55,53 @@ export const MASTER_PRECIPITATION_REGISTRY = [
         regionKey: 'pakistan_karachi',
         latitude: 24.8400,
         longitude: 67.0200,
-        radiusKm: 22,
+        radiusKm: 9,
         probabilityPct: 63,
         rateMmh: 4.8,
         sector: 'Coastal Sea / Arabian Marine Inflow',
         status: 'Active Coastal Rainband · Marine Squall'
+    },
+    {
+        id: 'pk-karachi-clifton-harbor',
+        name: 'Clifton Harbor & Seaview Convective Cell',
+        city: 'Karachi',
+        country: 'Pakistan',
+        regionKey: 'pakistan_karachi',
+        latitude: 24.8150,
+        longitude: 67.0250,
+        radiusKm: 11,
+        probabilityPct: 47,
+        rateMmh: 2.6,
+        sector: 'Clifton–Seaview Marine Inflow',
+        status: 'Scattered Coastal Showers'
+    },
+    {
+        id: 'pk-karachi-malir',
+        name: 'Malir Basin Urban Heat & Rain Cell',
+        city: 'Karachi',
+        country: 'Pakistan',
+        regionKey: 'pakistan_karachi',
+        latitude: 24.9050,
+        longitude: 67.1800,
+        radiusKm: 10,
+        probabilityPct: 31,
+        rateMmh: 1.4,
+        sector: 'Malir River Urban Convergence',
+        status: 'Passing Convective Cell'
+    },
+    {
+        id: 'pk-karachi-lyari',
+        name: 'Lyari–Gulshan Inland Rain Cell',
+        city: 'Karachi',
+        country: 'Pakistan',
+        regionKey: 'pakistan_karachi',
+        latitude: 24.9250,
+        longitude: 67.0050,
+        radiusKm: 9,
+        probabilityPct: 22,
+        rateMmh: 0.8,
+        sector: 'Lyari Inland Moisture Channel',
+        status: 'Low-Probability Shower Cell'
     },
     {
         id: 'pk-chenab-basin',
@@ -3895,31 +3937,28 @@ export function buildPrecipitationFootprintGeoJSON(overrideLocation = null) {
     const activeKey = String(activeLoc.key || '').trim().toLowerCase();
     const zoom = _map ? _map.getZoom() : 4;
 
-    const isCityScope = (zoom >= 6.5) || Boolean(
-        activeLoc && 
-        (locType === 'city' || locType === 'landmark' || activeLoc.city) && 
-        activeKey && 
-        activeKey !== 'asia-overview' && 
-        !activeKey.startsWith('country:')
-    );
+    // Scope follows the map zoom, not merely the last selected city. A city
+    // can remain selected while the operator returns to the Asia overview;
+    // in that state all regional precipitation cells must remain visible.
+    const isCityScope = zoom >= 6.5;
 
     let targetZones = [];
 
     // 1. City / District view
     if (isCityScope) {
         const matchedZone = findMasterPrecipitationZone(activeLoc);
-        let inBounds = [];
-        if (_map && zoom >= 6.5) {
-            try {
-                const b = _map.getBounds();
-                inBounds = MASTER_PRECIPITATION_REGISTRY.filter(z => 
-                    z.longitude >= b.getWest() - 0.15 && z.longitude <= b.getEast() + 0.15 &&
-                    z.latitude >= b.getSouth() - 0.15 && z.latitude <= b.getNorth() + 0.15
-                );
-            } catch (e) {}
-        }
-        if (inBounds.length > 0) {
-            targetZones = inBounds;
+        // Keep every registered micro-cell for the active city. Using only the
+        // current viewport bounds dropped coastal/inland cells when the map
+        // camera was still settling after the fly-to animation.
+        const cityZones = MASTER_PRECIPITATION_REGISTRY.filter(z => {
+            const zCity = String(z.city || '').trim().toLowerCase();
+            const anchorCity = activeCity || String(matchedZone?.city || '').trim().toLowerCase();
+            const anchorKey = matchedZone?.regionKey || activeKey;
+            return (anchorCity && zCity === anchorCity)
+                || (anchorKey && z.regionKey && z.regionKey.toLowerCase() === anchorKey);
+        });
+        if (cityZones.length > 0) {
+            targetZones = cityZones;
         } else if (matchedZone) {
             targetZones = [matchedZone];
         } else if (Number.isFinite(Number(activeLoc.latitude)) && Number.isFinite(Number(activeLoc.longitude))) {
