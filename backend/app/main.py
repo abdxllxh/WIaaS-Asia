@@ -169,3 +169,7 @@ def serve_frontend() -> FileResponse:
     response.headers["Expires"] = "0"
     return response
 
+@app.get("/wiaas-logo.svg", include_in_schema=False)
+def serve_wiaas_logo() -> FileResponse:
+    """Serve the lightweight brand mark used by the browser tab and loader."""
+    return FileResponse(str(_STATIC_DIR / "wiaas-logo.svg"), media_type="image/svg+xml")

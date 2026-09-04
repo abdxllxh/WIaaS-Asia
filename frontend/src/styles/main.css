@@ -147,6 +147,16 @@ body {
     animation: loaderPulse 2.4s ease-in-out infinite;
 }
 
+.loader-logo {
+    width: clamp(52px, 8vw, 76px);
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 0 22px rgba(56, 189, 248, 0.28));
+    opacity: 0;
+    transform: translateY(10px) scale(0.86);
+    animation: logoReveal 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
+}
+
 .loader-title {
     font-family: 'Outfit', 'Inter', sans-serif;
     font-size: clamp(2.8rem, 7vw, 5rem);
@@ -168,6 +178,10 @@ body {
 @keyframes loaderPulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.65; }
+}
+
+@keyframes logoReveal {
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* App Container */
