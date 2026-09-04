@@ -1287,3 +1287,19 @@ WlaaS/
     - Recompiled production bundle (`npm run build`) — 0 errors.
     - Verified background servers running at `http://127.0.0.1:8000/` and `http://localhost:5173/`.
 
+### HH. Hackathon Submission Readiness, 1-Click Launchers & GitHub Deployment (Turn 44)
+- **Objective**: Prepare repository for effortless hackathon evaluation, ensure 100% cross-platform installation on any external PC with zero configuration hurdles, and push to target GitHub repository `https://github.com/abdxllxh/WIAAS---Asia`.
+- **Delivered Solutions**:
+  - **1-Click Launchers**:
+    - Created root [`run.py`](file:///c:/Users/DELL/Desktop/MY%20PROJECTS/WlaaS/run.py) quickstart runner: verifies python packages, handles Windows UTF-8 stdout encoding, resolves paths, launches Uvicorn on `127.0.0.1:8000`, and automatically opens the user's browser.
+    - Created [`start.bat`](file:///c:/Users/DELL/Desktop/MY%20PROJECTS/WlaaS/start.bat) for 1-click Windows execution (pip install + run).
+    - Created [`start.sh`](file:///c:/Users/DELL/Desktop/MY%20PROJECTS/WlaaS/start.sh) for 1-click macOS/Linux execution.
+  - **Zero-Node Evaluator Experience**:
+    - Pre-compiled production Single-Page Application checked into `backend/static/`, enabling judges to run the full interactive web application, map, and telemetry with **Python only** (no Node.js/npm required).
+  - **Complete Dependency Specifications**:
+    - Updated `requirements.txt` and `backend/requirements.txt` to include `edge-tts>=6.1.10`.
+    - Updated `README.md` with a prominent 60-Second Quickstart & Installation guide.
+  - **GitHub Deployment**:
+    - Target repository set to `https://github.com/abdxllxh/WIAAS---Asia.git`.
+    - Pushed full project commit history and all assets cleanly to `origin/main`.
+
