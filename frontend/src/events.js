@@ -643,6 +643,7 @@ export async function selectLocationContext(rawLocation) {
     if (!regionKey) return null;
 
     const generation = ++_locationSelectionGeneration;
+    window._hasExplicitRegionSelection = true;
     setActiveRegionKey(regionKey);
     const location = getActiveRegion();
     setLocationDataStatus('loading', location);

@@ -567,9 +567,14 @@ export function updateUIElements(apiData) {
     // Region name with coordinates, diurnal cycle badge, and risk metrics
     const regionNameEl = document.getElementById('current-region-name');
     if (regionNameEl && activeRegionKey) {
-        const formatted = formatRegionDisplayName(apiData.region_name, location?.country);
-        regionNameEl.innerText = formatted;
-        regionNameEl.title = `${apiData.region_name || ''}, ${location?.country || ''}`.trim();
+        if (window._hasExplicitRegionSelection === true) {
+            const formatted = formatRegionDisplayName(apiData.region_name, location?.country);
+            regionNameEl.innerText = formatted;
+            regionNameEl.title = `${apiData.region_name || ''}, ${location?.country || ''}`.trim();
+        } else {
+            regionNameEl.innerText = '';
+            regionNameEl.removeAttribute('title');
+        }
     }
     updateAgroZoneBadge(location);
 
@@ -1649,6 +1654,7 @@ export function setRegionClockLocation(location) {
 export function clearRegionClockLocation() {
     _clockLocation = null;
     _isLocalhostTimelineActive = false;
+    window._hasExplicitRegionSelection = false;
 
     // Hide the widget completely when selection is cleared
     const widgetEl = document.querySelector('.active-region-widget') || document.getElementById('active-region-widget');
