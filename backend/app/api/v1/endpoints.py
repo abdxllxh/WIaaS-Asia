@@ -242,7 +242,8 @@ def get_all_regions() -> dict:
     asian_regions = {
         key: region
         for key, region in REGIONS.items()
-        if region.get("asian_subregion") != "Global Benchmarks"
+        if key and str(key).strip().lower() not in {"null", "undefined", "none"}
+        and region.get("asian_subregion") != "Global Benchmarks"
     }
     return {
         "status": "success",
@@ -320,6 +321,10 @@ def check_and_register_dynamic_region(
     location_type: str = "city",
 ) -> None:
     """Register any map-selected Asian city/country as a full analytics region."""
+    # Never persist placeholder route values as visible regions. A stale
+    # ``/analytics/null`` request used to create a misleading Null row.
+    if not region_key or str(region_key).strip().lower() in {"null", "undefined", "none"}:
+        return
     if region_key in REGIONS:
         return
 

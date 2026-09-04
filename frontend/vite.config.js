@@ -10,6 +10,12 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      // Keep neural speech available in the Vite development build too.
+      // Without this, chat works on :5173 but every TTS request returns 404.
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
   build: {

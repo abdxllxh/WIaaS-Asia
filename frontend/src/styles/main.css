@@ -7292,8 +7292,8 @@ body {
         width: auto !important;
         min-width: auto !important;
         max-width: none !important;
-        height: 32px !important;
-        min-height: 32px !important;
+        height: 40px !important;
+        min-height: 40px !important;
         padding: 4px 6px !important;
         margin: 0 1px !important;
         gap: 4px !important;
@@ -7324,7 +7324,8 @@ body {
     }
 
     .mobile-modules-btn {
-        padding: 4px 7px !important;
+        padding: 6px 8px !important;
+        min-height: 40px !important;
         gap: 4px !important;
     }
 
@@ -7339,13 +7340,15 @@ body {
 
     .voice-advisory-pill {
         padding: 4px 6px !important;
-        height: 32px !important;
+        height: 40px !important;
+        min-width: 40px !important;
         margin: 0 1px !important;
     }
 
     .lang-pill {
         padding: 3px 6px !important;
-        height: 32px !important;
+        height: 40px !important;
+        min-width: 40px !important;
         font-size: 0.60rem !important;
         margin: 0 1px !important;
     }
@@ -7618,8 +7621,8 @@ body {
     }
     .nav-item {
         padding: 3px 4px !important;
-        height: 28px !important;
-        min-height: 28px !important;
+        height: 40px !important;
+        min-height: 40px !important;
         gap: 2px !important;
     }
     .nav-item span {
@@ -7630,11 +7633,13 @@ body {
     }
     .voice-advisory-pill {
         padding: 3px 5px !important;
-        height: 28px !important;
+        height: 40px !important;
+        min-width: 40px !important;
     }
     .lang-pill {
         padding: 2px 4px !important;
-        height: 28px !important;
+        height: 40px !important;
+        min-width: 40px !important;
         font-size: 0.56rem !important;
     }
     .active-region-widget {
@@ -11500,6 +11505,8 @@ body.urdu-mode .agent-card-rec p {
 .location-analysis-panel-body {
 
     padding-bottom: 24px;
+    min-width: 0;
+    overflow-x: hidden;
 
 }
 
@@ -11558,6 +11565,9 @@ body.urdu-mode .agent-card-rec p {
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
 
 }
 
@@ -12115,6 +12125,8 @@ body.urdu-mode .agent-card-rec p {
     margin-top: 10px;
     padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+    min-width: 0;
+    max-width: 100%;
 }
 
 .layer-stat-row {
@@ -12125,6 +12137,7 @@ body.urdu-mode .agent-card-rec p {
     margin-bottom: 5px;
     font-size: 0.74rem;
     min-width: 0;
+    flex-wrap: wrap;
 }
 
 .layer-stat-row .ls-label {
@@ -12141,7 +12154,8 @@ body.urdu-mode .agent-card-rec p {
     font-size: 0.74rem;
     font-weight: 600;
     text-align: right;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
     flex-shrink: 0;
 }
 
@@ -12149,6 +12163,9 @@ body.urdu-mode .agent-card-rec p {
     margin-top: 6px;
     padding-top: 6px;
     border-top: 1px dashed rgba(255, 255, 255, 0.08);
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
 

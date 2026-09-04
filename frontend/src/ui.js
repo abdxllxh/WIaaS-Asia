@@ -665,11 +665,15 @@ export function updateUIElements(apiData) {
     } else {
         recommendation = `SYSTEM NORMAL: Atmospheric conditions match the regional baseline. Maintain standard automated irrigation scheduling and track crop indices.`;
     }
-    document.getElementById('ai-recommendation-text').innerText = recommendation;
+    const recommendationEl = document.getElementById('ai-recommendation-text');
+    if (recommendationEl) recommendationEl.innerText = recommendation;
 
     // Chat system notification
-    document.getElementById('system-notification-text').innerText =
-        `Weather models processed for ${apiData.region_name}. System status matches ${apiData.system_status} with current temperature at ${telemetry.temperature_celsius}°C. Risk Level: ${apiData.risk_level} (Criticality Score: ${apiData.mission_criticality_score}/100). Adjusting domain policies accordingly.`;
+    const notificationEl = document.getElementById('system-notification-text');
+    if (notificationEl) {
+        notificationEl.innerText =
+            `Weather models processed for ${apiData.region_name}. System status matches ${apiData.system_status} with current temperature at ${telemetry.temperature_celsius}°C. Risk Level: ${apiData.risk_level} (Criticality Score: ${apiData.mission_criticality_score}/100). Adjusting domain policies accordingly.`;
+    }
 
     // Refresh the currently active side panel so that changing regions updates all tab contents instantly
     if (_currentPanelTab && !document.getElementById('general-info-panel').classList.contains('hidden')) {
@@ -740,6 +744,9 @@ export function renderAsiaRegionTreeHTML(query, filter) {
     // Group regions by subregion then country
     const grouped = {};
     for (const [key, item] of Object.entries(regionsRegistry)) {
+        // This explorer is Asia-only. Legacy benchmark fixtures remain in the
+        // registry for compatibility, but must never leak into the UI.
+        if (item.asian_subregion === 'Global Benchmarks') continue;
         const sub = (item.asian_subregion || 'Global Benchmarks').toUpperCase();
         
         // Filter by subregion tab

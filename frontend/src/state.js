@@ -6,9 +6,11 @@
 import citiesManager from './cities.js';
 
 // ── Active Region Global Context ──────────────────────────────────────────────
-export let activeRegionKey = null;
+// Start on a real Asian city so the first render never requests
+// ``/analytics/null`` or shows an empty selected-region widget.
+export let activeRegionKey = 'pakistan_multan';
 export let activeLeftTab = null;
-window._activeRegionKey = null;
+window._activeRegionKey = activeRegionKey;
 
 // ── Complete Asian Region Registry Cache ──────────────────────────────────────
 export let regionsRegistry = {
