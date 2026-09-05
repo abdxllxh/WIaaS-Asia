@@ -248,7 +248,7 @@ async function startApp() {
         console.error('[main] Bootstrap critical error:', err);
     } finally {
         const elapsed = Date.now() - startTime;
-        const minLoadingTime = 1200; // ms
+        const minLoadingTime = 900; // ms: crisp, elegant loading sequence
         const remaining = Math.max(0, minLoadingTime - elapsed);
         setTimeout(dismissLoadingScreen, remaining);
     }

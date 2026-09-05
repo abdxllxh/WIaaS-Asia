@@ -58,24 +58,59 @@
     <!-- Mobile Backdrop Scrim for Sidebars & Drawers -->
     <div id="mobile-backdrop" class="mobile-backdrop" aria-hidden="true"></div>
 
-    <!-- Custom Sci-Fi Loading Screen -->
-    <div id="loading-screen" class="loading-screen" style="position: fixed; inset: 0; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; min-width: 100%; height: 100vh; min-height: 100%; background: #000000; z-index: 999999; margin: 0; padding: 0;">
+    <!-- Minimalist Clean Preloader -->
+    <div id="loading-screen" class="loading-screen">
         <div class="loader-content">
-            <img class="loader-logo" src="/wiaas-logo.svg" alt="WIaaS" width="72" height="72">
-            <div class="loader-title">WIaaS</div>
-            <div class="loader-subtitle">WEATHER INTELLIGENCE AS A SERVICE</div>
+            <div class="loader-logo-wrap">
+                <div class="loader-orbit-ring"></div>
+                <img class="loader-logo" src="/wiaas-logo.svg" alt="WIaaS" width="60" height="60">
+            </div>
+            <div class="loader-brand">
+                <div class="loader-title">WIaaS</div>
+                <div class="loader-subtitle">WEATHER INTELLIGENCE AS A SERVICE</div>
+            </div>
+            <div class="loader-progress-track">
+                <div class="loader-progress-bar" id="loader-progress-bar"></div>
+            </div>
         </div>
     </div>
     <script>
-        // Fail-safe automatic dismiss in case network or external resources delay
-        setTimeout(function() {
+        (function() {
             var loader = document.getElementById('loading-screen');
-            if (loader && !loader.dataset.dismissed) {
-                loader.dataset.dismissed = 'true';
-                loader.classList.add('zoom-out', 'fade-out');
-                setTimeout(function() { if (loader && loader.parentNode) loader.remove(); }, 1200);
+            var barEl = document.getElementById('loader-progress-bar');
+            if (!loader || !barEl) return;
+
+            var start = performance.now();
+            var duration = 900; // ms
+
+            function updateLoader(now) {
+                if (loader.dataset.dismissed === 'true') {
+                    barEl.style.width = '100%';
+                    return;
+                }
+                var progress = Math.min(1, (now - start) / duration);
+                var eased = 1 - Math.pow(1 - progress, 2.2);
+                barEl.style.width = (eased * 100) + '%';
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateLoader);
+                } else {
+                    barEl.style.width = '100%';
+                }
             }
-        }, 2200);
+            requestAnimationFrame(updateLoader);
+
+            setTimeout(function() {
+                if (loader && !loader.dataset.dismissed) {
+                    loader.dataset.dismissed = 'true';
+                    loader.classList.add('zoom-out');
+                    setTimeout(function() {
+                        loader.classList.add('fade-out');
+                        setTimeout(function() { if (loader && loader.parentNode) loader.remove(); }, 600);
+                    }, 50);
+                }
+            }, 2000);
+        })();
     </script>
 
     <div class="app-container">

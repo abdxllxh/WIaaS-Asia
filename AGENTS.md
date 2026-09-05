@@ -275,6 +275,18 @@ This document serves as the authoritative, permanent memory and context for AI a
   - Mounted the real-time **1-Second Microclimate Oscilloscope Visualizer** with purple ambient thermal theme.
   - Added safe optional chaining (`data?.telemetry?.temperature_celsius ?? 34.5`) ensuring graceful zero-crash hydration.
 
+### V. Minimalist Human-Crafted Preloader & Delicate Orbit Animation
+- **Problem**: Earlier iterations over-relied on AI-generated sci-fi tropes (cluttered HUD brackets, fake console logs, multi-ring radar sweeps, green blips, and verbose pill badges), looking artificial, bloated, and distracting.
+- **Implemented Solution (`frontend/src/styles/main.css`, `frontend/index.html`, `frontend/src/main.js`)**:
+  - **Stripped All AI Sci-Fi Clutter**: Removed all corner brackets, multi-ring radar sweeps, sonar ripples, green blip dots, fake technical metadata lines, and pill tags.
+  - **Deep Pure Dark Canvas**: Rendered on a pure, clean `#000000` pitch field with zero distracting grids.
+  - **Delicate Hairline Orbit Ring**: Single, ultra-clean 1px orbital hairline spinner (`.loader-orbit-ring`, 88px) smoothly tracing around the WIaaS brand mark with cubic-bezier easing (`1.1s cubic-bezier(0.4, 0.05, 0.55, 0.95)`).
+  - **Restrained Typography**:
+    - "WIaaS" in crisp white, authentic typography (`font-weight: 600; letter-spacing: 0.18em; line-height: 1;`).
+    - "WEATHER INTELLIGENCE AS A SERVICE" in understated, quiet slate tracking (`color: #64748b; font-size: 0.63rem; letter-spacing: 0.28em;`).
+  - **Ultra-Thin 2px Hairline Progress**: A subtle 120px hairline bar filling smoothly with cyan accent.
+  - **Snappy 900ms Transition**: Fast, professional load that respects the user's time and dissolves cleanly into the Thermographic Asia Map.
+
 ---
 
 ## 3. Codebase File Structure & Key Components
