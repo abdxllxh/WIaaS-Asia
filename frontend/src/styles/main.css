@@ -1924,7 +1924,7 @@ body {
 
    .panel.left-panel can host more than one .panel-card at the same time
 
-   (the City Explorer injected by ui-cities.js sits alongside the
+   (the map city interaction sits alongside the
 
    Agriculture / General Info cards). Previously every .panel-card had
 

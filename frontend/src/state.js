@@ -3,8 +3,6 @@
  * Single source of truth for the entire Asia Monitoring Network & Global Active Context.
  */
 
-import citiesManager from './cities.js';
-
 // ── Active Region Global Context ──────────────────────────────────────────────
 // Start on a real Asian city so the first render never requests
 // ``/analytics/null`` or shows an empty selected-region widget.
@@ -1899,31 +1897,10 @@ export function setActiveLeftTab(tab) {
     activeLeftTab = tab;
 }
 
-// ── Dynamic City Support (Custom Pin Additions) ───────────────────────────────
-export function addDynamicRegion(cityData) {
-    const key = cityData.id || `city_${cityData.latitude}_${cityData.longitude}`;
-    return registerLocationContext({
-        ...cityData,
-        key,
-        name: cityData.displayName || cityData.name,
-        city: cityData.name,
-        province: cityData.adminName || 'Custom',
-        country: cityData.country || 'Custom Location',
-        country_code: cityData.countryCode || 'XX',
-        asian_subregion: 'Custom',
-        locationType: 'city',
-        risk_profile: ['DYNAMIC_PIN'],
-    });
-}
-
-export function syncDynamicCities() {
-    citiesManager.getAllCities().forEach(city => addDynamicRegion(city));
-}
-
 // ── Telemetry Cache ───────────────────────────────────────────────────────────
 export const regionsTelemetryCache = {};
 
-// ── Globe Layer Toggles ───────────────────────────────────────────────────────
+// ── Map Layer Toggles ───────────────────────────────────────────────────────
 export let heatmapActive       = false;
 export let windActive          = false;
 export let precipitationActive = false;
@@ -1939,31 +1916,3 @@ export function setBottomPanelMode(val) { bottomPanelMode = val; }
 // ── Chat Panel Mode ───────────────────────────────────────────────────────────
 export let chatMode = 'assistant'; // 'assistant' or 'crisislens'
 export function setChatMode(val) { chatMode = val; }
-
-// ── Globe Object References ───────────────────────────────────────────────────
-export let globeScene            = null;
-export let globeCamera           = null;
-export let globeRenderer         = null;
-export let globeMesh             = null;
-export let globePinsGroup        = null;
-export let globeStandardMaterial = null;
-export let globeHeatmapMaterial  = null;
-export let globeWindHelpers      = [];
-export let globeRainHelpers      = [];
-export let isRotationPaused      = false;
-export let activePopupRegionKey  = null;
-
-export function setGlobeRefs({ scene, camera, renderer, globe, pinsGroup, standardMaterial, heatmapMaterial }) {
-    globeScene            = scene;
-    globeCamera           = camera;
-    globeRenderer         = renderer;
-    globeMesh             = globe;
-    globePinsGroup        = pinsGroup;
-    globeStandardMaterial = standardMaterial;
-    globeHeatmapMaterial  = heatmapMaterial;
-}
-
-export function setWindHelpers(arr)          { globeWindHelpers = arr; }
-export function setRainHelpers(arr)          { globeRainHelpers = arr; }
-export function setRotationPaused(val)       { isRotationPaused = val; }
-export function setActivePopupRegionKey(val) { activePopupRegionKey = val; }

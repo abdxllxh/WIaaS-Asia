@@ -17,7 +17,6 @@ import { fetchRegionAnalytics, fetchAllRegions, clearConversationContext } from 
 import { navigateToLocation } from './geo-navigation.js';
 import { updateUIElements, showGeneralInfoPanel, toggleAgricultureReport, resetSectorContext, resetToDefaultOverview, refreshActiveTelemetry, getCurrentPanelTab, setRegionClockLocation } from './ui.js';
 import { handleUserMessage, setupVoiceInput, updateChatModeUI } from './chat.js';
-import { refreshCityUI } from './ui-cities.js';
 import {
     toggleWindLayer,
     toggleRainLayer,
@@ -255,12 +254,6 @@ export function setupEventListeners() {
                             'analytics': 'Threat'
                         };
                         activePill.textContent = labelMap[selectedTab] || selectedTab;
-                    }
-
-                    // City Search panel is kept hidden so Asia Region Explorer occupies full view
-                    const cityPanel = document.getElementById('city-search-panel');
-                    if (cityPanel) {
-                        cityPanel.classList.add('hidden');
                     }
 
                     const agriPanel = document.getElementById('agriculture-panel');
@@ -591,7 +584,6 @@ export async function loadRegionData(regionKey) {
     // A slower request from the previously selected city must never overwrite
     // the module values for a newer map selection.
     if (regionKey === activeRegionKey) updateUIElements(data);
-    refreshCityUI();
     return data;
 }
 
@@ -686,9 +678,6 @@ export function closeLeftSidebar() {
             t.classList.remove('active');
         }
     });
-
-    const cityPanel = document.getElementById('city-search-panel');
-    if (cityPanel) cityPanel.classList.add('hidden');
 
     const reportSec = document.getElementById('agriculture-report-section');
     if (reportSec) reportSec.classList.add('hidden');

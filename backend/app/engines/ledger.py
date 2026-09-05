@@ -213,7 +213,7 @@ class SyntheticResourceLedger:
                 "grid_status": "CRITICAL_OVERLOAD" if max_blackout_risk > 80 else "WARNING" if max_blackout_risk > 50 else "STABLE",
                 "m2m_trigger": {
                     "action_required": action_required,
-                    "recommended_mitigation": "DISPATCH_CARGO_TO_SAILORS_PORT_BLACKOUT" if action_required else "NONE"
+                    "recommended_mitigation": "REROUTE_PRIORITY_LOADS_AND_STAGE_BACKUP_GENERATION" if action_required else "NONE"
                 }
         }
     }

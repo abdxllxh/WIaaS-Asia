@@ -198,7 +198,7 @@ WIAAS-Asia/
 │   │   ├── chat.js               # Bilingual voice & conversational copilot
 │   │   ├── ui.js                 # Unified navigation, drawers, and HUD widgets
 │   │   ├── ui-agriculture.js     # Agro diagnostics, action directives, radar chart
-│   │   ├── ui-cities.js          # Dynamic city search & selection panel
+│   │   ├── geo-navigation.js     # Country, province, and city navigation
 │   │   ├── map-layers.js         # Thermal, wind vector, and rain radar overlays
 │   │   └── styles/main.css       # Master design system & responsive layout
 │   ├── index.html                # Application entry shell
