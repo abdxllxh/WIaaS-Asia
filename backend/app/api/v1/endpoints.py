@@ -44,6 +44,9 @@ _SPATIAL_GRID_CACHE: dict[str, tuple[float, dict]] = {}
 _SPATIAL_GRID_CACHE_LOCK = threading.Lock()
 _SPATIAL_GRID_CACHE_TTL_SECONDS = 240.0
 _OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+_CRISIS_CHAT_CACHE: dict[str, tuple[float, dict]] = {}
+_CRISIS_CHAT_CACHE_LOCK = threading.Lock()
+_CRISIS_CHAT_CACHE_TTL_SECONDS = 300.0
 
 
 def _spatial_grid_scope_settings(scope: str) -> tuple[float, int]:
@@ -1320,6 +1323,11 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
         or payload.get("query")
         or ""
     )
+    cache_key = "|".join((str(payload.get("region_key") or ""), str(payload.get("response_language") or "en"), re.sub(r"\s+", " ", user_query.strip().lower())))
+    with _CRISIS_CHAT_CACHE_LOCK:
+        cached_chat = _CRISIS_CHAT_CACHE.get(cache_key)
+    if cached_chat and (time.monotonic() - cached_chat[0]) < _CRISIS_CHAT_CACHE_TTL_SECONDS:
+        return {**cached_chat[1], "cache_hit": True, "cache_age_seconds": round(time.monotonic() - cached_chat[0], 1)}
     timeline_query = bool(re.search(r"\b(in \d{4}|last (?:day|week|month|year)|over the last|during the past|between|before and after|since|timeline|trend|changed over|next \d+ days?|coming week|forecast window|outlook)\b", user_query, re.I))
     historical_query = bool(re.search(r"\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the|timeline|trend|before and after)\b", user_query, re.I)) and bool(re.search(r"\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|avalanche|glacial|river|risk|weather)\b", user_query, re.I))
     region_key = payload.get("region_key") or "china_beijing"
@@ -1341,7 +1349,9 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
             f"وجوہات، نقصانات اور متاثرہ انفراسٹرکچر بیان کرنے سے پہلے سرکاری بلیٹن اور تاریخ شدہ معتبر ذرائع سے تصدیق ضروری ہے۔ فوری خطرے میں مقامی حکام کی ہدایات، محفوظ راستے اور سرکاری پناہ گاہیں استعمال کریں۔"
         )
         chosen = urdu if str(response_language).lower().startswith("ur") else english
-        return {"reply": chosen, "chat_message": chosen, "output": chosen, "speech_en": english, "speech_ur": urdu, "response_language": response_language, "response_kind": "TIMELINE_EVENT_GUARD" if timeline_query else "HISTORICAL_EVENT_GUARD", "historical_query": historical_query, "timeline_query": timeline_query, "evidence_status": "VERIFICATION_REQUIRED", "region": place}
+        guarded = {"reply": chosen, "chat_message": chosen, "output": chosen, "speech_en": english, "speech_ur": urdu, "response_language": response_language, "response_kind": "TIMELINE_EVENT_GUARD" if timeline_query else "HISTORICAL_EVENT_GUARD", "historical_query": historical_query, "timeline_query": timeline_query, "evidence_status": "VERIFICATION_REQUIRED", "region": place}
+        with _CRISIS_CHAT_CACHE_LOCK: _CRISIS_CHAT_CACHE[cache_key] = (time.monotonic(), guarded)
+        return guarded
 
     reg_meta = REGIONS.get(region_key) or {}
     reg_name = reg_meta.get("name") or payload.get("region_name") or region_key
@@ -1353,7 +1363,7 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
 
     def _call_n8n() -> requests.Response:
         print(f"[crisislens] → POST {url} payload keys={list(payload.keys())}")
-        return requests.post(url, json=payload, timeout=(5.0, 15.0))
+        return requests.post(url, json=payload, timeout=(3.0, 8.0))
 
     def _extract(d: dict) -> str:
         return (
