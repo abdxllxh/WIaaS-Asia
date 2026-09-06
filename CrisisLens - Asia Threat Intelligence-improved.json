@@ -1,0 +1,1804 @@
+{
+  "name": "CrisisLens - Asia Threat Intelligence",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Correlate the compact API evidence below into a threat assessment. Use only this data; never invent events. Max 3 threats, 3 evidence items, 2 causes, 3 gaps. Summary max 80 words. Return JSON only.\nDo not mention fire/satellite monitoring or API keys unless gdacs_alerts or relevant_news reference them. Never expose internal codes or source-status wording.\nSchema: {\"region\":\"\",\"overall_threat_level\":\"NONE|LOW|MEDIUM|HIGH|CRITICAL|INSUFFICIENT_EVIDENCE\",\"correlation_status\":\"SUPPORTED|PARTIALLY_SUPPORTED|INSUFFICIENT_EVIDENCE\",\"regional_summary\":\"\",\"threats\":[],\"supporting_evidence\":[],\"probable_causes\":[],\"information_gaps\":[]}\nDATA: {{ JSON.stringify($json.osint_input) }}\nAsia scope and grounding: Use the exact resolved Asian city/country and coordinates in the input. Treat API observations as evidence, distinguish observed data from inference, never substitute a global demo region, and never invent measurements, alerts, sources, or certainty. Sound calm, friendly, and human; acknowledge worry or discomfort without pretending to feel emotions. If the selected location exists, never ask for it again. When response_language is ur, answer naturally in Urdu; otherwise answer in English. Use response_variant and repeated_question_count so repeated questions get a fresh explanation angle and follow-up instead of copied wording. For a standard query, use short paragraphs, headings, the threat level, strongest evidence, and 3 practical actions within 300 words. For an explicit comprehensive or detailed threat report, expand to at most 450 words with severity, evidence by source, affected sectors, stakeholder actions, monitoring triggers, limitations, and a concise source list. Reuse cached assessment data for follow-ups and only call OSINT/action agents when the requested evidence or action is not already available.\n\nQUESTION-SPECIFIC RULES: Answer the exact intent and stakeholder. Definition questions need a plain definition without live API calls. Follow-ups such as agriculture, electricity, roads, or residents must answer only that sector using existing event context and must not repeat the event summary. Historical, previous, last year, or dated questions require historical evidence and must never use today's weather as event evidence. Comparison questions must produce a side-by-side comparison and mark missing metrics as unverified. Casualties, missing people, losses, damage, and evacuations may be stated only when present in retrieved evidence; otherwise say 'not verified in the sources reached.' Keep standard answers under 180 words unless a report is requested.",
+        "batching": {}
+      },
+      "id": "65ed2e70-20f4-4106-b488-819128a8f3c4",
+      "name": "OSINT Correlation Agent",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        13280,
+        26480
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Use only this correlated assessment. Return JSON only. Max 3 short actions for requested stakeholder and max 2 for other relevant stakeholders. Do not create actions for unaffected groups.\nSchema: {\"urgency\":\"ROUTINE|MONITOR|PROMPT|IMMEDIATE\",\"priority_message\":\"\",\"actions\":{\"farmers\":[],\"grid_operators\":[],\"emergency_authorities\":[],\"logistics_operators\":[],\"local_government\":[],\"general_public\":[]},\"monitoring_next\":[],\"safety_note\":\"\"}\nREQUESTED_STAKEHOLDER: {{ $('Normalize API Data1').item.json.requested_stakeholder }}\nASSESSMENT:\n{{ $json.text || $json.output || $json.response || JSON.stringify($json) }}\nAsia scope and grounding: Use the exact resolved Asian city/country and coordinates in the input. Treat API observations as evidence, distinguish observed data from inference, never substitute a global demo region, and never invent measurements, alerts, sources, or certainty. Sound calm, friendly, and human; acknowledge worry or discomfort without pretending to feel emotions. If the selected location exists, never ask for it again. When response_language is ur, answer naturally in Urdu; otherwise answer in English. Use response_variant and repeated_question_count so repeated questions get a fresh explanation angle and follow-up instead of copied wording. For a standard query, use short paragraphs, headings, the threat level, strongest evidence, and 3 practical actions within 300 words. For an explicit comprehensive or detailed threat report, expand to at most 450 words with severity, evidence by source, affected sectors, stakeholder actions, monitoring triggers, limitations, and a concise source list. Reuse cached assessment data for follow-ups and only call OSINT/action agents when the requested evidence or action is not already available.\n\nQUESTION-SPECIFIC RULES: Answer the exact intent and stakeholder. Definition questions need a plain definition without live API calls. Follow-ups such as agriculture, electricity, roads, or residents must answer only that sector using existing event context and must not repeat the event summary. Historical, previous, last year, or dated questions require historical evidence and must never use today's weather as event evidence. Comparison questions must produce a side-by-side comparison and mark missing metrics as unverified. Casualties, missing people, losses, damage, and evacuations may be stated only when present in retrieved evidence; otherwise say 'not verified in the sources reached.' Keep standard answers under 180 words unless a report is requested.",
+        "batching": {}
+      },
+      "id": "afba4d14-f186-4eb6-96a9-960b35ab0b6e",
+      "name": "Action Recommendation Agent",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        13856,
+        26192
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "accounts/fireworks/models/kimi-k2p6",
+          "mode": "list",
+          "cachedResultName": "accounts/fireworks/models/kimi-k2p6"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0,
+          "timeout": 60000,
+          "maxRetries": 2
+        }
+      },
+      "id": "777fdf82-1fdd-416f-8ecf-41271b6b2da1",
+      "name": "firework",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        13928,
+        26408
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "o4rTeim9qbkM3kgi",
+          "name": "hack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the WIaaS CrisisLens Conversational Decision Agent. Be friendly, calm, and human, but do routing only. Do not perform OSINT analysis or detailed recommendations.\n\nYour job:\n- Understand natural messages and follow-ups.\n- If the user describes a concern but gives no location, respond kindly and ask where they are located.\n- Ask what help they want when useful: quick risk check, evidence, or what to do.\n- Reuse saved region only when the message clearly refers to prior context.\n- Never invent a region, threat, API result, or official instruction.\n- Return JSON only, no markdown.\n\nFor missing location, direct_response should sound natural, for example:\n\"I’m sorry you’re dealing with that. I can check nearby weather, disaster alerts, and regional threat signals. Where are you located, and would you like a quick risk check or advice on what to do?\"\n\nSchema:\n{\"intent\":\"greeting|help|weather|general_threats|wildfire|flood|earthquake|storm|drought|power|roads|evidence|actions|follow_up|unknown\",\"region\":\"\",\"stakeholder\":\"farmers|grid_operators|emergency_authorities|logistics_operators|local_government|general_public|none\",\"needs_region\":false,\"use_saved_region\":false,\"should_call_apis\":false,\"required_sources\":[],\"needs_osint_agent\":false,\"needs_action_agent\":false,\"direct_response\":\"\",\"confidence\":0}\n\nAllowed required_sources: open_meteo, gdacs, gdelt, nasa_firms. Select nasa_firms only when a valid key exists.\n\nINPUT:\n{{ JSON.stringify($json) }}\nAsia scope and grounding: Use the exact resolved Asian city/country and coordinates in the input. Treat API observations as evidence, distinguish observed data from inference, never substitute a global demo region, and never invent measurements, alerts, sources, or certainty. Sound calm, friendly, and human; acknowledge worry or discomfort without pretending to feel emotions. If the selected location exists, never ask for it again. When response_language is ur, answer naturally in Urdu; otherwise answer in English. Use response_variant and repeated_question_count so repeated questions get a fresh explanation angle and follow-up instead of copied wording. For a standard query, use short paragraphs, headings, the threat level, strongest evidence, and 3 practical actions within 300 words. For an explicit comprehensive or detailed threat report, expand to at most 450 words with severity, evidence by source, affected sectors, stakeholder actions, monitoring triggers, limitations, and a concise source list. Reuse cached assessment data for follow-ups and only call OSINT/action agents when the requested evidence or action is not already available.\n\nQUESTION-SPECIFIC RULES: Answer the exact intent and stakeholder. Definition questions need a plain definition without live API calls. Follow-ups such as agriculture, electricity, roads, or residents must answer only that sector using existing event context and must not repeat the event summary. Historical, previous, last year, or dated questions require historical evidence and must never use today's weather as event evidence. Comparison questions must produce a side-by-side comparison and mark missing metrics as unverified. Casualties, missing people, losses, damage, and evacuations may be stated only when present in retrieved evidence; otherwise say 'not verified in the sources reached.' Keep standard answers under 180 words unless a report is requested.",
+        "batching": {}
+      },
+      "id": "a4dfd088-f2a9-40a9-9291-b520fdc40389",
+      "name": "Conversational Decision Agent",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        9568,
+        26848
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Use only this correlated assessment. Return JSON only. Max 3 short actions for requested stakeholder and max 2 for other relevant stakeholders. Do not create actions for unaffected groups.\nSchema: {\"urgency\":\"ROUTINE|MONITOR|PROMPT|IMMEDIATE\",\"priority_message\":\"\",\"actions\":{\"farmers\":[],\"grid_operators\":[],\"emergency_authorities\":[],\"logistics_operators\":[],\"local_government\":[],\"general_public\":[]},\"monitoring_next\":[],\"safety_note\":\"\"}\nREQUESTED_STAKEHOLDER: {{ $json.requested_stakeholder }}\nASSESSMENT:\n{{ JSON.stringify($json.action_assessment || {}) }}\nAsia scope and grounding: Use the exact resolved Asian city/country and coordinates in the input. Treat API observations as evidence, distinguish observed data from inference, never substitute a global demo region, and never invent measurements, alerts, sources, or certainty. Sound calm, friendly, and human; acknowledge worry or discomfort without pretending to feel emotions. If the selected location exists, never ask for it again. When response_language is ur, answer naturally in Urdu; otherwise answer in English. Use response_variant and repeated_question_count so repeated questions get a fresh explanation angle and follow-up instead of copied wording. For a standard query, use short paragraphs, headings, the threat level, strongest evidence, and 3 practical actions within 300 words. For an explicit comprehensive or detailed threat report, expand to at most 450 words with severity, evidence by source, affected sectors, stakeholder actions, monitoring triggers, limitations, and a concise source list. Reuse cached assessment data for follow-ups and only call OSINT/action agents when the requested evidence or action is not already available.\n\nQUESTION-SPECIFIC RULES: Answer the exact intent and stakeholder. Definition questions need a plain definition without live API calls. Follow-ups such as agriculture, electricity, roads, or residents must answer only that sector using existing event context and must not repeat the event summary. Historical, previous, last year, or dated questions require historical evidence and must never use today's weather as event evidence. Comparison questions must produce a side-by-side comparison and mark missing metrics as unverified. Casualties, missing people, losses, damage, and evacuations may be stated only when present in retrieved evidence; otherwise say 'not verified in the sources reached.' Keep standard answers under 180 words unless a report is requested.",
+        "batching": {}
+      },
+      "id": "62a95c2d-6071-4244-bc64-564b7589faff",
+      "name": "Cached Action Agent",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        13856,
+        28224
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wiaas-asia-crisislens",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "566cefe6-31b3-4f54-a5c4-578cbe0f3429",
+      "name": "CrisisLens Webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        8672,
+        26928
+      ],
+      "webhookId": "a9d0deab-e12f-45ea-8f76-8bf388e22de5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse User Request — memory now comes from the Data Table row (input $json),\n// and trigger data is read via explicit node references (Load Data Table Memory\n// sits between the trigger and this node).\nfunction getTrigger() {\n  try { const c = $('When chat message received'); if (c && c.item && c.item.json && Object.keys(c.item.json).length) return c.item.json; } catch (e) {}\n  try { const w = $('CrisisLens Webhook1'); if (w && w.item && w.item.json && Object.keys(w.item.json).length) return w.item.json; } catch (e) {}\n  return $json ?? {};\n}\n\nconst raw = getTrigger();\nconst body = raw.body && typeof raw.body === 'object' ? raw.body : {};\nconst input = { ...raw, ...body };\nconst suppliedContext = input.region_context && typeof input.region_context === 'object' ? input.region_context : {};\nconst suppliedLatitude = Number(input.latitude ?? suppliedContext.latitude);\nconst suppliedLongitude = Number(input.longitude ?? suppliedContext.longitude);\nconst hasSuppliedCoordinates = Number.isFinite(suppliedLatitude) && Number.isFinite(suppliedLongitude);\n\nconst chatInput = String(raw.chatInput ?? body.chatInput ?? '').trim();\n// Never let an empty query object become [object Object]: only accept strings.\nconst message = String(\n  (typeof input.message === 'string' && input.message) ||\n  (typeof input.query === 'string' && input.query) ||\n  (typeof input.chatInput === 'string' && input.chatInput) ||\n  (typeof body.chatInput === 'string' && body.chatInput) ||\n  chatInput || ''\n).trim();\nconst explicitRegion = String((typeof input.region === 'string' && input.region) || input.region_name || suppliedContext.name || suppliedContext.city || suppliedContext.country || '').trim();\nconst sessionId = String(raw.session_id ?? raw.sessionId ?? body.session_id ?? body.sessionId ?? '').trim() || 'anonymous';\nconst source_channel = (raw.headers !== undefined || raw.body !== undefined) ? 'webhook' : 'chat';\nconst classificationMessage = [message, input.routing_query].filter(Boolean).join(' ');\nconst lower = classificationMessage.toLowerCase();\nconst historicalEventQuery = /\\b(recent|recently|past|previous|last year|historical|history|what happened|cause|caused|losses|damage|killed|dead|missing|affected|displaced|recovery|lessons|compare|comparison)\\b/i.test(classificationMessage) && /\\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|avalanche|glacial|dam|river)\\b/i.test(classificationMessage);\nconst historicalLocationMatch = classificationMessage.match(/\\b(nepal|japan|pakistan|india|bangladesh|china|philippines|turkey|afghanistan|kathmandu|rasuwa|tokyo|karachi|lahore|delhi|beijing)\\b/i);\nconst historicalLocation = historicalLocationMatch ? historicalLocationMatch[1] : '';\nconst asksRegionAccess = /(?:what|which|show|list|tell).{0,28}(?:regions?|locations?|cities|countries).{0,24}(?:access|support|cover|available)|(?:regions?|locations?).{0,24}(?:do you have|can you access|are supported)/i.test(classificationMessage) || /(?:کن علاقوں|کون سے علاقوں|علاقوں تک رسائی|دستیاب علاقے|علاقوں کی فہرست)/.test(classificationMessage);\nconst availableRegionSource = Array.isArray(input.available_regions) ? input.available_regions : [];\nconst accessibleRegionNames = [...new Set(availableRegionSource.map((item) => typeof item === 'string' ? item : (item && (item.name || item.region_name || item.city || item.country))).filter(Boolean))];\n\n// ---- Load memory from the Data Table row (replaces $getWorkflowStaticData) ----\nfunction loadMemory() {\n  const result = { data: {}, ok: true, error: '' };\n  const row = $json ?? {};\n  try {\n    if (row && typeof row.memory_json === 'string' && row.memory_json.trim()) {\n      result.data = JSON.parse(row.memory_json) || {};\n      return result;\n    }\n    // Fallback: reconstruct from explicit columns if memory_json is absent.\n    if (row && (row.session_id || row.active_region || row.region_key)) {\n      let assessment = null;\n      try { assessment = row.last_assessment ? JSON.parse(row.last_assessment) : null; } catch (e) {}\n      result.data = {\n        last_region: row.active_region || '',\n        active_region: row.active_region || '',\n        region_key: row.region_key || '',\n        latitude: row.latitude ?? null,\n        longitude: row.longitude ?? null,\n        last_intent: row.last_intent || '',\n        last_stakeholder: row.last_stakeholder || '',\n        last_threat_level: row.last_threat_level || '',\n        last_assessment: assessment,\n        updated_at: row.updated_at || '',\n      };\n    }\n  } catch (error) {\n    result.ok = false;\n    result.error = String(error && error.message || error);\n  }\n  return result;\n}\n\nconst memoryLoad = loadMemory();\nconst memory = memoryLoad.data || {};\nconst recentAssessment = memory.last_assessment && memory.updated_at && (Date.now() - Date.parse(memory.updated_at) < 10 * 60 * 1000);\n\nfunction cleanRegion(value) {\n  return String(value || '')\n    .replace(/\\b(and\\s+)?what\\s+should\\s+[^?.]+/gi, ' ')\n    .replace(/\\bwhat\\s+actions\\s+should\\s+[^?.]+/gi, ' ')\n    .replace(/\\b(currently|today|right now|please|now|instead)\\b/gi, ' ')\n    .replace(/[?!.]+$/g, '')\n    .replace(/^\\s*(are\\s+there|is\\s+there|show\\s+me|tell\\s+me|what\\s+are|what\\s+is|check)\\s+/i, '')\n    .replace(/^\\s*(current\\s+)?(threats?|risks?|weather\\s+risks?|wildfires?|fires?|floods?|flooding|weather|conditions?)\\s+(affecting|near|in|for|around)?\\s*/i, '')\n    .replace(/\\s+/g, ' ')\n    .trim()\n    .replace(/,$/, '')\n    .trim();\n}\n\nfunction isLocationOnlyCandidate(text) {\n  const cleaned = cleanRegion(text).replace(/[.,!?]/g, '').trim();\n  if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s,'-]{2,90}$/.test(cleaned)) return false;\n  return !/\\b(i|i'm|im|am|feel|feeling|felt|hot|cold|freezing|sick|unwell|thirsty|dizzy|tired|what|why|how|threat|risk|weather|should|do|public|farmers|hello|help|dangerous|happening|evidence|supports)\\b/i.test(cleaned);\n}\n\nfunction extractRegion(text) {\n  if (!text) return '';\n  const patterns = [\n    /\\b(?:affecting|near|around|in|for|at)\\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s,'-]{2,90}?)(?:\\s+and\\s+(?:what|which|who|how)\\b|\\s+what\\s+should\\b|\\?|\\.|$)/i,\n    /\\b(?:threats?|risks?|wildfires?|fires?|floods?|flooding|weather\\s+risks?|weather)\\s+(?:affecting|near|around|in|for|at)\\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\\s,'-]{2,90}?)(?:\\s+and\\s+(?:what|which|who|how)\\b|\\s+what\\s+should\\b|\\?|\\.|$)/i,\n  ];\n  for (const pattern of patterns) {\n    const match = text.match(pattern);\n    if (match?.[1]) return cleanRegion(match[1]);\n  }\n  const known = [];\n  for (const [region, pattern] of known) {\n    if (pattern.test(text)) return region;\n  }\n  return isLocationOnlyCandidate(text) ? cleanRegion(text) : '';\n}\n\nfunction intentFromPending(pending) {\n  const value = String(pending || '').toLowerCase();\n  if (['weather_heat_check', 'weather_temperature_check', 'weather_check', 'heat_check', 'cold_check'].includes(value)) return 'weather';\n  if (['threat_assessment', 'general_threats', 'full_threat_assessment'].includes(value)) return 'general_threats';\n  return value || '';\n}\n\nfunction pendingFromIntent(intent, text) {\n  if (intent === 'weather' || intent === 'heat' || /\\b(hot|heat|freezing|cold|temperature|weather)\\b/i.test(text)) return 'weather_heat_check';\n  return 'general_threats';\n}\n\nlet intent = 'general_threats';\nif (/^(hello|hi|hey)\\b/.test(lower) && lower.split(/\\s+/).length <= 4) intent = 'greeting';\nelse if (/^(help|what can you do)\\b/.test(lower)) intent = 'help';\nelse if (historicalEventQuery) intent = 'historical_event';\nelse if (/\\bwhy\\b|happening|cause|evidence|supports?/i.test(classificationMessage)) intent = 'evidence';\nelse if (/what should|what do|actions?|recommend|advice|farmers do|residents take|public do/i.test(classificationMessage)) intent = 'actions';\nelse if (/weather|temperature|rain|wind|forecast|feel hot|very hot|freezing|feels cold/.test(lower) && !/threat|risk|flood|wildfire|fire|disaster|evidence|report|why|action|should/.test(lower)) intent = 'weather';\nelse if (/wildfire|forest fire|active fire|fire threat|thermal anomaly/.test(lower)) intent = 'wildfire';\nelse if (/flood|flooding|heavy rain|river/.test(lower)) intent = 'flood';\nelse if (/earthquake|seismic/.test(lower)) intent = 'earthquake';\nelse if (/cyclone|hurricane|typhoon|storm/.test(lower)) intent = 'storm';\nelse if (/heatwave|extreme heat|heat|feel hot|very hot/.test(lower)) intent = 'heat';\nelse if (/drought|water shortage|water scarcity/.test(lower)) intent = 'drought';\n\nlet requested_stakeholder = 'general_public';\nif (/farmer|farm|crop|livestock|agriculture/.test(lower)) requested_stakeholder = 'farmers';\nelse if (/public|resident|people|instead/.test(lower)) requested_stakeholder = 'general_public';\nelse if (/grid operator|utility|electricity operator/.test(lower)) requested_stakeholder = 'grid_operators';\nelse if (/emergency|rescue|disaster authority/.test(lower)) requested_stakeholder = 'emergency_authorities';\nelse if (/logistics|delivery|transport operator|supply chain/.test(lower)) requested_stakeholder = 'logistics_operators';\nelse if (/local government|municipality|council|government/.test(lower)) requested_stakeholder = 'local_government';\nelse if (memory.last_stakeholder) requested_stakeholder = memory.last_stakeholder;\n\nlet region_query = explicitRegion || extractRegion(message);\nlet use_saved_region = false;\nlet used_awaiting_region = false;\nlet restored_pending_intent = '';\nlet pending_intent = '';\n\nif (memory.awaiting_region && !explicitRegion && isLocationOnlyCandidate(message)) {\n  region_query = cleanRegion(message);\n  restored_pending_intent = memory.pending_intent || memory.last_pending_intent || pendingFromIntent(memory.last_intent || 'general_threats', message);\n  intent = intentFromPending(restored_pending_intent) || intent;\n  used_awaiting_region = true;\n}\n\nif (!region_query && memory.last_region && /\\b(this area|here|there|same area|previous|that|why|happening|what should|public do|farmers do|instead|dangerous|serious)\\b/i.test(classificationMessage)) {\n  region_query = memory.last_region;\n  use_saved_region = true;\n}\n\n// Severity follow-up: reuse the saved assessment instead of re-geocoding.\nconst severityFollowupRe = /\\b(how serious|how bad|how severe|how dangerous|is (?:this|it) dangerous|risk level|how risky|should (?:i|we) be worried|how concerning)\\b/i;\nif (severityFollowupRe.test(classificationMessage) && !explicitRegion && recentAssessment && use_saved_region) {\n  intent = 'severity_followup';\n}\n\n// Evidence follow-up: reuse the saved assessment's evidence instead of re-fetching.\n// When the user asks for evidence with no new region, and a recent assessment\n// with a saved region exists, answer from memory (no geocoding/APIs/agents).\nif (intent === 'evidence' && !explicitRegion && !region_query && recentAssessment && memory.active_region && memory.last_assessment) {\n  intent = 'evidence_followup';\n  region_query = memory.active_region;\n  use_saved_region = true;\n}\n\nconst historical_context = historicalEventQuery ? { event_location: historicalLocation, query_type: 'historical_event', requires_live_sources: true } : null;\nconst asksEvidence = /\\b(evidence|reports?|news|sources?|why|cause|causes|full report|happening)\\b/i.test(classificationMessage);\nconst actions_requested = intent === 'actions';\nconst isGreeting = intent === 'greeting' || intent === 'help';\nconst personalWeatherWithoutRegion = !region_query && /\\b(i\\s*(feel|am|'m|need|have)\\s*(very\\s*)?(hot|cold|freezing|overheated)|weather\\s+feels\\s+(freezing|cold|hot)|feeling\\s+(very\\s*)?(hot|cold|freezing)|too\\s+(hot|cold))\\b/i.test(classificationMessage);\nconst vagueThreatWithoutRegion = !region_query && /\\b(check|current|what|any|show|tell)\\b/i.test(classificationMessage) && /\\b(threats?|risks?|danger|disaster|alerts?)\\b/i.test(classificationMessage);\nconst personalConcernWithoutRegion = !region_query && /\\b(i\\s*(feel|am|'m|need|have|see|saw|smell|hear|noticed|worry|worried|scared|concerned)|my\\s+(area|home|farm|road|village|city|family|crops|livestock)|there\\s+is|it\\s+is|it's)\\b/i.test(classificationMessage) && !/\\b(hello|hi|hey|help|what can you do)\\b/i.test(classificationMessage);\nconst missingRegion = !region_query && !isGreeting && !asksRegionAccess;\nconst vagueConversational = /\\b(i feel|i am|i'm|very hot|too hot|freezing|why|happening|instead|what about|what should)\\b/i.test(classificationMessage) && !explicitRegion;\nconst canUseCachedAction = recentAssessment && actions_requested && region_query && use_saved_region;\nconst canUseCachedEvidence = recentAssessment && (intent === 'evidence' || intent === 'evidence_followup') && region_query && use_saved_region;\nconst canUseCachedSeverity = recentAssessment && intent === 'severity_followup' && region_query && use_saved_region;\n\nif (used_awaiting_region) pending_intent = restored_pending_intent;\nelse if (personalWeatherWithoutRegion) pending_intent = 'weather_heat_check';\nelse if (vagueThreatWithoutRegion || (missingRegion && !personalWeatherWithoutRegion && !isGreeting)) pending_intent = pendingFromIntent(intent, message);\n\nlet direct_response = null;\nif (asksRegionAccess) {\n  direct_response = {\n    ok: true,\n    response_kind: 'REGION_ACCESS',\n    overall_threat_level: 'NONE',\n    correlation_status: 'NOT_APPLICABLE',\n    regional_summary: 'CrisisLens supports the Asian regions supplied by the WIaaS Region panel.',\n  };\n} else if (intent === 'greeting') {\n  direct_response = {\n    ok: true,\n    response_kind: 'GREETING',\n    overall_threat_level: 'NONE',\n    correlation_status: 'NOT_APPLICABLE',\n    regional_summary: \"Hello, I'm WIaaS CrisisLens. Ask me about weather, floods, wildfire risk, disaster alerts, regional threats, or actions for farmers, authorities, logistics teams, and the public.\",\n  };\n} else if (intent === 'help') {\n  direct_response = {\n    ok: true,\n    response_kind: 'HELP',\n    overall_threat_level: 'NONE',\n    correlation_status: 'NOT_APPLICABLE',\n    regional_summary: 'I can check current weather, flood or wildfire risk, GDACS disaster alerts, regional reports, and practical actions for specific stakeholders. Tell me a city, state, province, or country.',\n  };\n} else if (missingRegion || personalConcernWithoutRegion) {\n  direct_response = {\n    ok: true,\n    response_kind: 'REGION_REQUIRED',\n    region: '',\n    overall_threat_level: 'NONE',\n    correlation_status: 'NOT_APPLICABLE',\n    regional_summary: personalWeatherWithoutRegion\n      ? 'I’m sorry you’re dealing with that. Which city, region, or country are you in? I’ll check the current weather and heat or cold risk there.'\n      : (personalConcernWithoutRegion\n        ? 'I’m sorry you’re dealing with that. I can check nearby weather, disaster alerts, and regional threat signals for you. Where are you located?'\n        : 'Which city, state, province, or country should I check?'),\n    awaiting_region: true,\n    pending_intent,\n  };\n}\n\nreturn [{\n  json: {\n    valid: Boolean(message || explicitRegion),\n    message,\n    region_query,\n    explicit_region: explicitRegion,\n    intent,\n    pending_intent,\n    restored_pending_intent,\n    historical_event_query: historicalEventQuery,\n    historical_context,\n    selected_route: historicalEventQuery ? 'historical_event' : (used_awaiting_region ? (restored_pending_intent || pending_intent) : (intent === 'weather' || intent === 'heat' ? 'weather_heat_check' : intent)),\n    requested_stakeholder,\n    actions_requested,\n    asks_evidence: asksEvidence,\n    session_id: sessionId,\n    user_id: String(input.user_id ?? input.userId ?? 'anonymous'),\n    source_channel,\n    api_only: true,\n    backend_used: false,\n    needs_geocode: !hasSuppliedCoordinates && !direct_response && !canUseCachedAction && !canUseCachedEvidence && !canUseCachedSeverity,\n    direct_response,\n    needs_conversation_agent: Boolean(!direct_response && (vagueConversational || missingRegion || personalConcernWithoutRegion) && !(region_query && ['weather', 'heat', 'general_threats', 'actions', 'evidence'].includes(intent))),\n    conversation_memory: {\n      last_region: memory.last_region || memory.active_region || '',\n      active_region: memory.active_region || memory.last_region || '',\n      region_key: memory.region_key || '',\n      latitude: memory.latitude ?? null,\n      longitude: memory.longitude ?? null,\n      last_intent: memory.last_intent || '',\n      pending_intent: memory.pending_intent || '',\n      last_pending_intent: memory.last_pending_intent || '',\n      last_stakeholder: memory.last_stakeholder || '',\n      last_threat_level: memory.last_threat_level || '',\n      last_assessment: memory.last_assessment || null,\n      last_threats: Array.isArray(memory.last_threats) ? memory.last_threats : [],\n      awaiting_region: Boolean(memory.awaiting_region),\n      updated_at: memory.updated_at || '',\n      has_recent_assessment: Boolean(recentAssessment),\n      memory_load_ok: memoryLoad.ok,\n      memory_load_error: memoryLoad.error,\n    },\n    use_saved_region,\n    used_awaiting_region,\n    cached_followup: canUseCachedAction || canUseCachedEvidence || canUseCachedSeverity,\n    cached_severity: canUseCachedSeverity,\n    cached_evidence: canUseCachedEvidence,\n    cached_assessment: canUseCachedAction || canUseCachedEvidence || canUseCachedSeverity ? memory.last_assessment : null,\n    schema_version: input.schema_version || 'wiaas.asia.chat.v1',\n    request_kind: input.request_kind || 'standard_query',\n    execution_mode: input.execution_mode || 'efficient',\n    response_style: input.response_style || 'structured',\n    max_response_words: Number(input.max_response_words) || 300,\n    token_strategy: input.token_strategy || 'deterministic_and_cached_first',\n    response_language: String(input.response_language || 'en').toLowerCase().startsWith('ur') ? 'ur' : 'en',\n    routing_query: String(input.routing_query || ''),\n    accessible_region_names: accessibleRegionNames,\n    turn_index: Number(input.turn_index) || 1,\n    repeated_question_count: Number(input.repeated_question_count) || 0,\n    response_variant: Number(input.response_variant) || 0,\n    recent_user_messages: Array.isArray(input.recent_user_messages) ? input.recent_user_messages.slice(-5) : [],\n    region_key: String(input.region_key || suppliedContext.key || ''),\n    region_name: String(input.region_name || suppliedContext.name || explicitRegion || ''),\n    region_context: { ...suppliedContext, key: input.region_key || suppliedContext.key || '', name: input.region_name || suppliedContext.name || explicitRegion || '', city: input.city || suppliedContext.city || '', province: input.province || suppliedContext.province || '', country: input.country || suppliedContext.country || '', country_code: input.country_code || suppliedContext.country_code || '', asian_subregion: input.asian_subregion || suppliedContext.asian_subregion || 'Asia', latitude: hasSuppliedCoordinates ? suppliedLatitude : null, longitude: hasSuppliedCoordinates ? suppliedLongitude : null, timezone: input.timezone || suppliedContext.timezone || '' },\n    supplied_telemetry: input.telemetry || null,\n    supplied_climate_matrix: input.climate_matrix || null,\n    supplied_ledger: input.ledger || input.synthetic_resource_ledger || null,\n  }\n}];"
+      },
+      "id": "9e4640c2-4ea1-4477-a565-b3acfa9f1dc7",
+      "name": "Parse User Request1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9120,
+        26928
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://geocoding-api.open-meteo.com/v1/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.region_query }}"
+            },
+            {
+              "name": "count",
+              "value": "5"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 6000
+        }
+      },
+      "id": "5f63dc1b-127e-410b-8d6b-69eeccea9aee",
+      "name": "Geocode Region1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        11264,
+        26080
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $('Parse User Request1').item.json;\nconst geocode = $json ?? {};\nconst queryRaw = String(request.region_query ?? '').trim();\nconst query = queryRaw.toLowerCase();\n\nfunction isWeatherRoute(req) {\n  return ['weather', 'heat'].includes(req.intent) || ['weather_heat_check', 'weather_temperature_check', 'weather_check', 'heat_check', 'cold_check'].includes(String(req.pending_intent || req.restored_pending_intent || req.selected_route || '').toLowerCase());\n}\n\nfunction planFor(req, geocodeOk) {\n  const noApi = Boolean(req.direct_response) || !geocodeOk;\n  const weatherOnly = isWeatherRoute(req);\n  const evidence = Boolean(req.asks_evidence) || req.intent === 'evidence';\n  const disaster = ['flood', 'earthquake', 'storm'].includes(req.intent);\n  const wildfire = req.intent === 'wildfire';\n  const actionOnly = req.intent === 'actions' && req.cached_followup;\n  return {\n    selected_route: weatherOnly ? 'weather_heat_check' : (req.intent === 'general_threats' ? 'threat_assessment' : req.intent),\n    call_weather: !noApi && !actionOnly && (weatherOnly || wildfire || disaster || req.intent === 'general_threats' || ['drought', 'evidence', 'actions'].includes(req.intent)),\n    call_firms: false,\n    call_gdacs: !noApi && !weatherOnly && !actionOnly && (disaster || req.intent === 'general_threats' || req.intent === 'evidence' || req.intent === 'actions'),\n    call_gdelt: !noApi && !weatherOnly && evidence,\n    run_osint: !noApi && !weatherOnly && !actionOnly,\n    run_action: Boolean(req.actions_requested) && !Boolean(req.cached_followup) && !weatherOnly,\n    firms_reason: 'MAP_KEY_NOT_CONFIGURED',\n  };\n}\n\nconst adminFallbacks = {};\n\nfunction slug(value) {\n  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');\n}\n\nfunction newsQueryFor(region, req) {\n  const threatTermsByIntent = {\n    wildfire: '(wildfire OR \"forest fire\" OR \"active fire\")',\n    flood: '(flood OR flooding OR \"heavy rain\")',\n    earthquake: '(earthquake OR seismic)',\n    storm: '(storm OR cyclone OR hurricane OR typhoon)',\n    heat: '(heatwave OR \"extreme heat\" OR temperature)',\n    drought: '(drought OR \"water shortage\")',\n  };\n  const threatTerms = threatTermsByIntent[req.intent] ?? '(wildfire OR flood OR storm OR heatwave OR drought OR earthquake)';\n  const places = [region.name, region.admin1, region.country].filter(Boolean);\n  return (places.map((v) => '\"' + String(v).replace(/\"/g, '') + '\"').join(' ') + ' ' + threatTerms).trim();\n}\n\nfunction outputForRegion(region, geocode_source = 'open_meteo') {\n  const lat = Number(region.latitude);\n  const lon = Number(region.longitude);\n  const bbox = region.bbox || { north: +(lat + 1.5).toFixed(4), south: +(lat - 1.5).toFixed(4), east: +(lon + 1.5).toFixed(4), west: +(lon - 1.5).toFixed(4) };\n  const api_plan = planFor(request, true);\n  const display = request.region_name || [...new Set([region.name, region.admin1, region.country].filter(Boolean))].join(', ');\n  return {\n    ...request,\n    geocode_ok: true,\n    geocode_source,\n    selected_route: api_plan.selected_route,\n    restored_pending_intent: request.restored_pending_intent || request.pending_intent || '',\n    active_region: display,\n    region_key: request.region_key || slug([region.country_code || region.country, region.admin1, region.name].filter(Boolean).join('_')),\n    region: {\n      name: region.name,\n      country: region.country ?? '',\n      country_code: region.country_code ?? '',\n      admin1: region.admin1 ?? '',\n      admin2: region.admin2 ?? '',\n      latitude: lat,\n      longitude: lon,\n      timezone: region.timezone ?? 'auto',\n    },\n    latitude: lat,\n    longitude: lon,\n    north: bbox.north,\n    south: bbox.south,\n    east: bbox.east,\n    west: bbox.west,\n    news_query: newsQueryFor(region, request),\n    api_plan,\n  };\n}\n\nconst supplied = request.region_context && typeof request.region_context === 'object' ? request.region_context : {};\nconst suppliedLat = Number(supplied.latitude ?? request.latitude);\nconst suppliedLon = Number(supplied.longitude ?? request.longitude);\nconst suppliedInsideAsia = Number.isFinite(suppliedLat) && Number.isFinite(suppliedLon) && suppliedLat >= -12 && suppliedLat <= 82 && suppliedLon >= 25 && suppliedLon <= 180;\nif (!request.direct_response && suppliedInsideAsia) {\n  return [{ json: outputForRegion({\n    name: supplied.city || supplied.name || request.region_name || supplied.country || 'Selected Asian region',\n    admin1: supplied.province || '',\n    country: supplied.country || '',\n    country_code: supplied.country_code || '',\n    latitude: suppliedLat,\n    longitude: suppliedLon,\n    timezone: supplied.timezone || request.timezone || 'auto',\n  }, 'wiaas_region_context') }];\n}\n\nif (request.direct_response) {\n  return [{ json: { ...request, geocode_ok: false, api_plan: planFor(request, false) } }];\n}\n\nconst fallback = adminFallbacks[query];\nif (fallback) return [{ json: outputForRegion(fallback, 'region_registry') }];\n\nconst ASIA_CODES = new Set(['AF','AM','AZ','BH','BD','BT','BN','KH','CN','CY','GE','IN','ID','IR','IQ','IL','JP','JO','KZ','KW','KG','LA','LB','MY','MV','MN','MM','NP','KP','OM','PK','PS','PH','QA','SA','SG','KR','LK','SY','TW','TJ','TH','TL','TR','TM','AE','UZ','VN','YE']);\nconst hits = (Array.isArray(geocode.results) ? geocode.results : []).filter((item) => ASIA_CODES.has(String(item.country_code || '').toUpperCase()));\nfunction score(hit) {\n  const country = String(hit.country ?? '').toLowerCase();\n  const admin1 = String(hit.admin1 ?? '').toLowerCase();\n  const name = String(hit.name ?? '').toLowerCase();\n  let value = 0;\n  if (country && query.includes(country)) value += 10;\n  if (admin1 && query.includes(admin1)) value += 8;\n  if (name && query.includes(name)) value += 6;\n  if (name === query) value += 6;\n  if (hit.feature_code && /adm/i.test(String(hit.feature_code))) value += 3;\n  value += Math.min(Number(hit.population ?? 0) / 1000000, 3);\n  return value;\n}\n\nconst hit = hits\n  .filter((h) => Number.isFinite(Number(h.latitude)) && Number.isFinite(Number(h.longitude)))\n  .sort((a, b) => score(b) - score(a))[0] ?? null;\n\nif (!hit) {\n  const keepPending = request.pending_intent || request.restored_pending_intent || 'general_threats';\n  return [{\n    json: {\n      ...request,\n      geocode_ok: false,\n      selected_route: 'ask_valid_region',\n      direct_response: {\n        ok: false,\n        error: 'REGION_NOT_FOUND',\n        response_kind: 'REGION_REQUIRED',\n        region: queryRaw,\n        regional_summary: 'I could not find that location. Please send a valid city, country, province, state, or supported region and I’ll continue the same check.',\n        awaiting_region: true,\n        pending_intent: keepPending,\n      },\n      api_plan: planFor(request, false),\n    }\n  }];\n}\n\nreturn [{ json: outputForRegion(hit) }];"
+      },
+      "id": "8a537121-947c-433f-b716-6b6bfc7d29d2",
+      "name": "Prepare API Context1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11488,
+        26832
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.open-meteo.com/v1/forecast?latitude={{$json.latitude}}&longitude={{$json.longitude}}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,cloud_cover,wind_speed_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,rain,weather_code,wind_speed_10m,wind_gusts_10m&forecast_days=2&timezone=auto",
+        "options": {
+          "timeout": 6000
+        }
+      },
+      "id": "e3508d71-1de9-434c-bf9b-06db0afcc982",
+      "name": "Open-Meteo Weather API1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        12160,
+        26272
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Prepare API Context1').item.json;\nreturn [{ json: { source_type: 'weather', source_name: 'Open-Meteo', ok: Boolean($json && !$json.error), data: $json ?? {}, error: $json.error?.message || null, region: context.region } }];"
+      },
+      "id": "aa866942-ade9-4eac-95aa-020268e35f81",
+      "name": "Tag Weather Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12384,
+        26272
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://firms.modaps.eosdis.nasa.gov/api/area/csv/REPLACE_NASA_FIRMS_MAP_KEY/VIIRS_SNPP_NRT/{{$json.west}},{{$json.south}},{{$json.east}},{{$json.north}}/2",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 8000
+        }
+      },
+      "id": "310c64d9-6f10-43ad-8095-160588c6e6bf",
+      "name": "NASA FIRMS Fire API - ADD KEY1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        12160,
+        26688
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { source_type: 'fire', source_name: 'NASA FIRMS', ok: Boolean($json && !$json.error), data: $json ?? '', error: $json.error?.message || null } }];"
+      },
+      "id": "39b972ff-9745-4098-b070-6408ac8574eb",
+      "name": "Tag FIRMS Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12384,
+        26688
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.gdacs.org/xml/rss.xml",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 6000
+        }
+      },
+      "id": "447cccd1-86e6-4f3b-ade4-9babb2c786fc",
+      "name": "GDACS Disaster Feed1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        12160,
+        27040
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { source_type: 'disaster', source_name: 'GDACS', ok: Boolean($json && !$json.error), data: $json ?? '', error: $json.error?.message || null } }];"
+      },
+      "id": "73361734-acb7-4bcd-8ad7-aae6f14cff51",
+      "name": "Tag GDACS Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12384,
+        27040
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.gdeltproject.org/api/v2/doc/doc?query={{ encodeURIComponent($json.news_query) }}&mode=artlist&maxrecords=5&format=json&sort=datedesc&timespan=1week",
+        "options": {
+          "timeout": 8000
+        }
+      },
+      "id": "b404dea3-0d05-4b09-97ad-572059472579",
+      "name": "GDELT Regional News API1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        12160,
+        27424
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { source_type: 'news', source_name: 'GDELT', ok: Boolean($json && !$json.error), data: $json ?? { articles: [] }, error: $json.error?.message || null } }];"
+      },
+      "id": "b77b3157-10ac-4a7d-8469-c2ff3a1e5c62",
+      "name": "Tag News Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12384,
+        27424
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "3777ebe1-c8f1-46e4-a546-019771399d62",
+      "name": "Merge API Results1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        12608,
+        26592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Prepare API Context1').item.json;\nconst inputs = $input.all().map((i) => i.json);\nconst byType = Object.fromEntries(inputs.map((i) => [i.source_type, i]));\n\nfunction arrMax(values) {\n  const nums = (values || []).map(Number).filter(Number.isFinite);\n  return nums.length ? Math.max(...nums) : null;\n}\nfunction cleanText(value, max = 180) {\n  return String(value || '').replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, max);\n}\nfunction decodeXml(value = '') {\n  return cleanText(String(value).replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, '$1')\n    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n    .replace(/&#39;/g, \"'\").replace(/&quot;/g, '\"'), 240);\n}\nfunction extractTag(block, tag) {\n  const match = String(block).match(new RegExp('<' + tag + '[^>]*>([\\\\\\\\s\\\\\\\\S]*?)<\\\\\\\\/' + tag + '>', 'i'));\n  return match ? decodeXml(match[1]) : '';\n}\nfunction uniqueBy(items, keyFn) {\n  const seen = new Set();\n  return items.filter((item) => {\n    const key = String(keyFn(item) || '').toLowerCase().trim();\n    if (!key || seen.has(key)) return false;\n    seen.add(key);\n    return true;\n  });\n}\nfunction csvToObjects(csv, limit = 3) {\n  if (typeof csv !== 'string' || !csv.includes('\\n')) return [];\n  const rows = csv.trim().split(/\\r?\\n/).filter(Boolean);\n  if (rows.length < 2 || !rows[0].toLowerCase().includes('latitude')) return [];\n  const headers = rows[0].split(',').map((h) => h.trim());\n  return rows.slice(1, limit + 1).map((line) => {\n    const cols = line.split(',').map((c) => c.trim());\n    return Object.fromEntries(headers.map((h, idx) => [h, cols[idx] ?? '']));\n  });\n}\n\nconst direct = context.direct_response;\nconst weatherRaw = byType.weather?.data ?? {};\nconst hourly = weatherRaw.hourly ?? {};\nconst current = weatherRaw.current ?? {};\nconst weather_summary = {\n  temperature: Number.isFinite(Number(current.temperature_2m)) ? Number(current.temperature_2m) : null,\n  humidity: Number.isFinite(Number(current.relative_humidity_2m)) ? Number(current.relative_humidity_2m) : null,\n  apparent_temperature: Number.isFinite(Number(current.apparent_temperature)) ? Number(current.apparent_temperature) : null,\n  current_rain: Number.isFinite(Number(current.rain)) ? Number(current.rain) : 0,\n  current_precipitation: Number.isFinite(Number(current.precipitation)) ? Number(current.precipitation) : 0,\n  max_precipitation_probability_24h: arrMax((hourly.precipitation_probability || []).slice(0, 24)),\n  max_wind_speed_24h: arrMax((hourly.wind_speed_10m || []).slice(0, 24)),\n  max_wind_gust_24h: arrMax((hourly.wind_gusts_10m || []).slice(0, 24)),\n  max_temperature_24h: arrMax((hourly.temperature_2m || []).slice(0, 24)),\n};\n\nconst fires = byType.fire?.ok ? csvToObjects(byType.fire.data, 3).map((r) => ({\n  latitude: Number(r.latitude),\n  longitude: Number(r.longitude),\n  confidence: r.confidence || '',\n  acquisition_date: r.acq_date || '',\n  short_finding: 'Satellite fire detection from NASA FIRMS',\n})).filter((x) => Number.isFinite(x.latitude) && Number.isFinite(x.longitude)).slice(0, 3) : [];\n\nconst regionTerms = [context.region?.name, context.region?.admin1, context.region?.country, context.region_query].filter(Boolean).map((v) => String(v).toLowerCase());\nconst gdacsText = typeof byType.disaster?.data === 'string' ? byType.disaster.data : String(byType.disaster?.data?.data ?? '');\nconst disaster_alerts = uniqueBy((gdacsText.match(/<item[\\s\\S]*?<\\/item>/gi) || []).map((block) => {\n  const title = extractTag(block, 'title');\n  const description = extractTag(block, 'description');\n  return {\n    title: cleanText(title, 120),\n    disaster_type: cleanText(extractTag(block, 'gdacs:eventtype') || title.split(' ')[0], 40),\n    alert_level: cleanText(extractTag(block, 'gdacs:alertlevel') || extractTag(block, 'gdacs:severity'), 40),\n    published_at: cleanText(extractTag(block, 'pubDate'), 80),\n    short_finding: cleanText(description || title, 160),\n    url: extractTag(block, 'link') || extractTag(block, 'guid'),\n  };\n}).filter((item) => {\n  const haystack = [item.title, item.short_finding].join(' ').toLowerCase();\n  return regionTerms.some((term) => term.length > 1 && haystack.includes(term));\n}), (a) => a.url || a.title).slice(0, 3);\n\nconst articles = Array.isArray(byType.news?.data?.articles) ? byType.news.data.articles : [];\nconst regional_news = uniqueBy(articles.map((a) => ({\n  title: cleanText(a.title, 130),\n  source_domain: cleanText(a.domain, 60),\n  published_at: cleanText(a.seendate || a.date, 60),\n  url: a.url || '',\n  short_finding: cleanText(a.title, 150),\n})), (a) => a.url || a.title).slice(0, 3);\n\nconst preliminary_threats = [];\nif (Number(weather_summary.temperature) >= 40) preliminary_threats.push({ type: 'extreme_heat', severity: weather_summary.temperature >= 45 ? 'HIGH' : 'MEDIUM', short_finding: 'Temperature is ' + weather_summary.temperature + ' C' });\nif (Number(weather_summary.max_wind_gust_24h) >= 60) preliminary_threats.push({ type: 'strong_wind', severity: weather_summary.max_wind_gust_24h >= 90 ? 'HIGH' : 'MEDIUM', short_finding: 'Max wind gust is ' + weather_summary.max_wind_gust_24h + ' km/h' });\nif (Number(weather_summary.current_rain) >= 20 || Number(weather_summary.current_precipitation) >= 20) preliminary_threats.push({ type: 'heavy_rainfall', severity: 'MEDIUM', short_finding: 'Observed current rainfall is ' + (Number(weather_summary.current_rain) || Number(weather_summary.current_precipitation) || 0) + ' mm' });\nelse if (Number(weather_summary.max_precipitation_probability_24h) >= 70) preliminary_threats.push({ type: 'elevated_precipitation_probability', severity: 'LOW', short_finding: 'Forecast precipitation probability up to ' + (weather_summary.max_precipitation_probability_24h ?? 'unknown') + '% in the next 24h; no heavy rainfall currently observed' });\nif (fires.length) preliminary_threats.push({ type: 'active_fire_detection', severity: fires.length >= 3 ? 'HIGH' : 'MEDIUM', short_finding: fires.length + ' fire detections available' });\nfor (const alert of disaster_alerts) preliminary_threats.push({ type: 'gdacs_disaster_alert', severity: /red|orange/i.test(alert.alert_level) ? 'HIGH' : 'MEDIUM', short_finding: alert.title });\n\n// ---- Compact input for the OSINT Agent (token optimization) ----\n// Send ONLY normalized scalars plus at most 5 evidence items. Never send raw\n// Open-Meteo/GDACS payloads, conversation memory, or prior assessments.\nfunction n0(v) { return Number.isFinite(Number(v)) ? Number(v) : 0; }\nconst osintRegionName = [context.region?.name, context.region?.admin1, context.region?.country].filter(Boolean).join(', ') || context.region_query || context.active_region || '';\nconst OSINT_EVIDENCE_LIMIT = 5;\nconst gdacsCompact = disaster_alerts.slice(0, OSINT_EVIDENCE_LIMIT).map((a) => ({ title: a.title, alert_level: a.alert_level, disaster_type: a.disaster_type }));\nconst newsCompact = regional_news.slice(0, Math.max(0, OSINT_EVIDENCE_LIMIT - gdacsCompact.length)).map((a) => ({ title: a.title, source: a.source_domain }));\nconst osint_input = {\n  region: osintRegionName,\n  temperature: n0(weather_summary.temperature),\n  feels_like: n0(weather_summary.apparent_temperature),\n  humidity: n0(weather_summary.humidity),\n  current_precipitation: n0(weather_summary.current_precipitation),\n  precipitation_probability_24h: n0(weather_summary.max_precipitation_probability_24h),\n  max_wind_gust_24h: n0(weather_summary.max_wind_gust_24h),\n  gdacs_alerts: gdacsCompact,\n  relevant_news: newsCompact,\n};\n\nconst source_status = inputs.map((i) => ({\n  source: i.source_name,\n  type: i.source_type,\n  ok: Boolean(i.ok),\n  reason: i.ok ? null : (i.reason || i.error || 'NOT_AVAILABLE'),\n}));\nconst selected = source_status.filter((s) => !['NOT_SELECTED', 'NOT_NEEDED'].includes(String(s.reason)));\nconst selectedOk = selected.filter((s) => s.ok);\nconst apiUnavailable = !direct && selected.length > 0 && selectedOk.length === 0;\nconst hasEvidence = preliminary_threats.length > 0 || disaster_alerts.length > 0 || regional_news.length > 0 || fires.length > 0;\nconst weatherOnly = context.api_plan?.selected_route === 'weather_heat_check' || context.intent === 'weather' || ['weather_heat_check', 'weather_temperature_check', 'weather_check', 'heat_check', 'cold_check'].includes(String(context.pending_intent || context.restored_pending_intent || context.selected_route || '').toLowerCase());\nconst run_osint = Boolean(context.api_plan?.run_osint && hasEvidence && !apiUnavailable);\nconst run_action = Boolean(run_osint && context.actions_requested);\n\nreturn [{\n  json: {\n    direct_response: direct || null,\n    response_kind: direct?.response_kind || (apiUnavailable ? 'API_UNAVAILABLE' : weatherOnly ? 'WEATHER_ONLY' : hasEvidence ? 'THREAT_EVIDENCE' : 'NO_MEASURABLE_THREAT'),\n    region: context.region ?? { name: context.region_query },\n    intent: context.intent,\n    requested_stakeholder: context.requested_stakeholder,\n    source_channel: context.source_channel,\n    session_id: context.session_id,\n    active_region: context.active_region,\n    region_key: context.region_key,\n    latitude: context.latitude,\n    longitude: context.longitude,\n    selected_route: context.api_plan?.selected_route || context.selected_route,\n    pending_intent: context.pending_intent || '',\n    restored_pending_intent: context.restored_pending_intent || '',\n    used_awaiting_region: Boolean(context.used_awaiting_region),\n    conversation_memory_before: context.conversation_memory || {},\n    api_plan: context.api_plan,\n    actions_requested: context.actions_requested,\n    weather_summary,\n    fire_detections: fires,\n    disaster_alerts,\n    regional_news,\n    preliminary_threats: preliminary_threats.slice(0, 5),\n    osint_input,\n    source_status,\n    ai_decision: { run_osint, run_action },\n  }\n}];"
+      },
+      "id": "e9c703eb-de3e-45db-b6b7-b77553f8d2ed",
+      "name": "Normalize API Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12832,
+        26624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseJsonSafe(value, fallback) {\n  if (value && typeof value === 'object' && !Array.isArray(value)) return value;\n  const fence = String.fromCharCode(96) + String.fromCharCode(96) + String.fromCharCode(96);\n  const text = String(value ?? '').trim()\n    .replace(new RegExp('^' + fence + 'json\\\\s*', 'i'), '')\n    .replace(new RegExp('^' + fence + '\\\\s*', 'i'), '')\n    .replace(new RegExp(fence + '$', 'i'), '')\n    .trim();\n  try { return JSON.parse(text); } catch {}\n  const start = text.indexOf('{'), end = text.lastIndexOf('}');\n  if (start >= 0 && end > start) { try { return JSON.parse(text.slice(start, end + 1)); } catch {} }\n  return fallback;\n}\nfunction getNodeJson(name) { try { return $(name).item.json; } catch { return null; } }\nconst normalized = getNodeJson('Normalize API Data') || $json;\nconst regionName = [normalized.region?.name, normalized.region?.admin1, normalized.region?.country].filter(Boolean).join(', ');\nfunction cleanRegion(value){ const parts=String(value||'').split(',').map((p)=>p.trim()).filter(Boolean); const out=[]; for(const p of parts){ const pl=p.toLowerCase(); if(out.some((q)=>q.toLowerCase()===pl))continue; const redundant=parts.some((o)=>{ const ol=o.toLowerCase(); if(o===p||ol.length<=pl.length)return false; return (' '+ol+' ').indexOf(' '+pl+' ')!==-1; }); if(redundant)continue; out.push(p); } return out.join(', '); }\nconst regionDisplay = cleanRegion(regionName);\nconst direct = normalized.direct_response;\nif (direct) {\n  return [{ json: { ...direct, system: 'WIaaS CrisisLens', api_only: true, backend_used: false, source_channel: normalized.source_channel || getNodeJson('Parse User Request')?.source_channel || 'webhook', session_id: getNodeJson('Parse User Request')?.session_id || normalized.session_id, selected_route: normalized.selected_route || direct.pending_intent || 'direct_response', restored_pending_intent: normalized.restored_pending_intent || normalized.pending_intent || direct.pending_intent || '', api_plan: normalized.api_plan || {}, conversation_memory_before: normalized.conversation_memory_before || getNodeJson('Parse User Request')?.conversation_memory || {}, conversation_agent_used: Boolean(getNodeJson('Apply Conversation Decision')?.conversation_agent_used) } }];\n}\n\n// Rain wording safety: never call precipitation probability \"heavy rain\" unless\n// rainfall amount/intensity/accumulation or an official warning supports it.\nconst _normStr = JSON.stringify(normalized || {});\nconst hasRainEvidence = /\\d+(?:\\.\\d+)?\\s*mm|rainfall of|accumulat|red alert|orange alert|official warning|severe weather warning|flood warning/i.test(_normStr);\n// Severe-weather wording is only allowed when an official alert or confirmed\n// severe signal supports it. Otherwise neutralize \"severe weather system\" style\n// phrasing that would otherwise be inferred from precipitation probability alone.\nconst hasSevereEvidence = /red alert|orange alert|official warning|severe weather warning|flood warning|cyclone warning|storm warning|gale warning|tornado warning|hurricane warning|evacuat/i.test(_normStr);\nfunction scrubSevere(text){\n  let t = String(text || '');\n  if (hasSevereEvidence) return t;\n  t = t.replace(/approaching severe weather system/gi, 'an elevated chance of precipitation with moderate wind gusts');\n  t = t.replace(/approaching storm system/gi, 'an elevated chance of precipitation with moderate wind gusts');\n  t = t.replace(/(?:potential|possible|approaching|imminent|expected|developing|likely) severe weather/gi, 'an elevated chance of precipitation with moderate wind gusts');\n  t = t.replace(/severe weather (?:system|is )?(?:approaching|imminent|expected|developing|likely)/gi, 'an elevated chance of precipitation with moderate wind gusts');\n  t = t.replace(/(?:possible |potential |approaching )?(?:approaching )?storms?(?: system)?/gi, 'unsettled weather');\n  t = t.replace(/severe weather system/gi, 'unsettled weather');\n  t = t.replace(/severe (?:thunder)?storm(?:s)?/gi, 'unsettled weather');\n  t = t.replace(/severe weather/gi, 'unsettled weather');\n  return t;\n}\nfunction scrubRain(text){\n  let t = String(text || '');\n  if (hasRainEvidence) return t;\n  t = t.replace(/imminent heavy rainfall/gi, 'a high chance of precipitation');\n  t = t.replace(/imminent heavy rain/gi, 'a high chance of precipitation');\n  t = t.replace(/imminent heavy precipitation/gi, 'a high chance of precipitation');\n  t = t.replace(/severe rainfall/gi, 'a high chance of precipitation');\n  t = t.replace(/heavy rainfall is (?:expected|forecast|likely|imminent)/gi, 'a high probability of precipitation is forecast, but heavy rainfall is not currently confirmed');\n  t = t.replace(/heavy rain is (?:expected|forecast|likely|imminent)/gi, 'a high probability of precipitation is forecast, but heavy rainfall is not currently confirmed');\n  t = t.replace(/heavy rainfall/gi, 'precipitation');\n  t = t.replace(/heavy rain/gi, 'precipitation');\n  return t;\n}\nfunction scrubRainItem(x){ if (x && typeof x === 'object') { const o = { ...x }; for (const k of Object.keys(o)) { if (typeof o[k] === 'string') o[k] = scrubRain(o[k]); } return o; } return scrubRain(x); }\n\nconst sourceOk = (normalized.source_status || []).filter((s) => s.ok).map((s) => s.source);\nconst sourceGaps = (normalized.source_status || []).filter((s) => !s.ok && !['NOT_SELECTED', 'NOT_NEEDED'].includes(String(s.reason))).map((s) => s.source + ':' + s.reason);\nconst fireRelevant = String(normalized.intent || '').toLowerCase() === 'wildfire';\nconst newsRelevant = Boolean(normalized.api_plan?.call_gdelt);\nfunction gapText(x){ if (x && typeof x === 'object') return String(x.description || x.detail || x.gap || x.text || x.title || x.message || x.name || ''); return String(x); }\nfunction evidenceText(x){ if (x && typeof x === 'object') return String(x.detail || x.description || x.short_finding || x.title || x.text || x.gap || ''); return String(x); }\nfunction scrubEvidenceList(list){ return (Array.isArray(list) ? list : []).filter((x) => { const s = evidenceText(x).toLowerCase(); if (!newsRelevant && /(news|gdelt|media|feed)/.test(s) && /(unavailable|not configured|inactive|not selected|limited|narrow|missing|reduced|no coverage|lack)/.test(s)) return false; if (!fireRelevant && /(nasa|firms|fire monitoring|map[_ ]?key|satellite fire)/.test(s)) return false; return evidenceText(x).trim().length > 0; }); }\nfunction splitSentences(text){ const s = String(text || ''); const out = []; let cur = ''; for (let i = 0; i < s.length; i++) { const ch = s[i]; cur += ch; if (ch === '.' || ch === '!' || ch === '?') { const prev = s[i-1], next = s[i+1]; if (ch === '.' && /\\d/.test(prev || '') && /\\d/.test(next || '')) continue; if (next === undefined || /\\s/.test(next)) { if (cur.trim()) out.push(cur.trim()); cur = ''; } } } if (cur.trim()) out.push(cur.trim()); return out.length ? out : [String(text || '')]; }\nfunction scrubSummary(text){ const parts = splitSentences(text); const kept = parts.filter((s) => { const low = s.toLowerCase(); if (!fireRelevant && /(nasa|firms|fire monitoring|fire detection|map[_ ]?key|satellite fire)/.test(low)) return false; if (!newsRelevant && /(news|gdelt|media|feed)/.test(low) && /(unavailable|not configured|inactive|not selected|limited|narrow|missing|no )/.test(low)) return false; if (/not[_ ]?selected|unconfigured|not configured|inactive news feed|map[_ ]?key/.test(low)) return false; return s.trim().length > 0; }); return kept.join(' ').replace(/ +/g, ' ').trim(); }\nfunction naturalizeGap(g) { const src = String(g).split(':')[0].trim(); const low = src.toLowerCase(); if (low.includes('firms')) return 'Satellite fire-detection data was unavailable for this area'; if (low.includes('gdelt')) return 'Regional news signals were limited or unavailable'; if (low.includes('gdacs')) return 'Disaster-alert data was temporarily unavailable'; if (low.includes('meteo')) return 'Weather data was temporarily unavailable'; return src + ' data was unavailable'; }\nfunction gapIsRelevant(g) { const s = String(g).toLowerCase(); if (/firms|fire|map[_ ]?key|nasa/.test(s) && !fireRelevant) return false; return true; }\nfunction sanitizeGapList(list) { return (Array.isArray(list) ? list : []).map(gapText).filter((x) => { const s = x.toLowerCase(); if (/firms|fire monitoring|map[_ ]?key|nasa/.test(s) && !fireRelevant) return false; if (/news|gdelt|media|feed/.test(s) && !newsRelevant) return false; if (/not[_ ]?selected|not[_ ]?needed|unconfigured|not configured|inactive news feed|news feed/.test(s)) return false; return Boolean(x.trim()); }); }\nconst userGaps = sourceGaps.filter(gapIsRelevant).map(naturalizeGap);\nif (normalized.response_kind === 'API_UNAVAILABLE') {\n  return [{ json: { ok: false, error: 'API_UNAVAILABLE', system: 'WIaaS CrisisLens', region: regionName, overall_threat_level: 'API_UNAVAILABLE', correlation_status: 'INSUFFICIENT_EVIDENCE', regional_summary: 'Selected external sources were unavailable, so no threat level was assigned.', source_status: { successful: sourceOk, failed_or_unconfigured: userGaps }, source_channel: normalized.source_channel, session_id: normalized.session_id, selected_route: normalized.selected_route } }];\n}\n\nconst weather = normalized.weather_summary || {};\nfunction num(value) {\n  return Number.isFinite(Number(value)) ? Number(value) : null;\n}\nfunction weatherCondition(w) {\n  if (num(w.current_precipitation) > 0 || num(w.current_rain) > 0) return 'rain or precipitation is being reported';\n  if (num(w.max_wind_speed_24h) >= 35) return 'wind may be noticeable';\n  return 'no major precipitation is showing in the current reading';\n}\nfunction heatRisk(w) {\n  const apparent = num(w.apparent_temperature);\n  const temp = num(w.temperature);\n  const t = apparent ?? temp;\n  if (t === null) return 'I do not have enough temperature data to judge heat or cold stress.';\n  if (t >= 45) return 'This is dangerous heat. Stay out of direct sun if you can, drink water, and seek medical help for confusion, fainting, chest pain, or worsening symptoms.';\n  if (t >= 40) return 'This is very high heat. Reduce outdoor activity, drink water often, and move to shade or a cooler place.';\n  if (t >= 35) return 'This can feel stressful, especially during activity or high humidity. Take breaks, hydrate, and cool down.';\n  if (t <= 0) return 'This is freezing or near-freezing weather. Keep warm, limit exposure, and watch for numbness or shivering.';\n  if (t <= 7) return 'This is cold enough to be uncomfortable with exposure. Keep warm and dry.';\n  return 'The current temperature does not indicate severe heat or cold stress, but your symptoms still matter. Rest, hydrate, and seek help if you feel unwell.';\n}\n\nif (normalized.response_kind === 'WEATHER_ONLY') {\n  const temp = weather.temperature ?? 'unknown';\n  const apparent = weather.apparent_temperature ?? 'unknown';\n  const humidity = weather.humidity ?? 'unknown';\n  // Neutral, non-symptom conditions description.\n  function neutralConditions(w) {\n    if (num(w.current_precipitation) > 0 || num(w.current_rain) > 0) return 'precipitation is currently being reported';\n    return 'no significant precipitation is currently reported';\n  }\n  // Wind: prefer current wind speed, fall back to max forecast wind.\n  const windVal = num(weather.wind_speed) != null ? num(weather.wind_speed) : (num(weather.current_wind_speed) != null ? num(weather.current_wind_speed) : num(weather.max_wind_speed_24h));\n  const windClause = windVal != null\n    ? 'Winds are around ' + windVal + ' km/h'\n    : 'Wind data is not available';\n  // Weather-only region display: city + country (drop intermediate admin levels).\n  const weatherRegion = cleanRegion([normalized.region?.name, normalized.region?.country].filter(Boolean).join(', ')) || regionDisplay || (normalized.region?.name || 'that location');\n  // Only include symptom-focused guidance when the user explicitly reports feeling unwell.\n  const userMsg = String(getNodeJson('Parse User Request')?.message || '').toLowerCase();\n  const feelsUnwell = /\\b(i (?:feel|am feeling|'m feeling|am)\\b.*\\b(hot|cold|dizzy|unwell|sick|faint|nause|weak|ill))|feeling (hot|cold|dizzy|unwell|sick|faint)|heat ?stroke|dehydrat/.test(userMsg);\n  let summary = weatherRegion + ' is currently ' + temp + '°C and feels like ' + apparent + '°C, with humidity around ' + humidity + '%. ' + windClause + ', and ' + neutralConditions(weather) + '.';\n  if (feelsUnwell) { summary = summary + ' ' + heatRisk(weather); }\n  summary = summary + '\\n\\nThis weather information is based on data from Open-Meteo.';\n  return [{ json: {\n    ok: true,\n    system: 'WIaaS CrisisLens',\n    api_only: true,\n    backend_used: false,\n    response_kind: 'WEATHER_ONLY',\n    source_channel: normalized.source_channel,\n    session_id: normalized.session_id,\n    region: regionName || normalized.region?.name || '',\n    resolved_location: regionName || normalized.region?.name || '',\n    active_region: regionName || normalized.active_region || '',\n    region_key: normalized.region_key || '',\n    latitude: normalized.latitude,\n    longitude: normalized.longitude,\n    selected_route: 'weather_heat_check',\n    restored_pending_intent: normalized.restored_pending_intent || normalized.pending_intent || 'weather_heat_check',\n    used_awaiting_region: Boolean(normalized.used_awaiting_region),\n    regional_summary: summary,\n    weather_summary: weather,\n    apis_called: sourceOk,\n    agents_called: [],\n    source_status: { successful: sourceOk, failed_or_unconfigured: [] },\n    api_plan: normalized.api_plan || {},\n    conversation_memory_before: normalized.conversation_memory_before || {},\n    ai_used: { run_osint: false, run_action: false, conversation_agent: Boolean(getNodeJson('Apply Conversation Decision')?.conversation_agent_used) },\n  } }];\n}\n\nlet osint = null;\nlet action = null;\nif (normalized.ai_decision?.run_osint) {\n  const osintNode = getNodeJson('OSINT Correlation Agent');\n  osint = parseJsonSafe(osintNode?.text ?? osintNode?.output ?? osintNode?.response, null);\n}\nif (normalized.ai_decision?.run_action) {\n  const actionNode = getNodeJson('Action Recommendation Agent') || $json;\n  action = parseJsonSafe(actionNode?.text ?? actionNode?.output ?? actionNode?.response, null);\n}\n\nconst hasThreats = normalized.preliminary_threats?.length > 0;\nconst hasHigh = (normalized.preliminary_threats || []).some((t) => /HIGH|CRITICAL/i.test(String(t && t.severity)));\nconst gdacsOk = sourceOk.some((s) => /gdacs/i.test(String(s)));\nconst gdacsAlerts = Array.isArray(normalized.disaster_alerts) ? normalized.disaster_alerts : [];\nconst weatherHasData = num(weather.temperature) !== null || num(weather.apparent_temperature) !== null || num(weather.max_precipitation_probability_24h) !== null || num(weather.current_precipitation) !== null || num(weather.max_wind_gust_24h) !== null;\nconst dataAvailable = weatherHasData || gdacsOk;\nconst shortRegion = normalized.region?.name || (regionDisplay.split(',')[0] || regionDisplay);\n\n// Deterministic assessment when the OSINT agent did not run or returned nothing.\n// Uses the available normalized weather + GDACS data instead of declaring\n// \"not enough evidence\" whenever a threshold-crossing threat is absent.\nconst _precipProb = num(weather.max_precipitation_probability_24h);\nconst _curRain = num(weather.current_rain) != null ? num(weather.current_rain) : num(weather.current_precipitation);\nconst _gust = num(weather.max_wind_gust_24h);\nconst _temp = num(weather.temperature);\nconst _apparent = num(weather.apparent_temperature);\nconst _feels = _apparent != null ? _apparent : _temp;\nconst _humidity = num(weather.humidity);\n\nfunction detEvidence() {\n  const ev = [];\n  if (_curRain != null && _curRain >= 20) ev.push('Open-Meteo reports current rainfall of ' + _curRain + ' mm.');\n  else if (_precipProb != null && _precipProb >= 50) ev.push('Open-Meteo forecasts an elevated chance of precipitation (up to ' + _precipProb + '%) in the next 24 hours, with no current heavy rainfall confirmed.');\n  else if (_precipProb != null) ev.push('Open-Meteo shows a low chance of precipitation (up to ' + _precipProb + '%) in the next 24 hours.');\n  if (_gust != null && _gust >= 30) ev.push('Maximum wind gusts up to ' + _gust + ' km/h are forecast in the next 24 hours.');\n  if (_feels != null && _feels >= 40) ev.push('Apparent temperature is around ' + _feels + '°C, indicating notable heat stress.');\n  else if (_temp != null) ev.push('Current temperature is ' + _temp + '°C' + (_humidity != null ? ' with humidity around ' + _humidity + '%' : '') + '.');\n  if (gdacsAlerts.length) ev.push('GDACS lists ' + gdacsAlerts.length + ' active disaster alert' + (gdacsAlerts.length > 1 ? 's' : '') + ' relevant to the area.');\n  else if (gdacsOk) ev.push('GDACS reports no active disaster alerts for the area.');\n  return ev;\n}\n\nlet deterministicLevel;\nif (hasHigh) deterministicLevel = 'HIGH';\nelse if (hasThreats) deterministicLevel = 'MEDIUM';\nelse if (dataAvailable) deterministicLevel = 'LOW';\nelse deterministicLevel = 'INSUFFICIENT_EVIDENCE';\n\n// Deterministic correlation status: LOW-with-data is a SUPPORTED \"no active\n// threat\" reading; MEDIUM/HIGH deterministic is partial; no data is insufficient.\nlet deterministicStatus;\nif (hasThreats || hasHigh) deterministicStatus = 'PARTIALLY_SUPPORTED';\nelse if (dataAvailable) deterministicStatus = 'SUPPORTED';\nelse deterministicStatus = 'INSUFFICIENT_EVIDENCE';\n\nconst gdacsClause = gdacsAlerts.length\n  ? ('GDACS reports ' + gdacsAlerts.length + ' active disaster alert' + (gdacsAlerts.length > 1 ? 's' : '') + '.')\n  : (gdacsOk ? 'GDACS reports no active disaster alerts.' : '');\nlet deterministicSummary;\nif (deterministicLevel === 'INSUFFICIENT_EVIDENCE') {\n  deterministicSummary = 'I did not find enough evidence from the selected API data to assign an active threat level for ' + regionDisplay + '. Monitor official local updates because conditions can change.';\n} else if (deterministicLevel === 'LOW') {\n  // No threat threshold crossed, but valid API data exists: report a calm LOW.\n  const parts = [shortRegion + ' currently shows a LOW threat level.'];\n  parts.push('Current weather conditions and the next 24-hour forecast do not cross the configured threat thresholds' + (gdacsClause ? ', and ' + gdacsClause : '.'));\n  parts.push('Conditions appear stable, but continue monitoring official local updates.');\n  deterministicSummary = parts.join(' ');\n} else {\n  const levelPhrase = { MEDIUM: 'a moderate', HIGH: 'a high', CRITICAL: 'a critical' }[deterministicLevel] || 'an elevated';\n  const bits = [shortRegion + ' currently shows ' + levelPhrase + ' weather-related threat level.'];\n  if (_curRain != null && _curRain >= 20) bits.push('Current rainfall is being reported.');\n  else if (_precipProb != null && _precipProb >= 50) bits.push('Forecast data indicates an elevated chance of precipitation, but no current heavy rainfall is confirmed.');\n  if (_gust != null && _gust >= 50) bits.push('Strong wind gusts up to ' + _gust + ' km/h are possible.');\n  else if (_gust != null && _gust >= 30) bits.push('Moderate wind gusts up to ' + _gust + ' km/h are possible.');\n  if (_feels != null && _feels >= 40) bits.push('Heat levels are elevated, so take heat precautions.');\n  if (gdacsClause) bits.push(gdacsClause);\n  bits.push(hasHigh ? 'Treat this as a serious situation and follow official guidance.' : 'Conditions should be monitored, but the available data does not indicate an immediate critical threat.');\n  deterministicSummary = bits.join(' ');\n}\nconst detEvidenceList = detEvidence();\n\nconst assessedNow = hasThreats || dataAvailable;\nconst recommended = action?.actions || {\n  farmers: normalized.requested_stakeholder === 'farmers' && assessedNow ? ['Monitor official advisories and adjust field work, irrigation, livestock, and worker safety plans to current conditions.'] : [],\n  grid_operators: [],\n  emergency_authorities: [],\n  logistics_operators: [],\n  local_government: [],\n  general_public: ['Monitor official local alerts.', 'Avoid acting on unconfirmed reports.'],\n};\n\nreturn [{ json: {\n  ok: true,\n  system: 'WIaaS CrisisLens',\n  api_only: true,\n  backend_used: false,\n  source_channel: normalized.source_channel,\n  session_id: normalized.session_id,\n  region: cleanRegion(osint?.region || regionName || normalized.region?.name || ''),\n  resolved_location: cleanRegion(osint?.region || regionName || normalized.region?.name || ''),\n  active_region: regionName || normalized.active_region || '',\n  region_key: normalized.region_key || '',\n  latitude: normalized.latitude,\n  longitude: normalized.longitude,\n  selected_route: normalized.selected_route || 'threat_assessment',\n  restored_pending_intent: normalized.restored_pending_intent || normalized.pending_intent || '',\n  used_awaiting_region: Boolean(normalized.used_awaiting_region),\n  generated_at: new Date().toISOString(),\n  overall_threat_level: osint?.overall_threat_level || deterministicLevel,\n  correlation_status: osint?.correlation_status || deterministicStatus,\n  regional_summary: scrubSevere(scrubRain(scrubSummary(osint?.regional_summary || deterministicSummary))),\n  threats: (Array.isArray(osint?.threats) ? osint.threats : (normalized.preliminary_threats || [])).map(scrubRainItem),\n  evidence: scrubEvidenceList(Array.isArray(osint?.supporting_evidence) ? osint.supporting_evidence : (detEvidenceList.length ? detEvidenceList : [...(normalized.disaster_alerts || []), ...(normalized.regional_news || []), ...(normalized.fire_detections || [])].slice(0, 3))).map(scrubRainItem),\n  probable_causes: Array.isArray(osint?.probable_causes) ? osint.probable_causes : [],\n  recommended_actions: recommended,\n  urgency: action?.urgency || (hasHigh ? 'ACT_NOW' : (assessedNow ? 'MONITOR' : 'ROUTINE')),\n  priority_message: action?.priority_message || (assessedNow ? 'Monitor official alerts and take precautionary steps matched to current conditions.' : 'No urgent action is suggested from the available API data.'),\n  monitoring_next: action?.monitoring_next || (fireRelevant ? ['Open-Meteo weather', 'GDACS alerts', 'GDELT reports when requested', 'Satellite fire detections'] : ['Open-Meteo weather', 'GDACS alerts', 'GDELT reports when requested']),\n  safety_note: action?.safety_note || 'During an emergency, follow instructions from local authorities.',\n  information_gaps: sanitizeGapList(Array.isArray(osint?.information_gaps) ? osint.information_gaps : userGaps),\n  source_status: { successful: sourceOk, failed_or_unconfigured: userGaps },\n  apis_called: sourceOk,\n  agents_called: [normalized.ai_decision?.run_osint ? 'OSINT Correlation Agent' : '', normalized.ai_decision?.run_action ? 'Action Recommendation Agent' : ''].filter(Boolean),\n  api_plan: normalized.api_plan || {},\n  conversation_memory_before: normalized.conversation_memory_before || {},\n  ai_used: { ...(normalized.ai_decision || { run_osint: false, run_action: false }), conversation_agent: Boolean(getNodeJson('Apply Conversation Decision')?.conversation_agent_used) },\n} }];"
+      },
+      "id": "5a4af47f-546c-4ad9-91d2-6b7746027bf9",
+      "name": "Build Frontend Response1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14208,
+        26864
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let j = $input.first().json || {};\ntry { j = $('Save Conversation State1').item.json || j; } catch (e) {}\nlet request = {};\ntry { request = $('Parse User Request1').item.json || {}; } catch (e) {}\nlet stakeholder = request.requested_stakeholder || 'general_public';\nconst headings = { farmers: 'Farmer actions', grid_operators: 'Grid actions', emergency_authorities: 'Emergency actions', logistics_operators: 'Logistics actions', local_government: 'Local-government actions', general_public: 'Public actions' };\nconst actions = Array.isArray(j.recommended_actions && j.recommended_actions[stakeholder]) ? j.recommended_actions[stakeholder].slice(0, 3) : [];\nconst base = String(j.chat_message || j.regional_summary || j.output || j.message || 'No CrisisLens response was generated.');\nconst actionText = actions.length ? '\\n\\n' + (headings[stakeholder] || 'Recommended actions') + ':\\n' + actions.map((item, index) => (index + 1) + '. ' + String(item)).join('\\n') : '';\nconst successfulSources = Array.isArray(j.source_status && j.source_status.successful) ? j.source_status.successful.slice(0, 4) : [];\nconst sourceText = successfulSources.length && !/based on data from/i.test(base) ? '\\n\\nSources: ' + successfulSources.join(', ') + '.' : '';\nconst detailed = request.request_kind === 'comprehensive_report' || request.response_style === 'detailed';\nfunction textOf(value) {\n  if (value && typeof value === 'object') return String(value.short_finding || value.detail || value.description || value.title || value.message || JSON.stringify(value));\n  return String(value || '');\n}\nfunction listLines(values, fallback) {\n  const list = (Array.isArray(values) ? values : []).map(textOf).filter(Boolean).slice(0, 5);\n  return list.length ? list.map((item, index) => (index + 1) + '. ' + item).join('\\n') : fallback;\n}\nfunction capWords(value, maxWords) {\n  const words = String(value || '').trim().split(/\\s+/).filter(Boolean);\n  return words.length <= maxWords ? String(value || '').trim() : words.slice(0, maxWords).join(' ') + '…';\n}\nlet reply = base + actionText + sourceText;\nconst accessNames = Array.isArray(request.accessible_region_names) ? request.accessible_region_names.filter(Boolean) : [];\nif (!detailed) {\n  const variant = (Number(request.response_variant) || 0) % 4;\n  const repeated = Number(request.repeated_question_count) || 0;\n  const kind = String(j.response_kind || '').toUpperCase();\n  const userText = String(request.message || '').toLowerCase();\n  if (kind === 'REGION_ACCESS') {\n    const listed = accessNames.length ? accessNames.map((name) => '- ' + name).join('\\n') : '- Select any Asian country or city available in the Region panel.';\n    reply = ['CrisisLens currently has access to ' + accessNames.length + ' Asian regions:', '', listed, '', 'Select any listed region, then ask about weather threats, evidence, severity, public safety, agriculture, grid operations, logistics, or a full report.'].join('\\n');\n  } else if (kind === 'GREETING') {\n    reply = [\n      \"Hi — I’m CrisisLens. What would you like to understand about your selected region?\",\n      \"Hello! I’m ready to help you make sense of regional threats and practical next steps.\",\n      \"Good to hear from you. Tell me what you’re noticing, and we’ll examine it together.\",\n      \"Hi there. You can ask me naturally about weather, risk, evidence, or what to do next.\"\n    ][variant];\n  } else if (kind === 'REGION_REQUIRED') {\n    const personal = /\\b(i feel|i am|i'm|worried|scared|cold|hot|freezing|unwell)\\b/.test(userText);\n    const open = personal ? \"I’m sorry you’re dealing with that. I can help you check it carefully.\" : \"I can check that for you.\";\n    reply = open + '\\n\\n**Location needed**\\nWhich Asian city, province, or country are you currently in? Once you tell me, I can check the relevant conditions and ask which detail matters most to you.';\n  } else {\n    const openings = repeated > 0\n      ? ['I’ve checked that again and organized the answer a little differently.', 'Here’s a refreshed view of the same concern.', 'Absolutely — let’s revisit it with clearer priorities.', 'I rechecked the latest evidence and focused this answer on practical meaning.']\n      : ['Here’s the clearest current assessment.', 'I’ve reviewed the available regional risk signals.', 'Let’s walk through what the evidence means.', 'Here’s the practical risk picture right now.'];\n    const rawActions = actions.length ? actions.map(String) : ['Continue monitoring official local updates.', 'Recheck conditions if the situation changes.', 'Tell me which stakeholder or weather risk you want to focus on.'];\n    const rotatedActions = rawActions.length > 1 ? rawActions.slice(variant % rawActions.length).concat(rawActions.slice(0, variant % rawActions.length)) : rawActions;\n    const actionLines = rotatedActions.map((item, index) => (index + 1) + '. ' + item);\n    const sourceLine = successfulSources.length ? successfulSources.join(', ') : 'No verified external source was returned for this response.';\n    const perspectives = [\n      'I’m keeping this centered on current weather and climate risk, with local official alerts taking priority over any regional model.',\n      'From a planning angle, the useful question is what may change next and which low-regret action is worth taking now.',\n      'From an evidence angle, the confidence comes from agreement between the listed sources; missing sources remain a limitation.',\n      'From a personal-safety angle, use this regional assessment as context and follow local authorities if conditions change quickly.'\n    ];\n    const followups = [\n      'Would you like current conditions, the near-term forecast, or one specific weather hazard next?',\n      'Should I turn this into advice for residents, farmers, grid operators, or logistics teams?',\n      'Do you want the supporting evidence, a severity explanation, or a city-to-city comparison?',\n      'What matters most right now: rain, heat, wind, flooding, agriculture, power, or travel?'\n    ];\n    const assessmentTitles = ['Assessment', 'Updated weather-risk view', 'Evidence-led interpretation', 'Practical weather context'];\n    reply = [openings[variant], '', '**' + assessmentTitles[variant] + '**', base, ...(repeated > 0 ? ['', perspectives[variant]] : []), '', '**Threat level**', '- Severity: ' + (j.overall_threat_level || 'UNKNOWN'), '- Correlation: ' + (j.correlation_status || 'UNKNOWN'), '', '**Practical next steps**', ...actionLines, '', '**Evidence sources**', sourceLine, '', followups[variant]].join('\\n');\n  }\n}\nif (detailed) {\n  const threatLines = listLines(j.threats, 'No threshold-crossing active threat was detected from the available evidence.');\n  const evidenceLines = listLines(j.evidence, 'No additional corroborating evidence was returned.');\n  const sectorEntries = Object.entries(j.recommended_actions || {}).filter(([, value]) => Array.isArray(value) && value.length);\n  const sectorLines = sectorEntries.length\n    ? sectorEntries.slice(0, 5).map(([key, value]) => '- ' + (headings[key] || key.replace(/_/g, ' ')) + ': ' + value.slice(0, 2).map(String).join(' ')).join('\\n')\n    : '- No sector-specific impact is supported beyond general monitoring.';\n  const monitoring = Array.isArray(j.monitoring_next) ? j.monitoring_next.map(textOf).join('; ') : textOf(j.monitoring_next || j.priority_message || 'Continue official local monitoring.');\n  const gaps = Array.isArray(j.source_status && j.source_status.failed_or_unconfigured) ? j.source_status.failed_or_unconfigured.map(textOf).filter(Boolean) : [];\n  const detailedReport = [\n    'CrisisLens Comprehensive Assessment',\n    '',\n    'Region: ' + (j.region || j.resolved_location || j.active_region || request.region_name || 'Selected Asian region'),\n    'Severity: ' + (j.overall_threat_level || 'UNKNOWN'),\n    'Correlation: ' + (j.correlation_status || 'UNKNOWN'),\n    '',\n    'Executive Assessment:',\n    base,\n    '',\n    'Detected Threats:',\n    threatLines,\n    '',\n    'Evidence by Source:',\n    evidenceLines,\n    '',\n    'Affected Sectors and Actions:',\n    sectorLines,\n    '',\n    'Monitoring Triggers:',\n    monitoring,\n    '',\n    'Limitations:',\n    gaps.length ? gaps.join('; ') : 'No additional source limitations were reported; absence of an alert is not a guarantee that conditions cannot change.',\n    '',\n    'Sources:',\n    successfulSources.length ? successfulSources.join(', ') : 'No verified source was returned.',\n  ].join('\\n');\n  const limit = Math.max(220, Math.min(450, Number(request.max_response_words) || 450));\n  reply = capWords(detailedReport, limit);\n}\nconst englishReply = reply;\nconst responseLanguage = String(request.response_language || 'en').toLowerCase().startsWith('ur') ? 'ur' : 'en';\nconst responseKind = String(j.response_kind || '').toUpperCase();\nconst regionLabel = j.region || j.resolved_location || j.active_region || request.region_name || 'منتخب ایشیائی علاقہ';\nconst severity = j.overall_threat_level || 'UNKNOWN';\nconst correlation = j.correlation_status || 'UNKNOWN';\nconst sourceList = successfulSources.length ? successfulSources.join(', ') : 'کوئی تصدیق شدہ بیرونی ذریعہ دستیاب نہیں';\nlet urduReply = '';\nif (responseKind === 'REGION_ACCESS') {\n  const listed = accessNames.length ? accessNames.map((name) => '- ' + name).join('\\n') : '- ریجن پینل میں دستیاب کوئی بھی ایشیائی ملک یا شہر منتخب کریں۔';\n  urduReply = ['کرائسس لینز کو اس وقت ' + accessNames.length + ' ایشیائی علاقوں تک رسائی حاصل ہے:', '', listed, '', 'کسی علاقے کو منتخب کریں، پھر موسم، خطرات، شواہد، شدت، عوامی حفاظت، زراعت، بجلی، لاجسٹکس یا مکمل رپورٹ کے بارے میں پوچھیں۔'].join('\\n');\n} else if (responseKind === 'GREETING') {\n  urduReply = 'السلام علیکم۔ میں کرائسس لینز ہوں۔ آپ اپنے منتخب علاقے کے موسم، سیلاب، آگ، آفات، شواہد یا عملی حفاظتی اقدامات کے بارے میں پوچھ سکتے ہیں۔';\n} else if (responseKind === 'REGION_REQUIRED') {\n  urduReply = 'میں آپ کے لیے یہ معلومات چیک کر سکتا ہوں۔\\n\\n**مقام درکار ہے**\\nبراہ کرم اپنا ایشیائی شہر، صوبہ یا ملک بتائیں۔ اس کے بعد میں متعلقہ خطرات اور حالات کا جائزہ دوں گا۔';\n} else {\n  const riskMeaning = String(severity).toUpperCase() === 'LOW'\n    ? 'دستیاب شواہد اس وقت کم خطرے کی نشاندہی کرتے ہیں، تاہم حالات بدل سکتے ہیں۔'\n    : 'خطرے کی موجودہ سطح کی وجہ سے مقامی سرکاری ہدایات اور تازہ معلومات پر قریب سے نظر رکھیں۔';\n  urduReply = [\n    'میں نے ' + regionLabel + ' کے تازہ علاقائی خطرات کا جائزہ لیا ہے۔',\n    '',\n    '**موجودہ جائزہ**',\n    riskMeaning,\n    '',\n    '**خطرے کی سطح**',\n    '- شدت: ' + severity,\n    '- شواہد کا باہمی تعلق: ' + correlation,\n    '',\n    '**عملی اگلے اقدامات**',\n    '1. مقامی سرکاری انتباہات اور موسم کی تازہ معلومات دیکھتے رہیں۔',\n    '2. غیر مصدقہ خبروں پر فوری عمل نہ کریں۔',\n    '3. صورتحال بدلے تو دوبارہ خطرے کی جانچ کریں۔',\n    '',\n    '**شواہد کے ذرائع**',\n    sourceList,\n    '',\n    'کیا آپ اگلا جائزہ عوامی حفاظت، کسانوں، بجلی، لاجسٹکس یا مکمل رپورٹ کے لیے چاہتے ہیں؟'\n  ].join('\\n');\n}\nreply = responseLanguage === 'ur' ? urduReply : englishReply;\nreturn [{ json: {\n  reply,\n  chat_message: reply,\n  speech_en: englishReply,\n  speech_ur: urduReply,\n  response_language: responseLanguage,\n  response_kind: j.response_kind || '',\n  region: j.region || j.resolved_location || j.active_region || '',\n  region_key: j.region_key || '',\n  overall_threat_level: j.overall_threat_level || 'UNKNOWN',\n  correlation_status: j.correlation_status || 'UNKNOWN',\n  recommended_actions: j.recommended_actions || {},\n  source_status: j.source_status || {},\n} }];"
+      },
+      "id": "5c46453d-0382-40fa-a245-e493aaed619d",
+      "name": "Return to Frontend1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        15104,
+        27552
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-chat-source",
+              "leftValue": "={{ $('Parse User Request1').item.json.source_channel }}",
+              "rightValue": "chat",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5ccdc197-fb3f-4a23-83f0-d720d814825b",
+      "name": "Route Chat or Webhook Response1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        14880,
+        27456
+      ]
+    },
+    {
+      "parameters": {
+        "message": "={{ (() => { const $j = $('Save Conversation State1').item.json;\n  if (['CACHED_ACTION_FOLLOWUP','CACHED_SEVERITY_FOLLOWUP','CACHED_EVIDENCE_FOLLOWUP'].includes($j.response_kind) && $j.chat_message) { return $j.chat_message; }\n  return (\n  ['GREETING','HELP','REGION_REQUIRED','CONVERSATIONAL','WEATHER_ONLY'].includes($j.response_kind) ||\n  ['REGION_REQUIRED','REGION_NOT_FOUND'].includes($j.error)\n)\n  ? (\n      $j.regional_summary ||\n      ($j.error === 'REGION_NOT_FOUND'\n        ? 'I could not find that location. Please send a valid city, country, province, state, or supported region and I’ll continue the same check.'\n        : ''\n      ) ||\n      $j.direct_response ||\n      $j.priority_message ||\n      'I can help with that. Where are you located?'\n    )\n  : (\n    $j.ok === false\n      ? (($j.regional_summary || $j.region || '').trim() || 'I could not complete that request.')\n      : (\n        ($j.regional_summary || $j.priority_message || 'No summary returned.') +\n        (\n          (($j.recommended_actions && $j.recommended_actions.farmers || []).length)\n            ? '\\n\\nFarmers: ' + ($j.recommended_actions.farmers || []).join('; ')\n            : ''\n        ) +\n        (() => { const ok = ($j.source_status && $j.source_status.successful) || []; const nj = (a) => a.length <= 1 ? (a[0] || '') : (a.length === 2 ? a[0] + ' and ' + a[1] : a.slice(0, -1).join(', ') + ', and ' + a[a.length - 1]); const src = ok.length ? '\\n\\nThis assessment is based on data from ' + nj(ok) + '.' : ''; const gaps = ($j.source_status && $j.source_status.failed_or_unconfigured) || []; const lim = gaps.length ? '\\n\\nEvidence limitation: ' + gaps.join('; ') + '.' : ''; return src + lim; })()\n      )\n  ); })() }}",
+        "options": {}
+      },
+      "id": "78cee151-7914-4482-8c2e-7c33feeb391f",
+      "name": "Return to Chat1",
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.3,
+      "position": [
+        15104,
+        27360
+      ],
+      "webhookId": "crisislens-chat-response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-needs-geocode-condition",
+              "leftValue": "={{ String($json.needs_geocode) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b206b87b-be34-4761-8107-fb8b27df4a96",
+      "name": "Route Needs Geocode1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        11040,
+        26832
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-weather-api-condition",
+              "leftValue": "={{ String($json.api_plan.call_weather) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dad5f4b0-5c98-424f-b9f8-08d5c7eda9e9",
+      "name": "Route Weather API1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        11936,
+        26160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-firms-api-condition",
+              "leftValue": "={{ String($json.api_plan.call_firms) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fcc18eba-5a1c-43f4-855b-486111ed8087",
+      "name": "Route FIRMS API1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        11936,
+        26576
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-gdacs-api-condition",
+              "leftValue": "={{ String($json.api_plan.call_gdacs) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e36f7c36-e9bb-4de2-8254-ac6f2ed5f5d7",
+      "name": "Route GDACS API1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        11936,
+        27136
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-gdelt-api-condition",
+              "leftValue": "={{ String($json.api_plan.call_gdelt) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2bcca2e4-effa-4c60-9200-f09c62d7ff03",
+      "name": "Route GDELT API1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        11936,
+        27520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "should-run-osint--condition",
+              "leftValue": "={{ String($json.ai_decision.run_osint) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4daf76ef-ca25-492f-a85c-4666a281b8b9",
+      "name": "Should Run OSINT?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        13056,
+        26624
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "should-run-action--condition",
+              "leftValue": "={{ String($json.ai_decision.run_action) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "39230e6e-b92c-4bea-974c-42924baf9136",
+      "name": "Should Run Action?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        13632,
+        26336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Prepare API Context1').item.json;\nreturn [{ json: { source_type: 'weather', source_name: 'Open-Meteo', ok: false, data: {}, reason: context.direct_response ? 'NOT_NEEDED' : 'NOT_SELECTED' } }];"
+      },
+      "id": "17b7e2e6-4585-4f4f-bf77-99f656149507",
+      "name": "Skip Weather Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12384,
+        26080
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { source_type: 'fire', source_name: 'NASA FIRMS', ok: false, data: [], reason: 'MAP_KEY_NOT_CONFIGURED' } }];"
+      },
+      "id": "2e2efafd-4aeb-429e-acb3-0f08b5dcab4d",
+      "name": "Skip FIRMS Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12384,
+        26464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Prepare API Context1').item.json;\nreturn [{ json: { source_type: 'disaster', source_name: 'GDACS', ok: false, data: '', reason: context.direct_response ? 'NOT_NEEDED' : 'NOT_SELECTED' } }];"
+      },
+      "id": "eb9e1d80-13a7-4cf2-add3-e229373bf1fe",
+      "name": "Skip GDACS Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12384,
+        27232
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Prepare API Context1').item.json;\nreturn [{ json: { source_type: 'news', source_name: 'GDELT', ok: false, data: { articles: [] }, reason: context.direct_response ? 'NOT_NEEDED' : 'NOT_SELECTED' } }];"
+      },
+      "id": "b4b03558-e5e0-401d-a054-10c30c3f8581",
+      "name": "Skip GDELT Data1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12384,
+        27616
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "needs-conversational-decision--condition",
+              "leftValue": "={{ String($json.needs_conversation_agent) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "70d53715-2e7f-4ce2-9020-0ee12fb110d5",
+      "name": "Needs Conversational Decision?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        9344,
+        26928
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseJsonSafe(value, fallback) {\n  if (value && typeof value === 'object' && !Array.isArray(value)) return value;\n  const fence = String.fromCharCode(96) + String.fromCharCode(96) + String.fromCharCode(96);\n  const text = String(value ?? '').trim()\n    .replace(new RegExp('^' + fence + 'json\\\\s*', 'i'), '')\n    .replace(new RegExp('^' + fence + '\\\\s*', 'i'), '')\n    .replace(new RegExp(fence + '$', 'i'), '')\n    .trim();\n  try { return JSON.parse(text); } catch {}\n  const start = text.indexOf('{'), end = text.lastIndexOf('}');\n  if (start >= 0 && end > start) { try { return JSON.parse(text.slice(start, end + 1)); } catch {} }\n  return fallback;\n}\n\nlet base;\ntry { base = $('Parse User Request1').item.json; } catch { base = $json; }\nconst decision = base.needs_conversation_agent\n  ? parseJsonSafe($json.text ?? $json.output ?? $json.response ?? $json, null)\n  : null;\n\nconst out = { ...base };\nif (decision) {\n  out.conversation_agent_used = true;\n  out.intent = decision.intent && decision.intent !== 'unknown' ? decision.intent : out.intent;\n  out.region_query = decision.region || (decision.use_saved_region ? out.conversation_memory?.last_region : out.region_query);\n  out.requested_stakeholder = decision.stakeholder && decision.stakeholder !== 'none' ? decision.stakeholder : out.requested_stakeholder;\n  out.actions_requested = Boolean(decision.needs_action_agent || out.actions_requested);\n  out.asks_evidence = Boolean(decision.needs_osint_agent || out.asks_evidence || out.intent === 'evidence');\n  if (decision.direct_response || decision.needs_region) {\n    out.direct_response = {\n      ok: !decision.needs_region,\n      error: decision.needs_region ? 'REGION_REQUIRED' : undefined,\n      response_kind: decision.needs_region ? 'REGION_REQUIRED' : 'CONVERSATIONAL',\n      overall_threat_level: 'NONE',\n      correlation_status: 'NOT_APPLICABLE',\n      regional_summary: decision.direct_response || 'Which city, state, province, or country should I check?',\n      awaiting_region: Boolean(decision.needs_region),\n    };\n  }\n  out.conversation_decision = decision;\n}\n\nif (out.cached_followup && out.cached_assessment) {\n  if (out.cached_severity || out.intent === 'severity_followup') {\n    out.cached_severity = true;\n    out.cached_action = false;\n    out.cached_evidence = false;\n    out.needs_geocode = false;\n  } else if (out.cached_evidence || out.intent === 'evidence_followup') {\n    out.cached_evidence = true;\n    out.cached_action = false;\n    out.cached_severity = false;\n    out.needs_geocode = false;\n  } else if (out.intent === 'actions') {\n    out.cached_action = true;\n    out.needs_geocode = false;\n    const _ca = out.cached_assessment || {};\n    out.action_assessment = { region: _ca.region, overall_threat_level: _ca.overall_threat_level, correlation_status: _ca.correlation_status, regional_summary: _ca.regional_summary, threats: _ca.threats, evidence: (Array.isArray(_ca.evidence) ? _ca.evidence.slice(0, 5) : []) };\n  } else {\n    out.direct_response = {\n      ...out.cached_assessment,\n      ok: true,\n      response_kind: 'CACHED_EVIDENCE_FOLLOWUP',\n      regional_summary: 'Using the latest saved assessment for ' + out.region_query + '. ' + (out.cached_assessment.regional_summary || ''),\n    };\n  }\n}\n\nout.needs_geocode = !out.direct_response && !out.cached_severity && !out.cached_evidence && !out.cached_action && Boolean(out.region_query);\nreturn [{ json: out }];"
+      },
+      "id": "f3303579-3c5f-44f3-8879-2a3c293f9023",
+      "name": "Apply Conversation Decision1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9920,
+        26928
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Save Conversation State — compute the memory object to persist. The actual\n// write happens in the downstream \"Persist Data Table Memory\" upsert node,\n// which reads $json.conversation_memory_after produced here.\nconst response = $json;\nlet parsed = {};\ntry { parsed = $('Parse User Request1').item.json; } catch (e) {}\nconst current = (parsed && parsed.conversation_memory) || response.conversation_memory_before || {};\nconst before = response.conversation_memory_before || current || {};\n\nconst session = parsed.session_id || response.session_id || 'anonymous';\nconst region = response.active_region || response.region || parsed.region_query || current.last_region || '';\nconst pending = response.pending_intent || response.restored_pending_intent || parsed.pending_intent || parsed.restored_pending_intent || current.pending_intent || '';\nconst isRegionRequired = Boolean(response.awaiting_region || response.error === 'REGION_REQUIRED' || response.response_kind === 'REGION_REQUIRED');\nconst shouldKeepPending = isRegionRequired || response.error === 'REGION_NOT_FOUND';\nconst lastAssessment = response.ok !== false && !['GREETING', 'HELP', 'REGION_REQUIRED', 'WEATHER_ONLY', 'CACHED_ACTION_FOLLOWUP', 'CACHED_SEVERITY_FOLLOWUP', 'CACHED_EVIDENCE_FOLLOWUP'].includes(response.response_kind || '') && response.error !== 'REGION_REQUIRED'\n  ? {\n      region: response.region || region,\n      overall_threat_level: response.overall_threat_level || '',\n      correlation_status: response.correlation_status || '',\n      regional_summary: response.regional_summary || '',\n      threats: Array.isArray(response.threats) ? response.threats.slice(0, 5) : [],\n      evidence: Array.isArray(response.evidence) ? response.evidence.slice(0, 3) : [],\n      probable_causes: Array.isArray(response.probable_causes) ? response.probable_causes.slice(0, 2) : [],\n      recommended_actions: response.recommended_actions || {},\n      priority_message: response.priority_message || '',\n      source_status: response.source_status || {},\n    }\n  : (current.last_assessment || null);\n\nconst after = {\n  session_id: session,\n  active_region: isRegionRequired ? (current.active_region || current.last_region || '') : region,\n  last_region: isRegionRequired ? (current.last_region || '') : region,\n  region_key: isRegionRequired ? (current.region_key || '') : (response.region_key || current.region_key || ''),\n  latitude: isRegionRequired ? (current.latitude ?? null) : (response.latitude ?? current.latitude ?? null),\n  longitude: isRegionRequired ? (current.longitude ?? null) : (response.longitude ?? current.longitude ?? null),\n  last_intent: parsed.intent || current.last_intent || '',\n  pending_intent: shouldKeepPending ? (pending || 'general_threats') : '',\n  last_pending_intent: pending || current.last_pending_intent || '',\n  last_stakeholder: parsed.requested_stakeholder || current.last_stakeholder || '',\n  last_threat_level: response.overall_threat_level || current.last_threat_level || '',\n  last_threats: Array.isArray(response.threats) ? response.threats.slice(0, 5) : (current.last_threats || []),\n  last_assessment: lastAssessment,\n  awaiting_region: Boolean(shouldKeepPending),\n  updated_at: new Date().toISOString(),\n};\n\nreturn [{ json: { ...response, conversation_memory_before: before, conversation_memory_after: after, memory_save_ok: true, memory_save_error: '' } }];"
+      },
+      "id": "e70ef18f-e287-419a-affa-d923b5a41d3d",
+      "name": "Save Conversation State1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14432,
+        27456
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-direct-response-condition",
+              "leftValue": "={{ String(Boolean($json.direct_response)) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c579a181-4b7b-4fbf-8571-654de877afb8",
+      "name": "Route Direct Response1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        10816,
+        27264
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-prepared-direct-response-condition",
+              "leftValue": "={{ String(Boolean($json.direct_response)) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c4fd140e-a95f-47e1-838a-9fb430f42e37",
+      "name": "Route Prepared Direct Response1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        11712,
+        26832
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-cached-action-cond",
+              "leftValue": "={{ String($json.cached_action) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "254c27ad-135a-48fb-bc16-739c5b2588ad",
+      "name": "Route Cached Action1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        10592,
+        27328
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function getNodeJson(name){ try{ return $(name).item.json; }catch{ return null; } }\nconst acd=getNodeJson('Apply Conversation Decision')||$json||{};\nconst parsed=getNodeJson('Parse User Request')||{};\nconst ca=acd.cached_assessment||acd.action_assessment||{};\n\n// ---- Region display (dedupe repeated admin segments, e.g. \"Punjab, Punjab, Pakistan\") ----\nfunction cleanRegion(value){\n  const parts=String(value||'').split(',').map((p)=>p.trim()).filter(Boolean);\n  const out=[];\n  for(const p of parts){ const pl=p.toLowerCase(); if(out.some((q)=>q.toLowerCase()===pl))continue; const redundant=parts.some((o)=>{ const ol=o.toLowerCase(); if(o===p||ol.length<=pl.length)return false; return (' '+ol+' ').indexOf(' '+pl+' ')!==-1; }); if(redundant)continue; out.push(p); }\n  return out.join(', ');\n}\nconst regionDisplay=cleanRegion(ca.region||acd.active_region||acd.region_query||'this region');\nconst regionName=ca.region||acd.active_region||acd.region_query||'';\n\n// ---- Stakeholder detection: current message wins, then saved memory, then general_public ----\nconst stakeholder=parsed.requested_stakeholder||acd.requested_stakeholder||(ca.last_stakeholder)||'general_public';\nconst headingMap={\n  farmers:'What farmers should do',\n  general_public:'What the general public should do',\n  emergency_authorities:'What emergency authorities should do',\n  logistics_operators:'What logistics operators should do',\n  grid_operators:'What grid operators should do',\n  local_government:'What local government should do',\n};\nconst heading=headingMap[stakeholder]||('What '+String(stakeholder).replace(/_/g,' ')+' should do');\n\n// ---- Saved threat level ----\nconst level=String(ca.overall_threat_level||'LOW').toUpperCase();\nconst active=level==='MEDIUM'||level==='HIGH'||level==='CRITICAL';\n\n// ---- Threat-type detection from the saved assessment (deterministic, no LLM) ----\nconst haystack=[Array.isArray(ca.threats)?ca.threats.join(' '):'',Array.isArray(ca.evidence)?ca.evidence.join(' '):'',ca.regional_summary||''].join(' ').toLowerCase();\nconst types={\n  rain:/flood|rain|precipitation|waterlog|inundat|monsoon/.test(haystack),\n  wind:/wind|gust|storm|cyclone|gale/.test(haystack),\n  heat:/heat|humid|temperature|hot|feels-like|feels like|heat index/.test(haystack),\n  fire:/fire|wildfire|smoke|burn/.test(haystack),\n  cold:/cold|snow|frost|freeze|freezing/.test(haystack),\n  disaster:/earthquake|tsunami|volcan|landslide|disaster alert|gdacs/.test(haystack),\n};\n\n// ---- Evidence-based escalation: urgent actions ONLY when the saved evidence confirms a\n//      specific serious hazard. Never inferred from precipitation probability alone. ----\nconst caStr=JSON.stringify(ca||{});\n// Severe rainfall amount / accumulation / official warning (same signal the wording scrub uses)\nconst hasRainEvidence=/\\d+(?:\\.\\d+)?\\s*mm|rainfall of|accumulat|red alert|orange alert|official warning|severe weather warning|flood warning/i.test(caStr);\nconst confirmedFlooding=/flood warning|flash flood|floodwater|inundation|flooding is (?:occurring|underway|reported|confirmed)|active flooding|ongoing flood/i.test(caStr);\nconst officialEvacuation=/evacuat/i.test(caStr);\nconst activeWildfire=/active (?:wild)?fire|wildfire (?:is )?(?:active|spreading|burning)|actively burning|fire detected|fire is spreading|hotspot detected/i.test(caStr);\n// Dangerous wind: numeric gust >= 75 km/h, or explicit severe-wind wording. Probability text ignored.\nlet maxGust=0; const gm=caStr.match(/(\\d+(?:\\.\\d+)?)\\s*km\\/h/gi)||[]; for(const g of gm){ const n=parseFloat(g); if(!isNaN(n)&&n>maxGust)maxGust=n; }\nconst dangerousWind=maxGust>=75||/damaging wind|destructive wind|gale warning|storm warning|hurricane|cyclone warning/i.test(caStr);\nconst escalate=hasRainEvidence||confirmedFlooding||officialEvacuation||activeWildfire||dangerousWind;\n\nconst baseLevel=(level==='HIGH'||level==='CRITICAL')?'HIGH':(level==='MEDIUM'?'MEDIUM':'LOW');\nconst effectiveLevel=escalate?'HIGH':baseLevel;\n\n// ---- Level-aware templates: stakeholder -> level -> (type map for MEDIUM/HIGH) ----\n// LOW  = monitor and prepare (low-impact only; no evacuation / relocation / emergency deployment)\n// MEDIUM = take precautions (drainage, protect assets, relocate vulnerable items only if likely)\n// HIGH = act immediately (move people/livestock/assets, suspend operations, evacuate, reroute)\nconst T={\n  farmers:{\n    low:[\n      'Monitor official weather forecasts and updates.',\n      'Inspect field drainage and equipment.',\n      'Secure lightweight outdoor items and loose equipment.',\n      'Adjust irrigation only if rainfall develops.',\n      'Continue normal operations with routine caution.',\n    ],\n    medium:{\n      rain:['Clear field and farm drainage channels ahead of rainfall.','Protect exposed crops and cover vulnerable seedlings.','Relocate vulnerable stored items if waterlogging becomes likely.'],\n      wind:['Secure loose equipment, sheeting, and greenhouse structures.','Stake or shelter vulnerable standing crops against strong wind.','Move lightweight or exposed items to sheltered storage if strong wind becomes likely.'],\n      heat:['Shift fieldwork to cooler morning or evening hours.','Provide water and shade for workers and livestock.','Monitor crop moisture and adjust irrigation carefully.'],\n      fire:['Clear dry vegetation and maintain firebreaks around fields and buildings.','Keep water and basic firefighting tools accessible.','Prepare to move livestock and stored feed if fire risk rises.'],\n      cold:['Protect sensitive crops with cover or mulch against frost.','Prepare shelter for vulnerable livestock.','Protect water lines and irrigation from freezing.'],\n      disaster:['Follow official agricultural and civil-defence advisories.','Prepare to move livestock and inputs if conditions worsen.','Keep emergency supplies and communications ready.'],\n      generic:['Clear drainage and protect exposed crops and equipment.','Prepare farm staff and emergency resources.','Relocate vulnerable items if conditions worsen.'],\n    },\n    high:{\n      rain:['Move livestock and stored produce out of flood-prone areas now.','Move seed, inputs, and equipment to higher, covered storage.','Suspend field operations in waterlogged or unsafe areas.'],\n      wind:['Move livestock and equipment away from exposed areas and weak structures.','Secure or remove anything that could be damaged or become airborne.','Suspend unsafe outdoor operations.'],\n      heat:['Reduce strenuous fieldwork and work during cooler morning or evening hours.','Provide water and shade for workers and livestock, and watch for heat stress.','Monitor crop moisture and adjust irrigation carefully.','Limit strenuous activity during peak afternoon heat.','Follow official heat-advisory guidance.'],\n      fire:['Move livestock, workers, and stored feed away from the fire path now.','Follow evacuation and official emergency instructions.','Suspend operations in threatened areas.'],\n      cold:['Move vulnerable livestock into insulated shelter now.','Protect or drain water systems against a hard freeze.','Suspend unsafe outdoor operations.'],\n      disaster:['Move livestock, people, equipment, and supplies from danger zones now.','Activate emergency plans and follow official instructions.','Suspend operations in affected areas.'],\n      generic:['Move livestock, people, equipment, and supplies from danger zones now.','Suspend unsafe operations and follow official emergency instructions.','Keep emergency supplies and communications ready.'],\n    },\n  },\n  general_public:{\n    low:[\n      'Monitor official weather updates and local alerts.',\n      'Keep phones charged and note local emergency contacts.',\n      'Secure lightweight outdoor items.',\n      'Avoid acting on unconfirmed reports.',\n      'Continue normal activity with routine caution.',\n    ],\n    medium:{\n      rain:['Avoid low-lying, flood-prone roads and underpasses.','Do not walk or drive through moving water.','Prepare for possible local disruption and keep alerts on.'],\n      wind:['Secure loose outdoor objects and stay clear of trees and weak structures.','Delay non-essential travel during peak winds.','Stay away from windows in strong gusts.'],\n      heat:['Stay hydrated and limit strenuous outdoor activity in peak heat.','Stay in shade or cooled spaces during the hottest hours.','Check on elderly, children, and vulnerable neighbours.'],\n      fire:['Monitor air-quality and evacuation guidance from authorities.','Keep windows closed and limit smoke exposure.','Prepare a go-bag in case conditions worsen.'],\n      cold:['Dress in warm layers and limit time in extreme cold.','Heat living spaces safely and watch for carbon-monoxide risk.','Check on elderly and vulnerable neighbours.'],\n      disaster:['Follow official advisories and prepare an emergency kit.','Know local shelter and evacuation routes.','Stay tuned to official channels for updates.'],\n      generic:['Monitor official local alerts and weather updates.','Avoid unnecessary travel in affected areas.','Prepare for possible disruption.'],\n    },\n    high:{\n      rain:['Move to higher ground and away from floodwater now.','Do not enter flooded roads, underpasses, or waterways.','Follow evacuation and official emergency instructions.'],\n      wind:['Shelter indoors away from windows during dangerous winds.','Avoid all non-essential travel and stay clear of falling hazards.','Follow official emergency instructions.'],\n      heat:['Stop outdoor exertion and move to cooling immediately.','Seek medical help for heat-illness symptoms.','Check urgently on vulnerable people.'],\n      fire:['Evacuate now if instructed and follow official routes.','Avoid smoke and keep away from the fire path.','Follow all emergency instructions.'],\n      cold:['Stay indoors and keep warm during extreme cold.','Seek warming shelter if heating fails.','Check urgently on vulnerable people.'],\n      disaster:['Follow evacuation orders and official emergency instructions now.','Move away from danger zones immediately.','Keep an emergency kit and documents ready.'],\n      generic:['Follow official emergency instructions and any evacuation orders now.','Move away from danger zones immediately.','Keep emergency supplies ready.'],\n    },\n  },\n  emergency_authorities:{\n    low:['Monitor official alerts and situation reports.','Review response plans and confirm on-call readiness.','Keep the public informed with routine guidance.'],\n    medium:{ generic:['Pre-position response resources in likely-affected areas.','Verify communications, shelters, and evacuation routes.','Coordinate with local agencies and update the public.'] },\n    high:{ generic:['Activate the emergency operations plan and response teams now.','Direct evacuations and close or reroute dangerous areas.','Coordinate agencies and issue urgent public warnings.'] },\n  },\n  logistics_operators:{\n    low:['Monitor route and weather conditions.','Review contingency routing options.','Continue normal operations with routine caution.'],\n    medium:{ generic:['Plan around affected corridors and avoid low-lying routes.','Protect cargo and depots from likely weather impact.','Prepare contingency routing and buffer schedules.'] },\n    high:{ generic:['Suspend routing through danger zones now.','Reroute fleets away from closed or unsafe corridors.','Coordinate with authorities on open routes.'] },\n  },\n  grid_operators:{\n    low:['Monitor grid load and weather impact.','Inspect the status of vulnerable infrastructure.','Keep restoration crews on routine standby.'],\n    medium:{ generic:['Inspect and reinforce exposed lines and assets.','Pre-stage restoration crews for possible outages.','Monitor load and prepare for fault isolation.'] },\n    high:{ generic:['Isolate damaged sections and prioritise critical facilities now.','De-energise unsafe lines as needed.','Deploy restoration crews as access allows.'] },\n  },\n  local_government:{\n    low:['Monitor official alerts.','Review local contingency plans.','Keep residents informed with routine guidance.'],\n    medium:{ generic:['Issue localised advisories and clear public drainage.','Ready shelters and support for vulnerable residents.','Coordinate with emergency services.'] },\n    high:{ generic:['Activate contingency plans and issue urgent public warnings now.','Open shelters and coordinate evacuations.','Close or reroute dangerous public areas.'] },\n  },\n};\n\nconst stakeObj=T[stakeholder]||T.general_public;\nconst order=['rain','wind','heat','fire','cold','disaster'];\n\n// ---- Prioritize the highest-risk threat type ----\n// Score each detected threat type by the highest severity of the saved threats\n// that reference it, so the most serious threat's actions are listed first while\n// still including every saved threat type.\nconst typePatterns={\n  rain:/flood|rain|precipitation|waterlog|inundat|monsoon/i,\n  wind:/wind|gust|storm|cyclone|gale/i,\n  heat:/heat|humid|temperature|hot|feels[- ]?like|heat index|arid|dry/i,\n  fire:/fire|wildfire|smoke|burn/i,\n  cold:/cold|snow|frost|freeze|freezing/i,\n  disaster:/earthquake|tsunami|volcan|landslide|disaster alert|gdacs/i,\n};\nfunction sevRank(s){ const v=String(s||'').toUpperCase(); if(v==='CRITICAL')return 4; if(v==='HIGH')return 3; if(v==='MEDIUM')return 2; if(v==='LOW')return 1; return 0; }\nfunction threatBlob(x){ if(x&&typeof x==='object')return [x.type,x.description,x.short_finding,x.detail,x.title].filter(Boolean).join(' '); return String(x||''); }\nconst savedThreats=Array.isArray(ca.threats)?ca.threats:[];\nconst savedEvidence=Array.isArray(ca.evidence)?ca.evidence:[];\n// Priority ranking: the OSINT agent lists threats in priority order, so an\n// earlier position = higher priority. When explicit per-threat severity exists,\n// it takes precedence. typeScore holds the highest severity seen (0 if none);\n// typePos holds the earliest threat-array index a type appears at (lower = more\n// important). Evidence order is used as a secondary position signal.\nconst typeScore={}; const typePos={};\nfor(const k of order){ typeScore[k]=types[k]?0:0; if(types[k])typePos[k]=999; }\nfunction scan(list,base){ for(let i=0;i<list.length;i++){ const blob=threatBlob(list[i]); const rank=sevRank(list[i]&&list[i].severity); for(const k of order){ if(typePatterns[k].test(blob)){ types[k]=true; if(rank>(typeScore[k]||0))typeScore[k]=rank; const pos=base+i; if(typePos[k]===undefined||pos<typePos[k])typePos[k]=pos; } } } }\nscan(savedThreats,0);\nscan(savedEvidence,100);\n// Detected types ordered by: explicit severity desc, then earliest position asc,\n// then canonical order. This surfaces the dominant threat's actions first\n// (e.g. heat listed first by OSINT) while still including every saved type.\nconst detectedOrder=order.filter((k)=>types[k]).sort((a,b)=>{\n  const ds=(typeScore[b]||0)-(typeScore[a]||0); if(ds!==0)return ds;\n  const dp=(typePos[a]===undefined?999:typePos[a])-(typePos[b]===undefined?999:typePos[b]); if(dp!==0)return dp;\n  return order.indexOf(a)-order.indexOf(b);\n});\n\n// Highest saved threat-type severity (0..4). Lets a dominant hazard (e.g. HIGH\n// \"extreme heat\" threat) drive type-specific precautions even when the OVERALL\n// level is LOW — so farmer heat advice appears when heat is the main threat.\nlet maxTypeSev=0; for(const k of detectedOrder){ const sc=(typeScore[k]||0); if(sc>maxTypeSev)maxTypeSev=sc; }\n// Template tier: escalation/HIGH -> high; otherwise use the highest of the overall\n// level and the dominant threat-type severity (MEDIUM+ threat => precaution tier).\nlet tier;\nif(effectiveLevel==='HIGH'){ tier='high'; }\nelse if(effectiveLevel==='MEDIUM'||maxTypeSev>=2){ tier='medium'; }\nelse { tier='low'; }\n\n// Build candidate step pool matched to the tier, highest-risk threat first.\nlet pool=[];\nif(tier==='low'){\n  pool=(stakeObj.low||[]).slice();\n} else {\n  const tierMap=(tier==='high'?stakeObj.high:stakeObj.medium)||{};\n  if(detectedOrder.length){ for(const t of detectedOrder){ if(Array.isArray(tierMap[t])) pool=pool.concat(tierMap[t]); } }\n  if(pool.length<3&&Array.isArray(tierMap.generic)) pool=pool.concat(tierMap.generic);\n  if(pool.length<3&&Array.isArray(stakeObj.low)) pool=pool.concat(stakeObj.low);\n}\n\n// de-duplicate, keep order, cap 3..5\nconst seen=new Set(); const steps=[];\nfor(const s of pool){ const k=s.toLowerCase(); if(seen.has(k))continue; seen.add(k); steps.push(s); if(steps.length>=5)break; }\nconst actions=steps.slice(0,Math.max(3,Math.min(5,steps.length)));\nconst numbered=actions.map((a,i)=>(i+1)+'. '+String(a).replace(/^\\s*\\d+[.)]\\s*/,'').trim());\n\n// ---- Natural source sentence ----\nfunction naturalJoin(arr){ arr=(arr||[]).filter(Boolean); if(arr.length<=1)return arr[0]||''; if(arr.length===2)return arr[0]+' and '+arr[1]; return arr.slice(0,-1).join(', ')+', and '+arr[arr.length-1]; }\nconst successful=(ca.source_status&&Array.isArray(ca.source_status.successful)&&ca.source_status.successful.length)?ca.source_status.successful:['Open-Meteo','GDACS'];\nconst sourceSentence='This assessment is based on data from '+naturalJoin(successful)+'.';\n\n// ---- Evidence limitation (only when a real gap exists; never \"Gaps: none\") ----\nconst gaps=(ca.source_status&&Array.isArray(ca.source_status.failed_or_unconfigured))?ca.source_status.failed_or_unconfigured.filter(Boolean):[];\nconst limitationLine=gaps.length?('\\n\\nEvidence limitation: '+gaps.map((g)=>String(g).replace(/\\.*$/,'')).join('; ')+'.'):'';\n\n// ---- Rain wording safety: don't call precipitation probability \"heavy rain\" without amount/intensity/warning ----\nfunction scrubRain(text){\n  let t=String(text||'');\n  if(hasRainEvidence)return t;\n  t=t.replace(/imminent heavy precipitation/gi,'a high chance of precipitation');\n  t=t.replace(/imminent heavy rainfall/gi,'a high chance of precipitation');\n  t=t.replace(/imminent heavy rain/gi,'a high chance of precipitation');\n  t=t.replace(/severe rainfall/gi,'a high chance of precipitation');\n  t=t.replace(/severe precipitation/gi,'a high chance of precipitation');\n  t=t.replace(/heavy precipitation/gi,'precipitation');\n  t=t.replace(/heavy rainfall is (?:expected|forecast|likely|imminent)/gi,'a high chance of precipitation is forecast, but heavy rainfall is not currently confirmed');\n  t=t.replace(/heavy rain is (?:expected|forecast|likely|imminent)/gi,'a high chance of precipitation is forecast, but heavy rainfall is not currently confirmed');\n  t=t.replace(/heavy rainfall/gi,'precipitation');\n  t=t.replace(/heavy rain/gi,'precipitation');\n  return t;\n}\n\n// ---- Severe-weather wording safety (no unsupported \"severe weather system\") ----\nconst hasSevereEvidence=/red alert|orange alert|official warning|severe weather warning|flood warning|cyclone warning|storm warning|gale warning|tornado warning|hurricane warning|evacuat/i.test(caStr);\nfunction scrubSevere(text){\n  let t=String(text||'');\n  if(hasSevereEvidence)return t;\n  t=t.replace(/approaching severe weather system/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/approaching storm system/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/(?:potential|possible|approaching|imminent|expected|developing|likely) severe weather/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/severe weather (?:system|is )?(?:approaching|imminent|expected|developing|likely)/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/(?:possible |potential |approaching )?(?:approaching )?storms?(?: system)?/gi,'unsettled weather');\n  t=t.replace(/severe weather system/gi,'unsettled weather');\n  t=t.replace(/severe (?:thunder)?storm(?:s)?/gi,'unsettled weather');\n  t=t.replace(/severe weather/gi,'unsettled weather');\n  return t;\n}\n\n// ---- One short context sentence from the saved assessment (decimal-safe split) ----\nfunction firstSentenceOf(text){\n  const s=String(text||''); let cur='';\n  for(let i=0;i<s.length;i++){ const ch=s[i]; cur+=ch; if(ch==='.'||ch==='!'||ch==='?'){ const prev=s[i-1],next=s[i+1]; if(ch==='.'&&/\\d/.test(prev||'')&&/\\d/.test(next||''))continue; if(next===undefined||/\\s/.test(next))return cur.trim(); } }\n  return cur.trim();\n}\nlet summary=String(ca.regional_summary||'').trim();\nlet contextSentence=scrubSevere(scrubRain(firstSentenceOf(summary)));\nif(!contextSentence){ contextSentence='The overall threat level is '+String(ca.overall_threat_level||'LOW').toLowerCase()+' based on the latest assessment.'; }\n\nconst chat_message=regionDisplay+' context: '+contextSentence+'\\n\\n'+heading+':\\n'+numbered.join('\\n')+'\\n\\n'+sourceSentence+limitationLine;\n\nconst urgency=effectiveLevel==='HIGH'?'PROMPT':(effectiveLevel==='MEDIUM'?'MONITOR':'ROUTINE');\nconst priority_message=ca.priority_message||('The overall threat level for '+regionDisplay+' is '+level.toLowerCase()+'. Take precautionary steps matched to the current conditions.');\n\nreturn [{ json: {\n  ok:true, system:'WIaaS CrisisLens', api_only:true, backend_used:false,\n  source_channel: acd.source_channel||parsed.source_channel||'webhook',\n  session_id: acd.session_id||parsed.session_id,\n  response_kind:'CACHED_ACTION_FOLLOWUP',\n  region: regionName, resolved_location: regionName,\n  active_region: acd.active_region||regionName, region_key: acd.region_key||'',\n  latitude: acd.latitude??null, longitude: acd.longitude??null,\n  selected_route:'action_from_memory',\n  requested_stakeholder: stakeholder,\n  stakeholder_heading: heading,\n  chat_message,\n  overall_threat_level: ca.overall_threat_level||'LOW',\n  correlation_status: ca.correlation_status||'PARTIALLY_SUPPORTED',\n  regional_summary: '',\n  context_sentence: contextSentence,\n  numbered_actions: numbered,\n  action_level: effectiveLevel,\n  threats: Array.isArray(ca.threats)?ca.threats:[],\n  evidence: Array.isArray(ca.evidence)?ca.evidence:[],\n  probable_causes: Array.isArray(ca.probable_causes)?ca.probable_causes:[],\n  recommended_actions: { [stakeholder]: actions },\n  stakeholder_actions: actions,\n  urgency,\n  priority_message,\n  monitoring_next: ['Open-Meteo weather','GDACS alerts'],\n  safety_note:'During an emergency, follow instructions from local authorities.',\n  information_gaps: [],\n  source_status: ca.source_status||{ successful:[], failed_or_unconfigured:[] },\n  source_sentence: sourceSentence,\n  apis_called: [], agents_called: [],\n  ai_used: { run_osint:false, run_action:false, conversation_agent:false, cached_followup:true },\n  reused_from_cache:true,\n  action_template_used:true,\n} }];"
+      },
+      "id": "88241959-44fb-408b-bff3-3fe37bcc30c3",
+      "name": "Build Cached Action Response1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14208,
+        27952
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-cached-severity-cond",
+              "leftValue": "={{ String($json.cached_severity) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d6c0f6d8-6e42-44da-8b20-a4c33b80ad53",
+      "name": "Route Cached Severity1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        10144,
+        26928
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function getNodeJson(name){ try{ return $(name).item.json; }catch{ return null; } }\nconst acd=getNodeJson('Apply Conversation Decision')||$json||{};\nconst parsed=getNodeJson('Parse User Request')||{};\nconst ca=acd.cached_assessment||{};\n\nfunction cleanRegion(value){\n  const parts=String(value||'').split(',').map((p)=>p.trim()).filter(Boolean);\n  const out=[];\n  for(const p of parts){ const pl=p.toLowerCase(); if(out.some((q)=>q.toLowerCase()===pl))continue; const redundant=parts.some((o)=>{ const ol=o.toLowerCase(); if(o===p||ol.length<=pl.length)return false; return (' '+ol+' ').indexOf(' '+pl+' ')!==-1; }); if(redundant)continue; out.push(p); }\n  return out.join(', ');\n}\nconst regionDisplay=cleanRegion(ca.region||acd.active_region||acd.region_query||'this region');\nconst regionName=ca.region||acd.active_region||acd.region_query||'';\nconst level=String(ca.overall_threat_level||acd.last_threat_level||'LOW');\nconst levelLower=level.toLowerCase();\n\n// Natural source sentence.\nfunction naturalJoin(arr){ arr=(arr||[]).filter(Boolean); if(arr.length<=1)return arr[0]||''; if(arr.length===2)return arr[0]+' and '+arr[1]; return arr.slice(0,-1).join(', ')+', and '+arr[arr.length-1]; }\nconst successful=(ca.source_status&&Array.isArray(ca.source_status.successful)&&ca.source_status.successful.length)?ca.source_status.successful:['Open-Meteo','GDACS'];\nconst sourceSentence='This assessment is based on data from '+naturalJoin(successful)+'.';\n\n// Rain wording safety: don't call precipitation probability \"heavy rain\" without amount/intensity/warning.\nconst caStr=JSON.stringify(ca||{});\nconst hasRainEvidence=/\\d+(?:\\.\\d+)?\\s*mm|rainfall of|accumulat|red alert|orange alert|official warning|severe weather warning|flood warning/i.test(caStr);\nfunction scrubRain(text){\n  let t=String(text||'');\n  if(hasRainEvidence)return t;\n  t=t.replace(/imminent heavy precipitation/gi,'a high chance of precipitation');\n  t=t.replace(/imminent heavy rainfall/gi,'a high chance of precipitation');\n  t=t.replace(/imminent heavy rain/gi,'a high chance of precipitation');\n  t=t.replace(/severe rainfall/gi,'a high chance of precipitation');\n  t=t.replace(/severe precipitation/gi,'a high chance of precipitation');\n  t=t.replace(/heavy precipitation/gi,'precipitation');\n  t=t.replace(/heavy rainfall is (?:expected|forecast|likely|imminent)/gi,'a high chance of precipitation is forecast, but heavy rainfall is not currently confirmed');\n  t=t.replace(/heavy rain is (?:expected|forecast|likely|imminent)/gi,'a high chance of precipitation is forecast, but heavy rainfall is not currently confirmed');\n  t=t.replace(/heavy rainfall/gi,'precipitation');\n  t=t.replace(/heavy rain/gi,'precipitation');\n  return t;\n}\n\n// Severe-weather wording safety (no unsupported \"severe weather system\").\nconst hasSevereEvidence=/red alert|orange alert|official warning|severe weather warning|flood warning|cyclone warning|storm warning|gale warning|tornado warning|hurricane warning|evacuat/i.test(caStr);\nfunction scrubSevere(text){\n  let t=String(text||'');\n  if(hasSevereEvidence)return t;\n  t=t.replace(/approaching severe weather system/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/approaching storm system/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/(?:potential|possible|approaching|imminent|expected|developing|likely) severe weather/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/severe weather (?:system|is )?(?:approaching|imminent|expected|developing|likely)/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/(?:possible |potential |approaching )?(?:approaching )?storms?(?: system)?/gi,'unsettled weather');\n  t=t.replace(/severe weather system/gi,'unsettled weather');\n  t=t.replace(/severe (?:thunder)?storm(?:s)?/gi,'unsettled weather');\n  t=t.replace(/severe weather/gi,'unsettled weather');\n  return t;\n}\n\n// Primary reason from saved threats/evidence.\nfunction threatText(x){ if(x&&typeof x==='object')return String(x.short_finding||x.description||x.detail||x.title||x.type||''); return String(x); }\nconst threats=Array.isArray(ca.threats)?ca.threats:[];\nconst evidence=Array.isArray(ca.evidence)?ca.evidence:[];\nlet reason=threats.length?threatText(threats[0]):(evidence.length?String(evidence[0]):'');\nreason=scrubSevere(scrubRain(reason)).trim();\n\n// Severity guidance phrasing.\nconst guidanceByLevel={\n  none:'so no active threat is currently indicated.',\n  low:'so the situation is minor and mainly warrants routine awareness.',\n  medium:'so the situation requires caution and monitoring but is not currently assessed as critical.',\n  high:'so the situation is serious and warrants close monitoring and precautionary action.',\n  critical:'so the situation is severe and warrants immediate attention and official guidance.',\n  insufficient_evidence:'so there is not enough evidence to assign an active threat level; continue monitoring official updates.',\n};\nconst guidance=guidanceByLevel[levelLower]||'so continue monitoring official local updates.';\n\nlet firstSentence;\nif(levelLower==='insufficient_evidence'){\n  firstSentence=regionDisplay+' does not currently have enough evidence to assign an active threat level'+(reason?(', though '+reason.charAt(0).toLowerCase()+reason.slice(1)):'')+'. '+guidance.charAt(0).toUpperCase()+guidance.slice(1);\n} else {\n  firstSentence=regionDisplay+' currently has a '+level+' threat level'+(reason?(' because '+reason.charAt(0).toLowerCase()+reason.slice(1).replace(/\\.$/,'')):'')+'. '+guidance.charAt(0).toUpperCase()+guidance.slice(1);\n}\nfirstSentence=scrubSevere(scrubRain(firstSentence)).replace(/\\s+/g,' ').trim();\n\nconst chat_message=firstSentence+'\\n\\n'+sourceSentence;\n\nreturn [{ json: {\n  ok:true, system:'WIaaS CrisisLens', api_only:true, backend_used:false,\n  source_channel: acd.source_channel||parsed.source_channel||'webhook',\n  session_id: acd.session_id||parsed.session_id,\n  response_kind:'CACHED_SEVERITY_FOLLOWUP',\n  region: regionName, resolved_location: regionName,\n  active_region: acd.active_region||regionName, region_key: acd.region_key||'',\n  latitude: acd.latitude??null, longitude: acd.longitude??null,\n  selected_route:'severity_from_memory',\n  chat_message,\n  overall_threat_level: level,\n  correlation_status: ca.correlation_status||'PARTIALLY_SUPPORTED',\n  regional_summary: '',\n  threats: threats,\n  evidence: evidence,\n  probable_causes: Array.isArray(ca.probable_causes)?ca.probable_causes:[],\n  source_status: ca.source_status||{ successful:[], failed_or_unconfigured:[] },\n  source_sentence: sourceSentence,\n  apis_called: [], agents_called: [],\n  ai_used: { run_osint:false, run_action:false, conversation_agent:false, cached_followup:true },\n  reused_from_cache:true,\n} }];"
+      },
+      "id": "3efe996b-cdc4-47aa-9cae-8f33686c4bec",
+      "name": "Build Cached Severity Response1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14208,
+        25936
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route-cached-evidence-cond",
+              "leftValue": "={{ String($json.cached_evidence) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7a9396f4-8a91-4699-8ca1-83854ee1a32b",
+      "name": "Route Cached Evidence1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        10368,
+        27408
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function getNodeJson(name){ try{ return $(name).item.json; }catch{ return null; } }\nconst acd=getNodeJson('Apply Conversation Decision')||$json||{};\nconst parsed=getNodeJson('Parse User Request')||{};\nconst ca=acd.cached_assessment||{};\n\nfunction cleanRegion(value){\n  const parts=String(value||'').split(',').map((p)=>p.trim()).filter(Boolean);\n  const out=[];\n  for(const p of parts){ const pl=p.toLowerCase(); if(out.some((q)=>q.toLowerCase()===pl))continue; const redundant=parts.some((o)=>{ const ol=o.toLowerCase(); if(o===p||ol.length<=pl.length)return false; return (' '+ol+' ').indexOf(' '+pl+' ')!==-1; }); if(redundant)continue; out.push(p); }\n  return out.join(', ');\n}\nconst regionDisplay=cleanRegion(ca.region||acd.active_region||acd.region_query||'this region');\nconst regionName=ca.region||acd.active_region||acd.region_query||'';\nconst level=String(ca.overall_threat_level||acd.last_threat_level||'LOW');\n\n// Natural source sentence.\nfunction naturalJoin(arr){ arr=(arr||[]).filter(Boolean); if(arr.length<=1)return arr[0]||''; if(arr.length===2)return arr[0]+' and '+arr[1]; return arr.slice(0,-1).join(', ')+', and '+arr[arr.length-1]; }\nconst successful=(ca.source_status&&Array.isArray(ca.source_status.successful)&&ca.source_status.successful.length)?ca.source_status.successful:['Open-Meteo','GDACS'];\nconst sourceSentence='This assessment is based on data from '+naturalJoin(successful)+'.';\n\n// Rain wording safety: don't call precipitation probability \"heavy rain\" without amount/intensity/warning.\nconst caStr=JSON.stringify(ca||{});\nconst hasRainEvidence=/\\d+(?:\\.\\d+)?\\s*mm|rainfall of|accumulat|red alert|orange alert|official warning|severe weather warning|flood warning/i.test(caStr);\nfunction scrubRain(text){\n  let t=String(text||'');\n  if(hasRainEvidence)return t;\n  t=t.replace(/imminent heavy precipitation/gi,'a high chance of precipitation');\n  t=t.replace(/imminent heavy rainfall/gi,'a high chance of precipitation');\n  t=t.replace(/imminent heavy rain/gi,'a high chance of precipitation');\n  t=t.replace(/severe rainfall/gi,'a high chance of precipitation');\n  t=t.replace(/severe precipitation/gi,'a high chance of precipitation');\n  t=t.replace(/heavy precipitation/gi,'precipitation');\n  t=t.replace(/heavy rainfall is (?:expected|forecast|likely|imminent)/gi,'a high chance of precipitation is forecast, but heavy rainfall is not currently confirmed');\n  t=t.replace(/heavy rain is (?:expected|forecast|likely|imminent)/gi,'a high chance of precipitation is forecast, but heavy rainfall is not currently confirmed');\n  t=t.replace(/heavy rainfall/gi,'precipitation');\n  t=t.replace(/heavy rain/gi,'precipitation');\n  return t;\n}\n\n// Build the evidence list from the saved assessment, preferring the explicit\n// evidence array, then threats, then a summary-derived fallback.\nfunction threatText(x){ if(x&&typeof x==='object')return String(x.short_finding||x.description||x.detail||x.title||x.type||''); return String(x); }\nfunction evidenceText(x){\n  if(x&&typeof x==='object'){\n    const detail=String(x.detail||x.finding||x.description||x.text||x.evidence||'').trim();\n    const src=String(x.source||x.source_name||'').trim();\n    if(detail&&src)return detail+' ('+src+')';\n    return detail||src||'';\n  }\n  return String(x||'').trim();\n}\n// Severe-weather wording safety (no unsupported \"severe weather system\").\nconst hasSevereEvidence=/red alert|orange alert|official warning|severe weather warning|flood warning|cyclone warning|storm warning|gale warning|tornado warning|hurricane warning|evacuat/i.test(caStr);\nfunction scrubSevere(text){\n  let t=String(text||'');\n  if(hasSevereEvidence)return t;\n  t=t.replace(/approaching severe weather system/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/approaching storm system/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/(?:potential|possible|approaching|imminent|expected|developing|likely) severe weather/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/severe weather (?:system|is )?(?:approaching|imminent|expected|developing|likely)/gi,'an elevated chance of precipitation with moderate wind gusts');\n  t=t.replace(/(?:possible |potential |approaching )?(?:approaching )?storms?(?: system)?/gi,'unsettled weather');\n  t=t.replace(/severe weather system/gi,'unsettled weather');\n  t=t.replace(/severe (?:thunder)?storm(?:s)?/gi,'unsettled weather');\n  t=t.replace(/severe weather/gi,'unsettled weather');\n  return t;\n}\n// Decimal-safe sentence splitter (does not split \"40.5\" or \"0.3 mm\").\nfunction splitSentences(text){ const s=String(text||''); const out=[]; let cur=''; for(let i=0;i<s.length;i++){ const ch=s[i]; cur+=ch; if(ch==='.'||ch==='!'||ch==='?'){ const prev=s[i-1],next=s[i+1]; if(ch==='.'&&/\\d/.test(prev||'')&&/\\d/.test(next||''))continue; if(next===undefined||/\\s/.test(next)){ if(cur.trim())out.push(cur.trim()); cur=''; } } } if(cur.trim())out.push(cur.trim()); return out; }\n\nconst evidence=Array.isArray(ca.evidence)?ca.evidence.filter(Boolean):[];\nconst threats=Array.isArray(ca.threats)?ca.threats:[];\nlet lines=[];\nif(evidence.length){ lines=evidence.map(evidenceText).filter(Boolean); }\nelse if(threats.length){ lines=threats.map(threatText).filter(Boolean); }\nif(!lines.length){\n  const summary=String(ca.regional_summary||'').trim();\n  if(summary){ lines=splitSentences(summary).slice(0,3); }\n}\nif(!lines.length){ lines=['The overall threat level is '+level.toLowerCase()+' based on the latest assessment.']; }\nlines=lines.slice(0,5).map((l)=>scrubSevere(scrubRain(String(l).replace(/^\\s*\\d+[.)]\\s*/,'').trim())));\nconst numbered=lines.map((l,i)=>(i+1)+'. '+l);\n\nconst chat_message='Evidence supporting the '+regionDisplay+' assessment:\\n\\n'+numbered.join('\\n')+'\\n\\n'+sourceSentence;\n\nreturn [{ json: {\n  ok:true, system:'WIaaS CrisisLens', api_only:true, backend_used:false,\n  source_channel: acd.source_channel||parsed.source_channel||'webhook',\n  session_id: acd.session_id||parsed.session_id,\n  response_kind:'CACHED_EVIDENCE_FOLLOWUP',\n  region: regionName, resolved_location: regionName,\n  active_region: acd.active_region||regionName, region_key: acd.region_key||'',\n  latitude: acd.latitude??null, longitude: acd.longitude??null,\n  selected_route:'evidence_from_memory',\n  chat_message,\n  overall_threat_level: level,\n  correlation_status: ca.correlation_status||'PARTIALLY_SUPPORTED',\n  regional_summary: '',\n  threats: threats,\n  evidence: evidence,\n  probable_causes: Array.isArray(ca.probable_causes)?ca.probable_causes:[],\n  source_status: ca.source_status||{ successful:[], failed_or_unconfigured:[] },\n  source_sentence: sourceSentence,\n  apis_called: [], agents_called: [],\n  ai_used: { run_osint:false, run_action:false, conversation_agent:false, cached_followup:true },\n  reused_from_cache:true,\n} }];"
+      },
+      "id": "feaea810-0daa-4c28-8b0c-d03cf25e0998",
+      "name": "Build Cached Evidence Response1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14208,
+        28144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PXA0eWF2la8kOCQG",
+          "cachedResultName": "wias_conversation_memory"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_id",
+              "keyValue": "={{ String($json.sessionId || $json.session_id || ($json.body ? ($json.body.sessionId || $json.body.session_id) : '') || 'anonymous').trim() || 'anonymous' }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "id": "85133979-0dff-489e-8f8a-c074a2a9b20e",
+      "name": "Load Data Table Memory1",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        8896,
+        26928
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PXA0eWF2la8kOCQG",
+          "cachedResultName": "wias_conversation_memory"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_id",
+              "keyValue": "={{ $json.conversation_memory_after.session_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $json.conversation_memory_after.session_id }}",
+            "active_region": "={{ $json.conversation_memory_after.active_region }}",
+            "region_key": "={{ $json.conversation_memory_after.region_key }}",
+            "latitude": "={{ $json.conversation_memory_after.latitude }}",
+            "longitude": "={{ $json.conversation_memory_after.longitude }}",
+            "last_intent": "={{ $json.conversation_memory_after.last_intent }}",
+            "last_stakeholder": "={{ $json.conversation_memory_after.last_stakeholder }}",
+            "last_threat_level": "={{ $json.conversation_memory_after.last_threat_level }}",
+            "last_assessment": "={{ JSON.stringify($json.conversation_memory_after.last_assessment || null) }}",
+            "last_evidence": "={{ JSON.stringify(($json.conversation_memory_after.last_assessment && $json.conversation_memory_after.last_assessment.evidence) || []) }}",
+            "updated_at": "={{ $json.conversation_memory_after.updated_at }}",
+            "memory_json": "={{ JSON.stringify($json.conversation_memory_after) }}"
+          },
+          "matchingColumns": [
+            "session_id"
+          ],
+          "schema": [
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "active_region",
+              "displayName": "active_region",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "region_key",
+              "displayName": "region_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "latitude",
+              "displayName": "latitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "longitude",
+              "displayName": "longitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_intent",
+              "displayName": "last_intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_stakeholder",
+              "displayName": "last_stakeholder",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_threat_level",
+              "displayName": "last_threat_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_assessment",
+              "displayName": "last_assessment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_evidence",
+              "displayName": "last_evidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "memory_json",
+              "displayName": "memory_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "bff7e38c-d936-447d-9134-dd4e5edf8d0b",
+      "name": "Persist Data Table Memory1",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        14656,
+        27456
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OSINT Correlation Agent": {
+      "main": [
+        [
+          {
+            "node": "Should Run Action?1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Frontend Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Recommendation Agent": {
+      "main": [
+        [
+          {
+            "node": "Build Frontend Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "firework": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "OSINT Correlation Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Action Recommendation Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Conversational Decision Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Cached Action Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversational Decision Agent": {
+      "main": [
+        [
+          {
+            "node": "Apply Conversation Decision1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cached Action Agent": {
+      "main": [
+        [
+          {
+            "node": "Build Cached Action Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CrisisLens Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Load Data Table Memory1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse User Request1": {
+      "main": [
+        [
+          {
+            "node": "Needs Conversational Decision?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Geocode Region1": {
+      "main": [
+        [
+          {
+            "node": "Prepare API Context1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare API Context1": {
+      "main": [
+        [
+          {
+            "node": "Route Prepared Direct Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open-Meteo Weather API1": {
+      "main": [
+        [
+          {
+            "node": "Tag Weather Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag Weather Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge API Results1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NASA FIRMS Fire API - ADD KEY1": {
+      "main": [
+        [
+          {
+            "node": "Tag FIRMS Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag FIRMS Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge API Results1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GDACS Disaster Feed1": {
+      "main": [
+        [
+          {
+            "node": "Tag GDACS Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag GDACS Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge API Results1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "GDELT Regional News API1": {
+      "main": [
+        [
+          {
+            "node": "Tag News Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag News Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge API Results1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge API Results1": {
+      "main": [
+        [
+          {
+            "node": "Normalize API Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize API Data1": {
+      "main": [
+        [
+          {
+            "node": "Should Run OSINT?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Frontend Response1": {
+      "main": [
+        [
+          {
+            "node": "Save Conversation State1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Chat or Webhook Response1": {
+      "main": [
+        [
+          {
+            "node": "Return to Chat1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return to Frontend1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Needs Geocode1": {
+      "main": [
+        [
+          {
+            "node": "Geocode Region1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare API Context1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Weather API1": {
+      "main": [
+        [
+          {
+            "node": "Open-Meteo Weather API1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Weather Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route FIRMS API1": {
+      "main": [
+        [
+          {
+            "node": "NASA FIRMS Fire API - ADD KEY1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip FIRMS Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route GDACS API1": {
+      "main": [
+        [
+          {
+            "node": "GDACS Disaster Feed1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip GDACS Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route GDELT API1": {
+      "main": [
+        [
+          {
+            "node": "GDELT Regional News API1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip GDELT Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Run OSINT?1": {
+      "main": [
+        [
+          {
+            "node": "OSINT Correlation Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Frontend Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Run Action?1": {
+      "main": [
+        [
+          {
+            "node": "Action Recommendation Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Frontend Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Weather Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge API Results1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip FIRMS Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge API Results1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Skip GDACS Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge API Results1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Skip GDELT Data1": {
+      "main": [
+        [
+          {
+            "node": "Merge API Results1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Needs Conversational Decision?1": {
+      "main": [
+        [
+          {
+            "node": "Conversational Decision Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Apply Conversation Decision1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Conversation Decision1": {
+      "main": [
+        [
+          {
+            "node": "Route Cached Severity1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Conversation State1": {
+      "main": [
+        [
+          {
+            "node": "Persist Data Table Memory1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Direct Response1": {
+      "main": [
+        [
+          {
+            "node": "Build Frontend Response1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Needs Geocode1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Prepared Direct Response1": {
+      "main": [
+        [
+          {
+            "node": "Build Frontend Response1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Weather API1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route FIRMS API1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route GDACS API1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route GDELT API1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Cached Action1": {
+      "main": [
+        [
+          {
+            "node": "Build Cached Action Response1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Direct Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Cached Action Response1": {
+      "main": [
+        [
+          {
+            "node": "Save Conversation State1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Cached Severity1": {
+      "main": [
+        [
+          {
+            "node": "Build Cached Severity Response1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Cached Evidence1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Cached Severity Response1": {
+      "main": [
+        [
+          {
+            "node": "Save Conversation State1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Cached Evidence1": {
+      "main": [
+        [
+          {
+            "node": "Build Cached Evidence Response1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Cached Action1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Cached Evidence Response1": {
+      "main": [
+        [
+          {
+            "node": "Save Conversation State1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Data Table Memory1": {
+      "main": [
+        [
+          {
+            "node": "Parse User Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Data Table Memory1": {
+      "main": [
+        [
+          {
+            "node": "Route Chat or Webhook Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cc879132-603e-4bb3-b345-c71dc11f913f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "64ed6f3f9389084d5fac03c8c3313c56cfc84e0973be51fa7d7601ff7b9fcbb5"
+  },
+  "nodeGroups": [],
+  "id": "v6aOUBOsM6L4WGFC",
+  "tags": []
+}
