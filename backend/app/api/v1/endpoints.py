@@ -1320,8 +1320,27 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
         or payload.get("query")
         or ""
     )
+    historical_query = bool(re.search(r"\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the)\b", user_query, re.I)) and bool(re.search(r"\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|avalanche|glacial|river)\b", user_query, re.I))
     region_key = payload.get("region_key") or "china_beijing"
     response_language = payload.get("response_language") or "en"
+
+    # Historical-event guard: never let a current selected-region weather
+    # template answer a question about a past/recent disaster.
+    if historical_query:
+        place = payload.get("region_name") or payload.get("city") or "the named event location"
+        hazard = "flood, earthquake, storm, or other disaster event"
+        english = (
+            f"I understand this as a historical or recent-event question about {user_query}. "
+            f"I will not substitute {place}'s current weather for the event record. "
+            f"The available workflow must verify the event through official disaster bulletins and dated reporting before stating causes, losses, or affected infrastructure. "
+            f"For immediate safety after a {hazard}, follow local authority instructions, move away from unstable structures and floodwater, keep emergency communications available, and use verified shelters and routes."
+        )
+        urdu = (
+            f"میں اسے ایک حالیہ یا تاریخی آفت کے بارے میں سوال سمجھ رہا ہوں۔ میں {place} کے موجودہ موسم کو اس واقعے کی معلومات کے طور پر پیش نہیں کروں گا۔ "
+            f"وجوہات، نقصانات اور متاثرہ انفراسٹرکچر بیان کرنے سے پہلے سرکاری بلیٹن اور تاریخ شدہ معتبر ذرائع سے تصدیق ضروری ہے۔ فوری خطرے میں مقامی حکام کی ہدایات، محفوظ راستے اور سرکاری پناہ گاہیں استعمال کریں۔"
+        )
+        chosen = urdu if str(response_language).lower().startswith("ur") else english
+        return {"reply": chosen, "chat_message": chosen, "output": chosen, "speech_en": english, "speech_ur": urdu, "response_language": response_language, "response_kind": "HISTORICAL_EVENT_GUARD", "historical_query": True, "evidence_status": "VERIFICATION_REQUIRED", "region": place}
 
     reg_meta = REGIONS.get(region_key) or {}
     reg_name = reg_meta.get("name") or payload.get("region_name") or region_key
