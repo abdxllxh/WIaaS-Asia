@@ -81,12 +81,15 @@ python scripts/verify_crisislens_questions.py
 
 ## 📸 Feature Screenshots
 
-The repository includes visual evidence for the plant-scanning workflow in [`docs/screenshots`](docs/screenshots):
+The repository includes visual evidence for the plant-scanning workflow. These previews render directly in the GitHub README:
 
-| Feature | Screenshot |
-|---|---|
-| Plant Scanner rejecting a non-plant/random upload | [plant-scanner-random-image-rejected.png](docs/screenshots/plant-scanner-random-image-rejected.png) |
-| Context-aware plant screening result | [plant-scanner-result.png](docs/screenshots/plant-scanner-result.png) |
+### Plant Scanner — random image rejected
+
+![Plant Scanner rejecting a non-plant/random upload](docs/screenshots/plant-scanner-random-image-rejected.png)
+
+### Plant Scanner — context-aware screening result
+
+![Context-aware plant screening result](docs/screenshots/plant-scanner-result.png)
 
 The live dashboard exposes the remaining features directly: Asia Monitoring Network, Physics Intelligence, Agriculture Diagnostics, What-If Simulator, Grid, Logistics, Research, Location Intelligence, CrisisLens, bilingual English/Urdu chat and voice advisory, timeline, telemetry visualizers, and city-specific action advisories.
 
