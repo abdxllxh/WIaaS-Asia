@@ -1320,13 +1320,14 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
         or payload.get("query")
         or ""
     )
-    historical_query = bool(re.search(r"\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the)\b", user_query, re.I)) and bool(re.search(r"\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|avalanche|glacial|river)\b", user_query, re.I))
+    timeline_query = bool(re.search(r"\b(in \d{4}|last (?:day|week|month|year)|over the last|during the past|between|before and after|since|timeline|trend|changed over|next \d+ days?|coming week|forecast window|outlook)\b", user_query, re.I))
+    historical_query = bool(re.search(r"\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the|timeline|trend|before and after)\b", user_query, re.I)) and bool(re.search(r"\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|avalanche|glacial|river|risk|weather)\b", user_query, re.I))
     region_key = payload.get("region_key") or "china_beijing"
     response_language = payload.get("response_language") or "en"
 
     # Historical-event guard: never let a current selected-region weather
     # template answer a question about a past/recent disaster.
-    if historical_query:
+    if historical_query or timeline_query:
         place = payload.get("region_name") or payload.get("city") or "the named event location"
         hazard = "flood, earthquake, storm, or other disaster event"
         english = (
@@ -1340,7 +1341,7 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
             f"وجوہات، نقصانات اور متاثرہ انفراسٹرکچر بیان کرنے سے پہلے سرکاری بلیٹن اور تاریخ شدہ معتبر ذرائع سے تصدیق ضروری ہے۔ فوری خطرے میں مقامی حکام کی ہدایات، محفوظ راستے اور سرکاری پناہ گاہیں استعمال کریں۔"
         )
         chosen = urdu if str(response_language).lower().startswith("ur") else english
-        return {"reply": chosen, "chat_message": chosen, "output": chosen, "speech_en": english, "speech_ur": urdu, "response_language": response_language, "response_kind": "HISTORICAL_EVENT_GUARD", "historical_query": True, "evidence_status": "VERIFICATION_REQUIRED", "region": place}
+        return {"reply": chosen, "chat_message": chosen, "output": chosen, "speech_en": english, "speech_ur": urdu, "response_language": response_language, "response_kind": "TIMELINE_EVENT_GUARD" if timeline_query else "HISTORICAL_EVENT_GUARD", "historical_query": historical_query, "timeline_query": timeline_query, "evidence_status": "VERIFICATION_REQUIRED", "region": place}
 
     reg_meta = REGIONS.get(region_key) or {}
     reg_name = reg_meta.get("name") or payload.get("region_name") or region_key
