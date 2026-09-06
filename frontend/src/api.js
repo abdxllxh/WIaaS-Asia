@@ -221,6 +221,19 @@ function buildHumanCrisisFallback(message, regionContext, data, isUrdu = false) 
         : `I understand your question in the context of ${place}. The current overall risk is ${risk}. If you make the concern a little more specific—such as “Is Karachi at risk of flooding?” or “What should people do now?”—I’ll give the relevant evidence and practical next steps.`;
 }
 
+function buildComplexCrisisFallback(message, regionContext, data) {
+    const q = String(message || '').toLowerCase();
+    const place = regionContext.name || regionContext.city || regionContext.country || 'the selected region';
+    const isNepal = /nepal|kathmandu|rasuwa|bhote koshi|trishuli/.test(q);
+    const historical = /past|historical|what happened|august|cause|caused|losses|damage|affected|reported/.test(q);
+    const forecast = /next|future|seven days|7 days|forecast|warning signals|upcoming|could affect/.test(q);
+    const multiHazard = /flood|heatwave|storm|earthquake|wildfire|hazard|threats?/.test(q) && /flood|heatwave|storm|earthquake|wildfire|hazard|threats?/.test(q.replace(/flood/, ''));
+    if (!(isNepal && (historical || forecast || multiHazard))) return '';
+    if (historical) return `**Historical event review — ${isNepal ? 'Nepal' : place}**\n\nThis is a past-event question, so a current Kathmandu weather snapshot is not a valid answer. CrisisLens must verify the event date, affected districts, causes, losses, and infrastructure impacts from dated official bulletins and reliable reporting. Until those records are returned, casualty and damage figures remain **unverified**.\n\nFor safety, follow Nepal authority instructions, avoid floodwater and unstable bridges, move to higher ground when warned, and use verified shelters and emergency channels.`;
+    if (forecast) return `**Seven-day hazard outlook — ${isNepal ? 'Nepal' : place}**\n\nA seven-day forecast must be reported as a probability, not as a confirmed event. CrisisLens should combine official hydrology and meteorology warnings with rainfall, river-level, landslide, wind, heat, and seismic alerts, then show the forecast timestamp and confidence.\n\nUntil a verified warning is available: keep emergency supplies ready, identify higher ground and safe routes, protect medicines and documents, avoid river crossings, and monitor Nepal’s official DHM, NDRRMA, and local administration updates.`;
+    return `**Multi-hazard assessment — ${isNepal ? 'Nepal' : place}**\n\nThe question covers several hazards, so a flood-only report is incomplete. CrisisLens should evaluate flood and river rise, landslides, heat, severe wind, wildfire, and earthquake alerts separately, then combine them into one severity view with source timestamps.\n\nNo single LOW flood reading can clear all hazards. Residents should monitor official alerts, avoid rivers and unstable slopes, keep communications and medicines ready, and follow evacuation instructions if authorities issue them.`;
+}
+
 function buildRegionContext(regionKey, meta = {}) {
     return {
         key: regionKey,
@@ -621,10 +634,11 @@ export async function sendCrisisLensChat(message) {
         const english = result.speech_en || result.reply || '';
         const urdu = result.speech_ur || buildLocalUrduCrisis(result, regionContext);
         const rawReply = String(result.reply || result.output || '').trim();
+        const complexFallback = buildComplexCrisisFallback(message, regionContext, cachedData);
         const historicalEvent = /\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the)\b/i.test(message) && /\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|river)\b/i.test(message);
         const looksLikeWrongCurrentTemplate = historicalEvent && /flood hazard level|current rainfall rate|current weather conditions|current overall risk|low \/ unlikely/i.test(rawReply);
         const looksLikeGenericCrisisTemplate = !rawReply || looksLikeWrongCurrentTemplate || /multi-hazard situational threat assessment|low to nominal monitoring|no threshold-crossing severe weather detected/i.test(rawReply);
-        const humanFallback = looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, false) : '';
+        const humanFallback = complexFallback || (looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, false) : '');
         const humanFallbackUrdu = looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, true) : '';
         return {
             ...result,
