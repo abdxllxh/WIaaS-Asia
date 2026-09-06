@@ -191,6 +191,20 @@ function buildLocalSpecificWiaas(data, regionContext, query) {
     return '';
 }
 
+function buildHumanCrisisFallback(message, regionContext, data, isUrdu = false) {
+    const place = regionContext.name || regionContext.city || regionContext.country || 'the selected region';
+    const q = String(message || '').trim().toLowerCase();
+    const risk = data?.risk_level || 'currently unavailable';
+    if (/^(hi|hello|hey|salam|assalam|good morning|good evening)\b/.test(q)) {
+        return isUrdu
+            ? `وعلیکم السلام۔ میں ${place} کے خطرات سمجھنے میں مدد کر سکتا ہوں۔ آپ موسم، سیلاب، گرمی، آگ، عوامی حفاظت، کسانوں، گرڈ یا راستوں کے بارے میں پوچھ سکتے ہیں۔`
+            : `Hello. I’m CrisisLens for ${place}. Ask me about weather threats, flooding, heat, fires, public safety, farmers, grid pressure, or route risks.`;
+    }
+    return isUrdu
+        ? `میں نے آپ کا سوال ${place} کے تناظر میں سمجھا ہے۔ اس وقت مجموعی خطرے کی سطح ${risk} ہے۔ اگر آپ سوال کو تھوڑا مخصوص کریں—مثلاً “کراچی میں سیلاب کا خطرہ کیا ہے؟” یا “لوگوں کو ابھی کیا کرنا چاہیے؟”—تو میں متعلقہ شواہد اور عملی قدم دوں گا۔`
+        : `I understand your question in the context of ${place}. The current overall risk is ${risk}. If you make the concern a little more specific—such as “Is Karachi at risk of flooding?” or “What should people do now?”—I’ll give the relevant evidence and practical next steps.`;
+}
+
 function buildRegionContext(regionKey, meta = {}) {
     return {
         key: regionKey,
@@ -583,11 +597,15 @@ export async function sendCrisisLensChat(message) {
         const result = await response.json();
         const english = result.speech_en || result.reply || '';
         const urdu = result.speech_ur || buildLocalUrduCrisis(result, regionContext);
+        const rawReply = String(result.reply || result.output || '').trim();
+        const looksLikeGenericCrisisTemplate = !rawReply || /multi-hazard situational threat assessment|low to nominal monitoring|no threshold-crossing severe weather detected/i.test(rawReply);
+        const humanFallback = looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, false) : '';
+        const humanFallbackUrdu = looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, true) : '';
         return {
             ...result,
-            reply: responseLanguage === 'ur' ? urdu : result.reply,
-            speech_en: english,
-            speech_ur: urdu,
+            reply: responseLanguage === 'ur' ? (humanFallbackUrdu || urdu) : (humanFallback || result.reply),
+            speech_en: humanFallback || english,
+            speech_ur: humanFallbackUrdu || urdu,
             response_language: responseLanguage,
         };
     } catch (error) {
