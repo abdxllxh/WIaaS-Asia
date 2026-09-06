@@ -494,7 +494,14 @@ export async function sendChatSimulation(regionKey, query) {
         }
         
         const localUrdu = buildLocalUrduWiaas(cachedData, regionContext, query);
-        const localSpecific = buildLocalSpecificWiaas(cachedData, regionContext, query);
+        const localSpecificBase = buildLocalSpecificWiaas(cachedData, regionContext, query);
+        const repeatIndex = Number(conversationContext.repeated_question_count || conversationContext.turn_index || 0);
+        const variation = [
+            '',
+            '\n\n**Follow-up:** If you share the crop or exact district, I can narrow this to a more targeted operational recommendation.',
+            '\n\n**Practical check:** Recheck the same indicators at the next telemetry update before changing a field or infrastructure plan.',
+        ][Math.max(0, repeatIndex) % 3];
+        const localSpecific = localSpecificBase ? `${localSpecificBase}${variation}` : '';
         const speechEnglish = responseObject?.speech_en || extractedReply;
         const speechUrdu = responseObject?.speech_ur || localUrdu;
         return {
