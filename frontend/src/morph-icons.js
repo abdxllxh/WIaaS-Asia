@@ -187,7 +187,7 @@ export function hydrateDynamicMorphIcons(root = document) {
     const subtabs = [
         { id: 'subtab-diagnostics', base: 'activity', hover: 'zap' },
         { id: 'subtab-simulator', base: 'sliders', hover: 'play' },
-        { id: 'subtab-swarm', base: 'cpu', hover: 'bot' }
+        { id: 'subtab-plant-scanner', base: 'crosshair', hover: 'leaf' }
     ];
     subtabs.forEach(({ id, base, hover }) => {
         const el = root.getElementById ? root.getElementById(id) : root.querySelector(`#${id}`);

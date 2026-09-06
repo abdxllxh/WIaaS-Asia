@@ -5,7 +5,7 @@ import { showToast } from './toast.js';
  * Renders:
  * 1. Diagnostics View (Agro-Zones, Spray Window, Soil Stratification, NDVI, Radar Chart)
  * 2. What-If Scenario Decision Simulator (Interactive Physics Sliders)
- * 3. 4-Agent Swarm Inspector (Live Collaborative Agent Stream)
+ * 3. On-device Plant Disease Scanner (MobileNetV2 / PlantVillage)
  * 4. Spoken Voice Advisory (Urdu/English Web Speech Synthesis)
  * 5. 2G Low-Bandwidth GSM SMS Dispatch Modal
  * 6. WhatsApp / Printable Advisory Card Modal
@@ -17,7 +17,6 @@ import {
     URDU_TRANSLATIONS,
     calculateSpraySafety,
     runWhatIfScenario,
-    getAgentSwarmConsensus,
     getSpokenAdvisoryText,
     getSmsPayload
 } from './agro-intelligence.js';
@@ -25,8 +24,9 @@ import { updateChatLanguage } from './chat.js';
 import { updateRadarChart } from './charts.js';
 import { getActiveRegion, regionsRegistry, activeRegionKey } from './state.js';
 import { hydrateDynamicMorphIcons } from './morph-icons.js';
+import { renderPlantScanner } from './plant-scanner.js';
 
-let currentSubView = 'diagnostics'; // 'diagnostics' | 'simulator' | 'swarm'
+let currentSubView = 'diagnostics'; // 'diagnostics' | 'simulator' | 'scanner'
 let currentLanguage = 'en'; // 'en' | 'ur'
 let isVoicePlaying = false;
 let currentSpeechUtterance = null;
@@ -98,8 +98,8 @@ export function renderAgriculturePanel(location, analytics) {
         renderDiagnosticsView(container, location, analytics);
     } else if (currentSubView === 'simulator') {
         renderSimulatorView(container, location, analytics);
-    } else if (currentSubView === 'swarm') {
-        renderSwarmView(container, location, analytics);
+    } else if (currentSubView === 'scanner') {
+        renderPlantScanner(container, location, analytics, currentLanguage === 'ur');
     }
 
     const targetCityEl = document.getElementById('vac-target-city');
@@ -445,43 +445,6 @@ function renderSimulatorView(container, location, analytics) {
     requestAnimationFrame(() => {
         hydrateDynamicMorphIcons(container);
     });
-}
-
-function renderSwarmView(container, location, analytics) {
-    const isUrdu = currentLanguage === 'ur';
-    const agents = getAgentSwarmConsensus(location, analytics);
-
-    container.innerHTML = `
-        <div class="swarm-consensus-header">
-            <div class="consensus-chip">
-                <span class="consensus-dot"></span>
-                <span class="consensus-title">${isUrdu ? 'نیورل ایجنٹ اتفاق رائے' : 'Neural Swarm Consensus'}</span>
-            </div>
-            <span class="consensus-score">96.8% ${isUrdu ? 'اعتماد' : 'Confidence'}</span>
-        </div>
-
-        <div class="agent-swarm-cards-list">
-            ${agents.map(agent => `
-                <div class="agent-swarm-card" id="agent-card-${agent.id}">
-                    <div class="agent-card-head">
-                        <div class="agent-name-group">
-                            <i data-lucide="${agent.icon}" class="agent-avatar-icon"></i>
-                            <strong>${isUrdu ? agent.nameUr : agent.nameEn}</strong>
-                        </div>
-                        <span class="agent-status-tag ${agent.statusColor}">${isUrdu ? agent.statusUr : agent.statusEn}</span>
-                    </div>
-                    <div class="agent-card-finding">
-                        <span class="finding-label">${isUrdu ? 'مشاہدہ:' : 'Finding:'}</span>
-                        <p>${isUrdu ? agent.findingUr : agent.findingEn}</p>
-                    </div>
-                    <div class="agent-card-rec">
-                        <span class="rec-label">${isUrdu ? 'سفارش:' : 'Directive:'}</span>
-                        <p>${isUrdu ? agent.recommendationUr : agent.recommendationEn}</p>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
 }
 
 let _preloadedVoices = [];

@@ -1315,3 +1315,18 @@ WlaaS/
     - Target repository set to `https://github.com/abdxllxh/WIAAS---Asia.git`.
     - Pushed full project commit history and all assets cleanly to `origin/main`.
 
+### II. On-Device Plant Disease Scanner (Turn 45)
+- **Decision**: Replaced the agriculture drawer's internal `Agent Swarm (4)` subtab with a farmer-facing `Plant Scanner`. No new top-navigation item was added because plant screening belongs inside Agriculture and the global navigation is already at capacity.
+- **Implementation (`frontend/src/plant-scanner.js`)**:
+  - Added camera/file selection, drag-and-drop, image preview/removal, crop cross-check selection, inline validation, loading progress, and persistent state across language changes.
+  - Runs `onnx-community/mobilenet_v2_1.0_224-plant-disease-identification-ONNX` locally in the browser through `@huggingface/transformers`; leaf images are not uploaded to an external diagnosis service.
+  - Uses the verified FP32 model. The published quantized model was rejected after it misclassified a known PlantVillage late-blight validation image; FP32 returned `Tomato with Late Blight` at 97.8% confidence for the same image.
+  - Supports 38 PlantVillage classes across 14 crops and explicitly communicates controlled-dataset, unsupported-crop, field-lighting, and expert-confirmation limitations.
+  - Produces confidence, alternate candidates, crop mismatch/low-confidence handling, bilingual next actions, and treatment guidance adjusted by active WIaaS temperature, humidity, wind, and VPD telemetry.
+  - Added disease-specific regional context: the exact predicted label selects its scouting pattern and trigger, while the active city selects an irrigated-belt, coastal, floodplain, or protected-horticulture risk setting. Unknown cities explicitly show that no verified city-incidence layer is available instead of generating a hotspot claim.
+- **UI & Accessibility**:
+  - Added stable preview space, 44px image removal target, visible labels, keyboard-focus treatment, accessible busy/status output, reduced-motion handling, Urdu RTL layout, and responsive narrow-screen stacking.
+  - Updated the agriculture subtab icon morph and Urdu translation to `پودے کی جانچ`.
+- **Production Delivery**:
+  - Added `@huggingface/transformers@3.8.1`, rebuilt the Vite application into `backend/static/`, and included its WebAssembly runtime and lazy-loaded browser inference bundle.
+  - Verified the production UI at `http://127.0.0.1:8000/` and completed an end-to-end scan of a known Tomato Late Blight sample with the expected 98% result and weather-aware guidance.

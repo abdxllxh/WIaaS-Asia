@@ -91,7 +91,7 @@ export const URDU_TRANSLATIONS = {
     "Severe Stress": "شدید تناؤ",
     "Diagnostics": "فصل معائنہ",
     "What-If Simulator": "فیصلہ سازی سمیلیٹر",
-    "Agent Swarm": "ایجنٹ مشاورتی ٹیم",
+    "Plant Scanner": "پودے کی جانچ",
     "Soil Moisture (0-30cm)": "زمین کی نمی (0-30 سینٹی میٹر)",
     "Topsoil (0-10cm)": "اوپری مٹی (0-10 سینٹی میٹر)",
     "Root Zone (10-40cm)": "جڑ کا احاطہ (10-40 سینٹی میٹر)",

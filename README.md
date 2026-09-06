@@ -48,8 +48,8 @@ The entire frontend Single Page Application (SPA) is **pre-compiled and served d
 ### Option B — Standard Python Launch
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/abdxllxh/WIAAS---Asia.git
-   cd WIAAS---Asia
+   git clone https://github.com/abdxllxh/WIaaS-Asia.git
+   cd WIaaS-Asia
    ```
 
 2. **Install Python Dependencies:**
@@ -78,6 +78,23 @@ python scripts/verify_crisislens_questions.py
 ```
 
 *Asserts: HTTP 200 responses, zero generic canned phrases, evidence-backed physics reasoning (°C, kPa, MW, mm), and authentic bilingual Urdu script generation.*
+
+## 📸 Feature Screenshots
+
+The repository includes visual evidence for the plant-scanning workflow in [`docs/screenshots`](docs/screenshots):
+
+| Feature | Screenshot |
+|---|---|
+| Plant Scanner rejecting a non-plant/random upload | [plant-scanner-random-image-rejected.png](docs/screenshots/plant-scanner-random-image-rejected.png) |
+| Context-aware plant screening result | [plant-scanner-result.png](docs/screenshots/plant-scanner-result.png) |
+
+The live dashboard exposes the remaining features directly: Asia Monitoring Network, Physics Intelligence, Agriculture Diagnostics, What-If Simulator, Grid, Logistics, Research, Location Intelligence, CrisisLens, bilingual English/Urdu chat and voice advisory, timeline, telemetry visualizers, and city-specific action advisories.
+
+## 🔐 Public-repository security
+
+- Runtime `.env` files are ignored by Git; only `.env.example` is versioned.
+- Never commit API keys, webhook credentials, tokens, passwords, or private certificates.
+- Before publishing, inspect the staged diff with `git diff --cached` and rotate any credential that was ever committed.
 
 ---
 
