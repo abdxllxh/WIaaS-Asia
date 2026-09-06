@@ -167,6 +167,10 @@ function buildLocalSpecificWiaas(data, regionContext, query) {
     const surge = metric(ledger.grid_demand_surge_pct, '%');
     const evaporation = metric(ledger.water_surface_evap_loss_pct ?? climate.water_surface_evap_loss_pct, '%');
     const comparisonTarget = findMentionedRegion(query.replace(/\b(karachi|lahore|multan|delhi|tokyo|beijing|shanghai|mumbai|dhaka|sylhet|dubai|riyadh)\b/gi, (match, offset, full) => offset === full.toLowerCase().indexOf(match.toLowerCase()) ? '' : match));
+    const selectedCity = String(regionContext.city || '').toLowerCase();
+    const selectedProfile = ['karachi', 'mumbai', 'dhaka', 'sylhet', 'tokyo', 'shanghai'].some((city) => selectedCity.includes(city))
+        ? 'humid or maritime, so drainage, leaf-wetness, and fungal pressure deserve attention'
+        : 'drier or continental, so VPD, irrigation demand, and heat exposure deserve attention';
     if ((q.includes('what region') || q.includes('which region') || q.includes('region access') || q.includes('regions do you have')) && (q.includes('access') || q.includes('support') || q.includes('available') || q.includes('have'))) {
         return `**WIaaS coverage**\n\nI can analyze Asian cities and countries including Karachi, Lahore, Islamabad, Multan, Delhi, Mumbai, Dhaka, Sylhet, Beijing, Shanghai, Tokyo, Dubai, Riyadh, and other registered Asian locations. Select a region on the map or name a city, and I’ll use that location’s telemetry for the answer.`;
     }
@@ -182,7 +186,7 @@ function buildLocalSpecificWiaas(data, regionContext, query) {
         const target = comparisonTarget?.meta?.city || (q.match(/\b(beijing|lahore|tokyo|delhi|multan|shanghai|mumbai|dhaka|sylhet|dubai|riyadh)\b/i)?.[1] || 'the comparison region');
         const targetLower = target.toLowerCase();
         const targetProfile = targetLower.includes('beijing') || targetLower.includes('lahore') || targetLower.includes('delhi') ? 'generally hotter and drier, with higher VPD, irrigation demand, crop heat stress, and cooling load' : 'a different climate profile that should be checked against its registered telemetry';
-        return `**${regionContext.city || 'Selected region'}–${target} Conditions Compared**\n\n• ${regionContext.city || 'Selected region'}: coastal humidity is ${humidity} with drying demand ${vpd}; drainage, leaf-wetness disease, and salinity are the main concerns.\n• ${target}: its registered baseline is ${targetProfile}.\n• Operational difference: the selected coastal region needs drainage and canopy airflow, while ${target} needs a location-specific irrigation, crop-stress, grid, and logistics plan. Switch the map to ${target} for a live telemetry refresh.`;
+        return `**${regionContext.city || 'Selected region'}–${target} Conditions Compared**\n\n• ${regionContext.city || 'Selected region'}: the selected telemetry is ${selectedProfile}; current humidity is ${humidity} and drying demand is ${vpd}.\n• ${target}: its registered baseline is ${targetProfile}.\n• Operational difference: compare irrigation timing, crop stress, grid load, and route exposure using each location’s own telemetry. Switch the map to ${target} for a live refresh.`;
     }
     if (q.includes('research') || q.includes('weather pattern') || q.includes('what does the data say')) {
         return `**Research Interpretation for ${place}**\n\nThe available telemetry shows ${temp} temperature, ${humidity} humidity, VPD ${vpd}, and wind ${wind}. The dominant signal is ${Number(telemetry.humidity_percentage) >= 70 ? 'moisture retention and leaf-wetness pressure' : 'atmospheric drying and irrigation demand'}. Grid demand is ${surge} above baseline. This is an operational interpretation of regional telemetry, not a peer-reviewed causal study.`;
