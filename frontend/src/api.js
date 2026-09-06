@@ -592,6 +592,8 @@ export async function sendCrisisLensChat(message) {
         const payload = {
             schema_version: 'wiaas.asia.chat.v1',
             agent_mode: 'crisislens',
+            response_style: 'direct_answer',
+            response_rules: 'Answer the exact question first in 2-5 short paragraphs or bullets. Include only relevant evidence, uncertainty, and practical actions. Do not produce a full report unless requested. Never substitute current weather for a historical or future question. Do not invent facts, losses, or causes.',
             ...responseProfile,
             ...conversationContext,
             response_language: responseLanguage,
