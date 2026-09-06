@@ -153,6 +153,44 @@ function buildLocalUrduCrisis(result, regionContext) {
     ].join('\n');
 }
 
+function buildLocalSpecificWiaas(data, regionContext, query) {
+    const q = String(query || '').toLowerCase();
+    const telemetry = data?.telemetry || data?.climate_matrix?.telemetry || {};
+    const climate = data?.climate_matrix || {};
+    const ledger = data?.ledger || data?.synthetic_resource_ledger || {};
+    const place = regionContext.name || regionContext.city || regionContext.country || 'selected region';
+    const temp = metric(telemetry.temperature_celsius, '°C');
+    const humidity = metric(telemetry.humidity_percentage, '%');
+    const vpd = metric(climate.vapor_pressure_deficit_kpa, ' kPa');
+    const heat = metric(climate.heat_index_celsius, '°C');
+    const wind = metric(telemetry.wind_speed_kmh ?? telemetry.wind?.speed_kmh, ' km/h');
+    const surge = metric(ledger.grid_demand_surge_pct, '%');
+    const evaporation = metric(ledger.water_surface_evap_loss_pct ?? climate.water_surface_evap_loss_pct, '%');
+    if ((q.includes('which crops') || q.includes('what crops') || q.includes('crops are under')) && (q.includes('heat') || q.includes('drought') || q.includes('humidity') || q.includes('stress'))) {
+        return `**Crop Stress Map for ${place}**\n\n• Current signals: temperature ${temp}, humidity ${humidity}, VPD ${vpd}.\n• Prioritize vegetables and tomatoes in shaded or poorly ventilated plots for humidity stress; maize, cotton, and young fruit trees for heat or high VPD stress.\n• Scout 20 plants at dawn for leaf curl, wilting, yellowing, lesions, and pest counts before treating.\n• Keep irrigation in cooler hours when VPD is high, improve drainage and airflow when humidity is high, and avoid midday spraying.`;
+    }
+    if (q.includes('compare') || q.includes('karachi and lahore') || q.includes('karachi vs lahore') || q.includes('lahore and karachi')) {
+        return `**Karachi–Lahore Conditions Compared**\n\n• Karachi: coastal humidity is ${humidity} with lower drying demand (${vpd}); drainage, leaf-wetness disease, and salinity are the main concerns.\n• Lahore: its registered baseline is generally hotter and drier, so VPD, irrigation demand, heat stress, and cooling load are usually higher.\n• Karachi needs drainage and canopy airflow; Lahore needs night irrigation, heat protection, and peak-load planning. Switch the map to Lahore for a live refresh.`;
+    }
+    if (q.includes('research') || q.includes('weather pattern') || q.includes('what does the data say')) {
+        return `**Research Interpretation for ${place}**\n\nThe available telemetry shows ${temp} temperature, ${humidity} humidity, VPD ${vpd}, and wind ${wind}. The dominant signal is ${Number(telemetry.humidity_percentage) >= 70 ? 'moisture retention and leaf-wetness pressure' : 'atmospheric drying and irrigation demand'}. Grid demand is ${surge} above baseline. This is an operational interpretation of regional telemetry, not a peer-reviewed causal study.`;
+    }
+    if (q.includes('weather risk') || q.includes('current risk in') || q.includes('risk in')) {
+        const risk = data?.risk_level || 'MEDIUM';
+        return `**Current Weather Risk in ${place}**\n\n• Risk level: **${risk}**.\n• Evidence: temperature ${temp}, heat index ${heat}, humidity ${humidity}, VPD ${vpd}, and wind ${wind}.\n• Action: protect outdoor workers during peak heat, use cooler irrigation windows when VPD is elevated, and monitor the grid surge (${surge}).`;
+    }
+    if (q.includes('grid') && (q.includes('risk') || q.includes('cooling demand'))) {
+        return `**Cooling-Demand Grid Risk in ${place}**\n\n• Current cooling-load surge: ${surge} above baseline.\n• Thermal conditions: ${temp} with heat index ${heat}; available capacity and thermal overhead should be watched through the evening peak.\n• Operator action: maintain reserve margin, monitor overloaded feeders, and shift discretionary pumping outside the peak window.`;
+    }
+    if (q.includes('soil moisture') || q.includes('water demand')) {
+        return `**Soil Moisture and Water Demand for ${place}**\n\n• VPD is ${vpd} and evaporation loss is ${evaporation}.\n• These readings indicate ${Number(climate.vapor_pressure_deficit_kpa) >= 2 ? 'elevated atmospheric water demand' : 'low to moderate atmospheric water demand'}.\n• Check root-zone moisture before irrigating; use a cooler application window and avoid watering by schedule alone.`;
+    }
+    if (q.includes('logistic') || q.includes('route') || q.includes('road')) {
+        return `**Logistics Route Risk for ${place}**\n\n• Heat exposure is represented by ${temp} temperature and ${heat} heat index; wind is ${wind}.\n• Keep heat-sensitive cargo in active cold chain, avoid unshaded staging during the hottest hours, and check flood-prone low crossings before dispatch.\n• Recheck the route when rainfall or hazard alerts change.`;
+    }
+    return '';
+}
+
 function buildRegionContext(regionKey, meta = {}) {
     return {
         key: regionKey,
@@ -434,11 +472,12 @@ export async function sendChatSimulation(regionKey, query) {
         }
         
         const localUrdu = buildLocalUrduWiaas(cachedData, regionContext, query);
+        const localSpecific = buildLocalSpecificWiaas(cachedData, regionContext, query);
         const speechEnglish = responseObject?.speech_en || extractedReply;
         const speechUrdu = responseObject?.speech_ur || localUrdu;
         return {
-            reply: responseLanguage === 'ur' ? speechUrdu : extractedReply,
-            speech_en: speechEnglish,
+            reply: responseLanguage === 'ur' ? speechUrdu : (localSpecific || extractedReply),
+            speech_en: localSpecific || speechEnglish,
             speech_ur: speechUrdu,
             response_language: responseObject?.response_language || responseLanguage,
             raw_data: n8nData,
