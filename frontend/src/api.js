@@ -166,6 +166,14 @@ function buildLocalSpecificWiaas(data, regionContext, query) {
     const wind = metric(telemetry.wind_speed_kmh ?? telemetry.wind?.speed_kmh, ' km/h');
     const surge = metric(ledger.grid_demand_surge_pct, '%');
     const evaporation = metric(ledger.water_surface_evap_loss_pct ?? climate.water_surface_evap_loss_pct, '%');
+    if ((q.includes('what region') || q.includes('which region') || q.includes('region access') || q.includes('regions do you have')) && (q.includes('access') || q.includes('support') || q.includes('available') || q.includes('have'))) {
+        return `**WIaaS coverage**\n\nI can analyze Asian cities and countries including Karachi, Lahore, Islamabad, Multan, Delhi, Mumbai, Dhaka, Sylhet, Beijing, Shanghai, Tokyo, Dubai, Riyadh, and other registered Asian locations. Select a region on the map or name a city, and I’ll use that location’s telemetry for the answer.`;
+    }
+    if (q.includes('vpd') || q.includes('vapor pressure deficit')) {
+        const vpdValue = Number(climate.vapor_pressure_deficit_kpa);
+        const interpretation = Number.isFinite(vpdValue) && vpdValue >= 2 ? 'high atmospheric drying demand' : Number.isFinite(vpdValue) && vpdValue >= 1.2 ? 'moderate drying demand' : 'low atmospheric drying demand';
+        return `**VPD for ${place}**\n\n• Current VPD: **${vpd}**.\n• Meaning: VPD is the drying-pressure difference between the air and a fully wet leaf. At this reading, ${interpretation}; plants are under less moisture pull than they would be in a hot, dry afternoon.\n• Crop action: check root-zone moisture before watering, keep irrigation in the cooler window, and watch shaded leaves for fungal or leaf-wetness symptoms because humidity is ${humidity}.`;
+    }
     if ((q.includes('which crops') || q.includes('what crops') || q.includes('crops are under')) && (q.includes('heat') || q.includes('drought') || q.includes('humidity') || q.includes('stress'))) {
         return `**Crop Stress Map for ${place}**\n\n• Current signals: temperature ${temp}, humidity ${humidity}, VPD ${vpd}.\n• Prioritize vegetables and tomatoes in shaded or poorly ventilated plots for humidity stress; maize, cotton, and young fruit trees for heat or high VPD stress.\n• Scout 20 plants at dawn for leaf curl, wilting, yellowing, lesions, and pest counts before treating.\n• Keep irrigation in cooler hours when VPD is high, improve drainage and airflow when humidity is high, and avoid midday spraying.`;
     }
