@@ -1514,8 +1514,9 @@ def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None
             is_specific_query = any(k in q_lower for k in [
                 "heat index", "feels like", "apparent temperature", "heat stress", "thermal", "wet bulb", "wet-bulb", "vpd",
                 "grid risk", "power risk", "blackout", "electricity", "demand surge", "grid capacity", "power grid", "transformer", "grid load", "power", "grid",
-                "evaporation", "water loss", "water could be lost", "evaporation loss", "reservoir", "storage", "water",
+                "evaporation", "water loss", "water could be lost", "evaporation loss", "reservoir", "storage", "water", "soil moisture", "water demand",
                 "farmer", "farmers", "crop", "crops", "corps", "agriculture", "irrigation", "pest", "whitefly", "scouting", "yield",
+                "logistics", "route", "road", "research", "weather pattern", "compare", "comparison", "vulnerability", "cooling demand",
                 "comprehensive", "full report", "wiaas report", "crisis report", "all details", "complete report", "report"
             ])
             reply_lower = reply_text.lower()
@@ -1539,7 +1540,7 @@ def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None
                 "which city",
                 "مقام درکار ہے",
                 "ایشیائی شہر",
-            ])
+            ]) or ("comprehensive environmental & weather summary" in reply_lower and any(k in q_lower for k in ["soil", "water demand", "cooling demand", "research", "compare", "comparison", "logistics", "route", "vulnerability"]))
 
             if is_generic_canned and is_specific_query:
                 print(f"[wiaas] Intercepted generic canned response from n8n. Substituting specialized intelligence for '{request.query}'...")
