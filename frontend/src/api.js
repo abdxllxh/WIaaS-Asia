@@ -621,7 +621,9 @@ export async function sendCrisisLensChat(message) {
         const english = result.speech_en || result.reply || '';
         const urdu = result.speech_ur || buildLocalUrduCrisis(result, regionContext);
         const rawReply = String(result.reply || result.output || '').trim();
-        const looksLikeGenericCrisisTemplate = !rawReply || /multi-hazard situational threat assessment|low to nominal monitoring|no threshold-crossing severe weather detected/i.test(rawReply);
+        const historicalEvent = /\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the)\b/i.test(message) && /\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|river)\b/i.test(message);
+        const looksLikeWrongCurrentTemplate = historicalEvent && /flood hazard level|current rainfall rate|current weather conditions|current overall risk|low \/ unlikely/i.test(rawReply);
+        const looksLikeGenericCrisisTemplate = !rawReply || looksLikeWrongCurrentTemplate || /multi-hazard situational threat assessment|low to nominal monitoring|no threshold-crossing severe weather detected/i.test(rawReply);
         const humanFallback = looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, false) : '';
         const humanFallbackUrdu = looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, true) : '';
         return {
