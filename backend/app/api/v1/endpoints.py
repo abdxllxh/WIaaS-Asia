@@ -1329,7 +1329,8 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
     if cached_chat and (time.monotonic() - cached_chat[0]) < _CRISIS_CHAT_CACHE_TTL_SECONDS:
         return {**cached_chat[1], "cache_hit": True, "cache_age_seconds": round(time.monotonic() - cached_chat[0], 1)}
     timeline_query = bool(re.search(r"\b(in \d{4}|last (?:day|week|month|year)|over the last|during the past|between|before and after|since|timeline|trend|changed over|next \d+ days?|coming week|forecast window|outlook)\b", user_query, re.I))
-    historical_query = bool(re.search(r"\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the|timeline|trend|before and after)\b", user_query, re.I)) and bool(re.search(r"\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|avalanche|glacial|river|risk|weather)\b", user_query, re.I))
+    comparison_query = bool(re.search(r"\b(compare|comparison|versus|vs\.?|difference between)\b", user_query, re.I))
+    historical_query = (not comparison_query) and bool(re.search(r"\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the|timeline|trend|before and after)\b", user_query, re.I)) and bool(re.search(r"\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|avalanche|glacial|river|risk|weather)\b", user_query, re.I))
     region_key = payload.get("region_key") or "china_beijing"
     response_language = payload.get("response_language") or "en"
 
