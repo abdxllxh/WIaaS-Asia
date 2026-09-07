@@ -418,7 +418,7 @@ export async function sendChatSimulation(regionKey, query) {
             const greeting = 'Hello! I’m your WIaaS weather-intelligence partner. I can help with current weather, crop stress, irrigation, power-grid pressure, logistics, and regional comparisons. What would you like to check?';
             return { reply: greeting, speech_en: greeting, speech_ur: greeting, response_language: 'en', response_kind: 'GREETING' };
         }
-        if (/^(what can you do|what do you do|how can you help|what are your capabilities|help)$/i.test(String(query || '').trim())) {
+        if (/^(what can you do|what do you do|how can you help|what are your capabilities|help|can you do comparisons?|do you support comparisons?|can you compare|what comparisons can you do)[?!.,\s]*$/i.test(String(query || '').trim())) {
             const capability = 'I can explain current weather and climate signals, crop stress, irrigation, power-grid pressure, logistics risk, and regional comparisons. Ask about a place and a topic, and I’ll give the relevant evidence and practical next step.';
             return { reply: capability, speech_en: capability, speech_ur: capability, response_language: 'en', response_kind: 'CAPABILITIES' };
         }
