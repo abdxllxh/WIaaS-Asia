@@ -20,12 +20,9 @@ Developed as an advanced submission for the **National Hackathon**, WIAAS Asia a
 
 WIAAS Asia combines live weather telemetry, deterministic climate physics, and region-aware specialist agents to turn environmental signals into practical decisions for agriculture, infrastructure, logistics, and emergency response.
 
-<video controls="controls" width="100%" preload="metadata">
-  <source src="assets/about-us.mp4" type="video/mp4">
-  Your browser does not support embedded video. [Watch the About Us video](assets/about-us.mp4).
-</video>
+[![Watch the WIAAS Asia About Us video](assets/about-us-video.svg)](assets/about-us.mp4)
 
-[Download or watch the About Us video](assets/about-us.mp4)
+[Watch or download the About Us video](assets/about-us.mp4)
 
 ---
 
