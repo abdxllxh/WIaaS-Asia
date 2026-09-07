@@ -422,6 +422,10 @@ export async function sendChatSimulation(regionKey, query) {
             const capability = 'I can explain current weather and climate signals, crop stress, irrigation, power-grid pressure, logistics risk, and regional comparisons. Ask about a place and a topic, and I’ll give the relevant evidence and practical next step.';
             return { reply: capability, speech_en: capability, speech_ur: capability, response_language: 'en', response_kind: 'CAPABILITIES' };
         }
+        if (/\b(i am|i'm|im|i feel|feeling)\s+(very\s+)?hot\b|heat\s+exhaustion|heatstroke/i.test(String(query || '').trim())) {
+            const care = 'I’m sorry you’re feeling overheated. Move into shade or a cool room now, loosen extra clothing, sip cool water or oral rehydration solution, and stop strenuous activity. If you feel confused, faint, severely weak, have a seizure, or cannot drink, seek emergency medical help immediately. If you can, tell me your city and whether you have dizziness, headache, nausea, or confusion so I can tailor the guidance.';
+            return { reply: care, speech_en: care, speech_ur: care, response_language: 'en', response_kind: 'PERSONAL_HEAT_SAFETY' };
+        }
         const cachedData = regionsTelemetryCache[regionKey] || {};
         const activeMeta = getActiveRegion() || {};
         const regionContext = buildRegionContext(regionKey, activeMeta);
@@ -593,6 +597,10 @@ export async function sendCrisisLensChat(message) {
         if (/^(what can you do|what do you do|how can you help|what are your capabilities|help)$/i.test(String(message || '').trim())) {
             const capability = 'I can check current and past hazards, explain verified evidence, compare events, and give practical safety guidance for residents, farms, roads, power, and logistics across Asia. Tell me a place and your concern.';
             return { reply: capability, speech_en: capability, speech_ur: capability, response_language: 'en', response_kind: 'CAPABILITIES' };
+        }
+        if (/\b(i am|i'm|im|i feel|feeling)\s+(very\s+)?hot\b|heat\s+exhaustion|heatstroke/i.test(String(message || '').trim())) {
+            const care = 'I’m sorry you’re feeling overheated. Move into shade or a cool room now, loosen extra clothing, sip cool water or oral rehydration solution, and stop strenuous activity. If you feel confused, faint, severely weak, have a seizure, or cannot drink, seek emergency medical help immediately. Tell me your city and whether you have dizziness, headache, nausea, or confusion if you want more tailored guidance.';
+            return { reply: care, speech_en: care, speech_ur: care, response_language: 'en', response_kind: 'PERSONAL_HEAT_SAFETY' };
         }
         const mentionedRegion = findMentionedRegion(message);
         const resolvedRegionKey = mentionedRegion?.key || activeRegionKey;
