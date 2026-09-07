@@ -16,6 +16,17 @@
 
 Developed as an advanced submission for the **National Hackathon**, WIAAS Asia addresses the urgent challenges facing Asia's most vulnerable microclimates: from compounding heat domes in the Indus Basin and maritime moisture traps in coastal metropolises to typhoon corridors in the Kanto plain and monsoon river valleys in Bengal.
 
+## About Us
+
+WIAAS Asia combines live weather telemetry, deterministic climate physics, and region-aware specialist agents to turn environmental signals into practical decisions for agriculture, infrastructure, logistics, and emergency response.
+
+<video controls="controls" width="100%" preload="metadata">
+  <source src="assets/about-us.mp4" type="video/mp4">
+  Your browser does not support embedded video. [Watch the About Us video](assets/about-us.mp4).
+</video>
+
+[Download or watch the About Us video](assets/about-us.mp4)
+
 ---
 
 ## 🎯 The Operational Problem & The WIAAS Solution
