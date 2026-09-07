@@ -4,15 +4,14 @@
  */
 
 // ── Active Region Global Context ──────────────────────────────────────────────
-// Start on a real Asian city so the first render never requests
-// ``/analytics/null`` or shows an empty selected-region widget.
-export let activeRegionKey = 'pakistan_multan';
+// No region is selected until the user chooses a country or city.
+export let activeRegionKey = null;
 // The default telemetry view is Multan for a useful first load, but it is not
 // a user selection. The header/chat should stay Asia-wide until a map or
 // Region drawer choice is made.
 window._hasExplicitRegionSelection = false;
 export let activeLeftTab = null;
-window._activeRegionKey = activeRegionKey;
+window._activeRegionKey = null;
 
 // ── Complete Asian Region Registry Cache ──────────────────────────────────────
 export let regionsRegistry = {

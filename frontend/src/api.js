@@ -426,6 +426,10 @@ export async function sendChatSimulation(regionKey, query) {
             const care = 'I’m sorry you’re feeling overheated. Move into shade or a cool room now, loosen extra clothing, sip cool water or oral rehydration solution, and stop strenuous activity. If you feel confused, faint, severely weak, have a seizure, or cannot drink, seek emergency medical help immediately. If you can, tell me your city and whether you have dizziness, headache, nausea, or confusion so I can tailor the guidance.';
             return { reply: care, speech_en: care, speech_ur: care, response_language: 'en', response_kind: 'PERSONAL_HEAT_SAFETY' };
         }
+        if (!regionKey) {
+            const prompt = 'Please select a country or city first so I can guide you using the correct local weather, agriculture, grid, and logistics context.';
+            return { reply: prompt, speech_en: prompt, speech_ur: prompt, response_language: 'en', response_kind: 'REGION_REQUIRED' };
+        }
         const cachedData = regionsTelemetryCache[regionKey] || {};
         const activeMeta = getActiveRegion() || {};
         const regionContext = buildRegionContext(regionKey, activeMeta);
@@ -601,6 +605,10 @@ export async function sendCrisisLensChat(message) {
         if (/\b(i am|i'm|im|i feel|feeling)\s+(very\s+)?hot\b|heat\s+exhaustion|heatstroke/i.test(String(message || '').trim())) {
             const care = 'I’m sorry you’re feeling overheated. Move into shade or a cool room now, loosen extra clothing, sip cool water or oral rehydration solution, and stop strenuous activity. If you feel confused, faint, severely weak, have a seizure, or cannot drink, seek emergency medical help immediately. Tell me your city and whether you have dizziness, headache, nausea, or confusion if you want more tailored guidance.';
             return { reply: care, speech_en: care, speech_ur: care, response_language: 'en', response_kind: 'PERSONAL_HEAT_SAFETY' };
+        }
+        if (!activeRegionKey && !findMentionedRegion(message)) {
+            const prompt = 'Please select a country or city first so I can guide you with the right local hazard, weather, and safety context.';
+            return { reply: prompt, speech_en: prompt, speech_ur: prompt, response_language: 'en', response_kind: 'REGION_REQUIRED' };
         }
         const mentionedRegion = findMentionedRegion(message);
         const resolvedRegionKey = mentionedRegion?.key || activeRegionKey;

@@ -202,13 +202,8 @@ async function startApp() {
             console.warn('[main] initCharts warning:', e);
         }
 
-        // 5. Load default Featured Region: Multan, Punjab, Pakistan
-        const defaultRegion = 'pakistan_multan';
-        try {
-            await loadRegionData(defaultRegion);
-        } catch (e) {
-            console.warn('[main] loadRegionData default warning:', e);
-        }
+        // 5. Do not select a city automatically. The user must choose a region.
+        // The map and region drawer remain available while agents stay location-neutral.
 
         // Periodic telemetry polling
         setInterval(async () => {
