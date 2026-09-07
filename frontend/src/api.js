@@ -414,6 +414,10 @@ export async function fetchAllRegions(regionsList) {
  */
 export async function sendChatSimulation(regionKey, query) {
     try {
+        if (/^(hi|hello|hey| salam|assalamualaikum|good morning|good afternoon|good evening)[!,.\s]*$/i.test(String(query || '').trim())) {
+            const greeting = 'Hello! I’m your WIaaS weather-intelligence partner. I can help with current weather, crop stress, irrigation, power-grid pressure, logistics, and regional comparisons. What would you like to check?';
+            return { reply: greeting, speech_en: greeting, speech_ur: greeting, response_language: 'en', response_kind: 'GREETING' };
+        }
         const cachedData = regionsTelemetryCache[regionKey] || {};
         const activeMeta = getActiveRegion() || {};
         const regionContext = buildRegionContext(regionKey, activeMeta);
@@ -578,6 +582,10 @@ export async function sendChatSimulation(regionKey, query) {
  */
 export async function sendCrisisLensChat(message) {
     try {
+        if (/^(hi|hello|hey| salam|assalamualaikum|good morning|good afternoon|good evening)[!,.\s]*$/i.test(String(message || '').trim())) {
+            const greeting = 'Hello! I’m CrisisLens. I can help you understand current and past disasters, future hazards, verified evidence, and practical safety steps across Asia. Which place or concern should we look at?';
+            return { reply: greeting, speech_en: greeting, speech_ur: greeting, response_language: 'en', response_kind: 'GREETING' };
+        }
         const mentionedRegion = findMentionedRegion(message);
         const resolvedRegionKey = mentionedRegion?.key || activeRegionKey;
         const activeMeta = mentionedRegion?.meta || getActiveRegion() || {};
