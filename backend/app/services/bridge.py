@@ -34,6 +34,7 @@ class GNNToLLMBridge:
         telemetry:   dict,
         analysis:    dict,
         ledger:      dict,
+        forecast_7d: dict | None = None,
     ) -> str:
         """
         Constructs the complete Bounded Text-State Vector from pipeline stage outputs.
@@ -71,6 +72,12 @@ class GNNToLLMBridge:
                 f"  Standard overhead irrigation is viable under current conditions."
             )
 
+        forecast = forecast_7d or {}
+        max_temps = forecast.get("max_temps_c", [])
+        min_temps = forecast.get("min_temps_c", [])
+        precip = forecast.get("precipitation_sums_mm", [])
+        rain_prob = forecast.get("rain_prob_max_pct", [])
+
         vector = f"""
 === WIaaS PHYSICS-CONSTRAINED STATE VECTOR ===
 ZONE       : {region_name}
@@ -101,6 +108,12 @@ CRITICALITY: {analysis.get('mission_criticality_score', 50)}/100
 * FUEL
   - Available Reserve    : {ledger['fuel_available_liters']:,} L
   - Thermal Overhead     : +{ledger['fuel_thermal_overhead_pct']:.2f}%
+
+[7-DAY FORECAST]
+- Daily Maximum Temperatures (°C): {max_temps}
+- Daily Minimum Temperatures (°C): {min_temps}
+- Daily Precipitation Totals (mm): {precip}
+- Daily Maximum Rain Probability (%): {rain_prob}
 
 [GLOBAL COOPERATION CONSTRAINT (GCC)]
 Agent bids must not collectively exceed ledger ceilings. A resource collapse in any single sector triggers a systemic penalty: all agent rewards reset to zero.

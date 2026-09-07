@@ -1,0 +1,1711 @@
+{
+  "name": "WIaaS - Asia Intelligence",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { ...$json, chatInput: $json.original_message || $json.chatInput || $json.user_message || '', body: { ...($json.body || {}), chatInput: $json.original_message || $json.chatInput || $json.user_message || '' } } }}",
+        "options": {}
+      },
+      "id": "bf4717c0-dad8-4988-8da5-87c29b4cb4fa",
+      "name": "Fallback To Pipeline",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        45120,
+        12848
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "accounts/fireworks/models/minimax-m3"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 12,
+          "temperature": 0
+        }
+      },
+      "id": "cedd1604-636f-4c11-b6e3-9e3b039dbea8",
+      "name": "FW Fallback Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        44848,
+        12976
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "o4rTeim9qbkM3kgi",
+          "name": "hack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Classify this message into EXACTLY ONE label (reply with only the label, nothing else): math_agent, sentiment_agent, wiaas_analysis_agent, crisis_triage_agent, faq_agent.\n\nMessage: {{ $json.original_message }}",
+        "options": {
+          "systemMessage": "Reply with exactly one label from the list. No punctuation, no explanation."
+        }
+      },
+      "id": "279f457a-e4c5-4085-aac9-732958657b57",
+      "name": "Fallback Classifier",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        44768,
+        12752
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { ...$json, chatInput: $json.original_message || $json.chatInput || $json.user_message || '', body: { ...($json.body || {}), chatInput: $json.original_message || $json.chatInput || $json.user_message || '' } } }}",
+        "options": {}
+      },
+      "id": "a706939f-80d4-4ebf-a255-4fc516f21eb4",
+      "name": "FAQ To Pipeline",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        45120,
+        12608
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { ...$json, chatInput: $json.original_message || $json.chatInput || $json.user_message || '', body: { ...($json.body || {}), chatInput: $json.original_message || $json.chatInput || $json.user_message || '' } } }}",
+        "options": {}
+      },
+      "id": "d83e56b7-414f-454a-82b0-f47a990cf249",
+      "name": "To WIaaS Pipeline",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        45120,
+        12416
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { \"output\": $json.output || $json.text || \"No rewrite generated.\", \"route\": \"sentiment_agent\" } }}",
+        "options": {}
+      },
+      "id": "03bb59d8-347a-4e28-877f-5b6ff76552af",
+      "name": "Sentiment Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        45120,
+        13440
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "accounts/fireworks/models/minimax-m3"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 400,
+          "temperature": 0.3
+        }
+      },
+      "id": "ee100a16-a56e-4ca2-bda6-d0dd9c7c3095",
+      "name": "FW Sentiment Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        44848,
+        13680
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "o4rTeim9qbkM3kgi",
+          "name": "hack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.original_message }}",
+        "options": {
+          "systemMessage": "You are a tone and rewriting assistant. If asked to rewrite, return only the improved text. If asked about tone/sentiment, give a one-line assessment plus a suggested rewrite. Plain text only. No internal reasoning."
+        }
+      },
+      "id": "f0e76b20-b0ab-4cbc-90e8-c88e0142a50f",
+      "name": "Sentiment Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        44768,
+        13440
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst msg = String($input.first().json.original_message || \"\");\nconst t = msg.toLowerCase();\nconst nums = (msg.match(/-?\\d+(?:\\.\\d+)?/g) || []).map(Number);\nlet output = \"\";\nfunction round(x){ return Math.round(x * 100) / 100; }\nif ((t.includes(\"heat index\") || t.includes(\"feels like\")) && nums.length >= 2) {\n  const T = nums[0], R = nums[1];\n  const Tf = T * 9/5 + 32;\n  let hiF = -42.379 + 2.04901523*Tf + 10.14333127*R - 0.22475541*Tf*R - 0.00683783*Tf*Tf - 0.05481717*R*R + 0.00122874*Tf*Tf*R + 0.00085282*Tf*R*R - 0.00000199*Tf*Tf*R*R;\n  const hiC = (hiF - 32) * 5/9;\n  output = \"Heat Index for \" + T + \"C at \" + R + \"% humidity = \" + round(hiC) + \"C (\" + round(hiF) + \"F).\";\n} else if (t.includes(\"vpd\") || t.includes(\"vapor pressure\")) {\n  if (nums.length >= 2) {\n    const T = nums[0], R = nums[1];\n    const svp = 0.6108 * Math.exp((17.27 * T) / (T + 237.3));\n    const vpd = svp * (1 - R/100);\n    output = \"VPD for \" + T + \"C at \" + R + \"% humidity = \" + round(vpd) + \" kPa.\";\n  } else { output = \"To calculate VPD I need temperature (C) and relative humidity (%).\"; }\n} else if (t.includes(\"percent\") || t.includes(\"percentage\") || t.includes(\"%\")) {\n  if (nums.length >= 2) { output = round((nums[0] / nums[1]) * 100) + \"% (\" + nums[0] + \" of \" + nums[1] + \").\"; }\n  else { output = \"To compute a percentage I need two numbers.\"; }\n} else if (t.includes(\"mission criticality\") || t.includes(\"criticality score\")) {\n  output = \"Mission criticality is computed inside the WIaaS pipeline from heat index, VPD, grid surge, and thermal overhead. Ask for a WIaaS analysis of a region to get its score.\";\n} else if (nums.length >= 2 && /[+\\-*x/]/.test(t)) {\n  let r = nums[0];\n  if (t.includes(\"+\")) r = nums.reduce((a,b)=>a+b,0);\n  else if (t.includes(\"-\")) r = nums.reduce((a,b)=>a-b);\n  else if (t.includes(\"x\") || t.includes(\"*\")) r = nums.reduce((a,b)=>a*b,1);\n  else if (t.includes(\"/\")) r = nums.reduce((a,b)=>a/b);\n  output = \"Result: \" + round(r) + \".\";\n} else {\n  output = \"I can calculate heat index (temp + humidity), VPD, percentages, and basic arithmetic. Please include the numbers.\";\n}\nreturn [{ json: { output, chat_response: output, final_response: output, route: \"math_agent\" } }];\n"
+      },
+      "id": "9c131a99-fe96-4c62-a7ce-ec7cf8779549",
+      "name": "Math Calc",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        44832,
+        13152
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { \"output\": $json.output || $json.text || \"No triage generated.\", \"route\": \"crisis_triage_agent\" } }}",
+        "options": {}
+      },
+      "id": "920defd2-0a91-46fe-b24e-0053868ab0aa",
+      "name": "Crisis Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        45120,
+        12160
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "accounts/fireworks/models/minimax-m3"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 700,
+          "temperature": 0.2
+        }
+      },
+      "id": "7af87333-be75-46ab-8492-c523346f9deb",
+      "name": "FW Crisis Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        44848,
+        12400
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "o4rTeim9qbkM3kgi",
+          "name": "hack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.original_message }}",
+        "options": {
+          "systemMessage": "You are a WIaaS crisis/anomaly triage assistant. Given an anomaly, polygon, threat, or disaster description, produce a concise triage: threat summary, severity, and recommended mitigation actions. Plain text only. No internal reasoning."
+        }
+      },
+      "id": "bf3f6780-c270-4f69-b45f-e3ddc7c75f0e",
+      "name": "Crisis Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        44768,
+        12160
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "crisis_triage_agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "53e74176-fcf4-4947-80d3-beb48f903077"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "math_agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "179f123b-3a9f-4ba5-98df-ba735096e946"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "sentiment_agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "5c1e4e35-34d1-4009-b2a0-99e2d9f21bb3"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "wiaas_analysis_agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2d4c0fd6-2ca8-4bf7-8ef9-ad21fd2deba4"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "faq_agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "193cb7a6-d72c-44be-9d77-bc8829aa201c"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "fallback_classifier"
+        }
+      },
+      "id": "8f2dc736-59dc-4901-b713-8ac38dccc024",
+      "name": "Route Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        44544,
+        12656
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json || {};\nif (typeof input.body === 'string') { try { Object.assign(input, JSON.parse(input.body)); } catch (e) {} }\nif (input.body && typeof input.body === 'object') Object.assign(input, input.body);\nconst body = input.body && typeof input.body === 'object' ? input.body : {};\nconst pick = (...xs) => xs.find(v => typeof v === 'string' && v.trim()) || '';\nconst original = String(pick(input.chatInput, input.user_message, input.message, input.text, body.chatInput, body.user_message, body.message, body.text)).trim();\nconst q = original.toLowerCase();\nconst faq = /\\b(hello|hi|hey|salam|thanks|thank you|how are you|what can (wiaas|you) (help|do)|how can you help|what do you do|who are you|what is wiaas|how does wiaas work|can you compare)\\b/i.test(q);\nconst crisis = /\\b(flood|flooding|earthquake|wildfire|typhoon|cyclone|landslide|disaster|evacuation|emergency|hazard|crisis|casualt|missing|damage|losses)\\b/i.test(q);\nconst math = /\\b(calculate|compute|convert|formula|equation|solve)\\b/i.test(q);\nconst sentiment = /\\b(rewrite|proofread|make formal|make professional|sentiment|tone)\\b/i.test(q);\nconst hasRegion = Boolean(input.region_key || input.region_name || input.region_context);\nlet route = 'fallback_classifier', model = 'minimax-m3', confidence = 0.3, reason = 'No confident match', needsFallback = true;\nif (faq) { route='faq_agent'; model='minimax-m3'; confidence=0.95; reason='Conversational or capability question'; needsFallback=false; }\nelse if (math) { route='math_agent'; model='deterministic'; confidence=0.9; reason='Calculation request'; needsFallback=false; }\nelse if (sentiment) { route='sentiment_agent'; model='minimax-m3'; confidence=0.9; reason='Rewrite or tone request'; needsFallback=false; }\nelse if (crisis) { route='crisis_triage_agent'; model='minimax-m3'; confidence=0.9; reason='Crisis or disaster question'; needsFallback=false; }\nelse if (hasRegion || /\\b(weather|forecast|temperature|humidity|heat|rain|irrigation|agriculture|grid|power|logistics|travel|risk|report|analysis|current|compare)\\b/i.test(q)) { route='wiaas_analysis_agent'; model='existing-wiaas'; confidence=0.9; reason='Regional intelligence question'; needsFallback=false; }\nreturn [{json:{...input, route, confidence, reason, selected_model:model, needs_fallback_classifier:needsFallback, original_message:original}}];"
+      },
+      "id": "e84f66c3-1db4-436d-9a87-43be89b0585e",
+      "name": "Regex Router",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        44320,
+        12720
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wiaas-asia-agents",
+        "responseMode": "lastNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "3afea1b7-9107-464b-ad80-9901b38b0bed",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        44096,
+        12720
+      ],
+      "webhookId": "3ad54f9e-7ac1-4c8a-8459-5cad188ccad6"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst j = $input.first().json;\nlet raw = j.output || j.text || j.response || j.chatOutput || (j.message && j.message.content) || j.direct_response || \"\";\nraw = String(raw).replace(/```[a-z]*|```/gi,\"\");\nconst bad = /(the user wants|constraints?|let'?s extract|i need to|i must|system prompt|workflow|internal|reasoning|agent prompt|as an ai)/i;\nlet clean = raw.split(/\\n/).filter(x=>{const t=x.trim(); if(!t) return true; return !bad.test(t);}).join(\"\\n\").replace(/\\n{3,}/g,\"\\n\\n\").trim();\nif(!clean){ clean = \"Hi! How can I help you with WIaaS today?\"; }\nreturn [{ json: { output: clean, direct_response: clean } }];\n"
+      },
+      "id": "423084d5-678f-4c3f-9cfb-819e823328dd",
+      "name": "Chat Sanitizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        46816,
+        13408
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Intent Router2').item.json.session_id || 'anonymous' }}",
+        "contextWindowLength": 12
+      },
+      "id": "1207fb2c-1a83-4ea7-abe8-28aeb721626c",
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        46608,
+        13648
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "accounts/fireworks/models/minimax-m3"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 220,
+          "temperature": 0.2
+        }
+      },
+      "id": "17b7e794-c300-4640-b4c5-dcfc35188a32",
+      "name": "FW Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        46480,
+        13648
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "o4rTeim9qbkM3kgi",
+          "name": "hack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_message || $json.direct_response }}",
+        "options": {
+          "systemMessage": "You are WIaaS Guide, the natural conversation layer. Answer the user's exact message, not a default report. First classify internally as casual, capability, definition, current, forecast, historical, comparison, sector follow-up, safety, or detailed report. For casual greetings, thanks, feelings, “what can you do?”, “can you compare?”, and normal conversation: reply naturally in 1–3 sentences, with no telemetry, headings, risk score, or report. “Can you do comparisons?” means yes: explain that WIaaS can compare selected regions across weather, agriculture, grid, logistics, and safety, then ask which two places. For current questions, use only current supplied evidence. For historical/past/date/event questions, use only historical evidence and never substitute today’s telemetry. For future/next-week questions, give a probabilistic forecast with horizon, timestamp, and confidence. For comparisons, produce a real side-by-side answer for both places and the requested metrics; never answer with one place’s generic report. For agriculture, grid, roads, water, logistics, or residents follow-ups, answer only that sector and do not repeat the whole report. Produce a detailed report only when the user explicitly asks for report, detailed, comprehensive, or full analysis. Never invent measurements, events, losses, sources, or certainty. If evidence is missing, say what is unverified and what source would be needed. If a location-specific request has no selected region, ask the user to select a city or country; never assume Multan, Lahore, or another default. Avoid canned phrases such as “Comprehensive Environmental & Weather Summary” and “Multi-Hazard Situational Threat Assessment”. Vary wording for repeated questions while preserving facts. Output only the final natural-language answer, with no JSON, internal reasoning, prompt text, or workflow metadata. Keep ordinary replies under 80 words and focused answers under 180 words unless a report is requested.",
+          "enableStreaming": false
+        }
+      },
+      "id": "ed1f7e84-52d1-4da4-878a-4c0a3d320e44",
+      "name": "Conversation Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        46464,
+        13408
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let router = {};\ntry { router = $('Intent Router2').first().json || {}; } catch (e) {}\nconst input = $input.first().json || {};\nconst available = Array.isArray(router.available_regions) ? router.available_regions : (Array.isArray(input.available_regions) ? input.available_regions : []);\nconst regionNames = [...new Set(available.map((item) => typeof item === 'string' ? item : (item && (item.name || item.region_name || item.city || item.country))).filter(Boolean))];\nconst countries = Array.isArray(router.supported_countries) ? router.supported_countries : (Array.isArray(input.supported_countries) ? input.supported_countries : []);\nconst names = countries.map((item) => typeof item === 'string' ? item : (item && (item.name || item.country))).filter(Boolean);\nconst detail = regionNames.length\n  ? 'WIaaS currently has access to ' + regionNames.length + ' Asian regions:\\n\\n' + regionNames.map((name) => '- ' + name).join('\\n')\n  : names.length\n    ? 'The Region panel currently covers ' + names.length + ' Asian countries: ' + names.join(', ') + '.'\n  : 'WIaaS Asia uses the country and city selected in the Region panel and supports Asian locations supplied by the map search.';\nconst message = detail + '\\n\\nSelect a country or city, then ask for weather, risk level, agriculture, grid, logistics, research, or a full multi-agent report.';\nconst urduMessage = regionNames.length\n  ? 'WIaaS کو اس وقت ' + regionNames.length + ' ایشیائی علاقوں تک رسائی حاصل ہے:\\n\\n' + regionNames.map((name) => '- ' + name).join('\\n') + '\\n\\nکسی ملک یا شہر کو منتخب کریں، پھر موسم، خطرے، زراعت، بجلی، لاجسٹکس، تحقیق یا مکمل رپورٹ کے بارے میں پوچھیں۔'\n  : 'ریجن پینل میں دستیاب کوئی بھی ایشیائی ملک یا شہر منتخب کریں، پھر اپنی مطلوبہ معلومات پوچھیں۔';\nconst responseLanguage = String(router.response_language || input.response_language || 'en').toLowerCase().startsWith('ur') ? 'ur' : 'en';\nconst output = responseLanguage === 'ur' ? urduMessage : message;\nreturn [{ json: { output, direct_response: output, chat_response: output, final_response: output, speech_en: message, speech_ur: urduMessage, response_language: responseLanguage, channel: router.channel || 'webhook' } }];"
+      },
+      "id": "11b36766-a298-4307-8d8d-b9dd9e6bbb12",
+      "name": "Format Region List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        46816,
+        13120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json || {};\nlet router = input;\ntry { router = $('Intent Router2').first().json || input; } catch (e) {}\nconst body = router.body && typeof router.body === 'object' ? router.body : {};\nconst context = router.region_context && typeof router.region_context === 'object'\n  ? router.region_context\n  : (body.region_context && typeof body.region_context === 'object' ? body.region_context : {});\nconst explicitKey = String(router.region_key || body.region_key || context.key || '').trim();\nconst explicitName = String(router.region_name || body.region_name || context.name || context.city || context.country || '').trim();\n\nfunction normalizeEntries(value) {\n  const source = value && value.regions !== undefined ? value.regions : value;\n  const entries = [];\n  if (Array.isArray(source)) {\n    for (const item of source) {\n      if (typeof item === 'string') entries.push({ key: item, name: item });\n      else if (item && typeof item === 'object') {\n        const key = item.key || item.region_key || item.id || '';\n        const name = item.name || item.region_name || item.city || item.country || key;\n        if (key || name) entries.push({ ...item, key: key || name, name });\n      }\n    }\n  } else if (source && typeof source === 'object') {\n    for (const [key, value] of Object.entries(source)) {\n      if (['status', 'count', 'message'].includes(key)) continue;\n      entries.push(value && typeof value === 'object'\n        ? { ...value, key, name: value.name || value.region_name || value.city || key }\n        : { key, name: String(value || key) });\n    }\n  }\n  return entries;\n}\n\nconst supplied = router.available_regions || body.available_regions || router.asia_regions || body.asia_regions || [];\nconst entries = normalizeEntries(supplied);\nif (explicitKey || explicitName) {\n  const exists = entries.some((item) => item.key === explicitKey || item.name === explicitName);\n  if (!exists) entries.unshift({\n    ...context,\n    key: explicitKey || explicitName,\n    name: explicitName || explicitKey,\n    city: router.city || body.city || context.city || '',\n    province: router.province || body.province || context.province || '',\n    country: router.country || body.country || context.country || '',\n    country_code: router.country_code || body.country_code || context.country_code || '',\n    asian_subregion: router.asian_subregion || body.asian_subregion || context.asian_subregion || '',\n    latitude: router.latitude ?? body.latitude ?? context.latitude ?? null,\n    longitude: router.longitude ?? body.longitude ?? context.longitude ?? null,\n    timezone: router.timezone || body.timezone || context.timezone || '',\n  });\n}\n\nreturn [{ json: {\n  status: 'success',\n  scope: 'ASIA',\n  count: entries.length,\n  regions: entries,\n  supported_countries: router.supported_countries || body.supported_countries || [],\n  selected_context: context,\n} }];"
+      },
+      "id": "39a31797-e2aa-4b58-902b-819196fcc84e",
+      "name": "Fetch Regions For List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        46528,
+        13120
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "region-list-check",
+              "leftValue": "={{ $json.wiaas_mode }}",
+              "rightValue": "region_list",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3fef2a31-5528-4bed-87c0-5f7c51c9e701",
+      "name": "Which Regions?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        46240,
+        13264
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ (() => { const offline = $json.region_status === \"backend_offline\"; const msg = offline ? \"The WIaaS backend appears to be offline right now, so I can't fetch live environmental data. Please try again in a little while.\" : \"I don't currently have environmental data for that region. Please try another supported region.\"; return { output: msg, direct_response: msg, chat_response: msg, final_response: msg, channel: $json.channel }; })() }}",
+        "options": {}
+      },
+      "id": "f41163f1-6d5f-4690-96fc-e432ec8bdcbc",
+      "name": "Region Not Found Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        46816,
+        12400
+      ]
+    },
+    {
+      "parameters": {
+        "message": "={{ $json.output || $json.direct_response }}",
+        "options": {}
+      },
+      "id": "7854708d-de02-4837-b62a-b8820b355462",
+      "name": "FAQs",
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.3,
+      "position": [
+        47264,
+        12800
+      ],
+      "webhookId": "5765de91-8eda-41c5-af7a-b39020bd2d52"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json || {};\nconst output = String(j.output || j.direct_response || 'I can help with WIaaS climate intelligence.');\nreturn [{ json: { ...j, output, speech_en: j.speech_en || output, speech_ur: j.speech_ur || '', response_language: j.response_language || 'en' } }];"
+      },
+      "id": "076456d3-14df-44fc-9b66-e93884b48223",
+      "name": "Respond FAQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        47264,
+        12608
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "faq-channel",
+              "leftValue": "={{ $('Intent Router2').item.json.channel }}",
+              "rightValue": "webhook",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dfae6c11-f82e-41b7-bd74-a2aa6869e716",
+      "name": "FAQ Channel?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        47040,
+        12688
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { \"output\": \"Sure - which region would you like me to analyze? You can send a city, country, or backend region key, for example: maritime region togo, pakistan punjab, or boston usa.\", \"direct_response\": \"Sure - which region would you like me to analyze? You can send a city, country, or backend region key, for example: maritime region togo, pakistan punjab, or boston usa.\", \"chat_response\": \"Sure - which region would you like me to analyze? You can send a city, country, or backend region key, for example: maritime region togo, pakistan punjab, or boston usa.\", \"final_response\": \"Sure - which region would you like me to analyze? You can send a city, country, or backend region key, for example: maritime region togo, pakistan punjab, or boston usa.\", \"channel\": $json.channel } }}",
+        "options": {}
+      },
+      "id": "1781ceca-0115-4838-a7ee-6ae883c71302",
+      "name": "Ask For Region",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        46816,
+        12592
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "region-missing-check",
+              "leftValue": "={{ $json.region_status }}",
+              "rightValue": "missing",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ada816d6-8c4c-4aeb-b287-b5085738d44c",
+      "name": "Region Missing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        46528,
+        12496
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ (() => {\n  const j = $json || {};\n  const body = j.body && typeof j.body === 'object' ? j.body : {};\n  const c = j.region_context || body.region_context || {};\n  const region = j.matched_region_name || j.region_name || body.region_name || c.name || c.city || c.country || 'Selected Asian region';\n  const state = {\n    metadata: {\n      region,\n      city: j.city || body.city || c.city || '',\n      province: j.province || body.province || c.province || '',\n      country: j.country || body.country || c.country || '',\n      country_code: j.country_code || body.country_code || c.country_code || '',\n      asian_subregion: j.asian_subregion || body.asian_subregion || c.asian_subregion || 'Asia',\n      latitude: j.latitude ?? body.latitude ?? c.latitude ?? null,\n      longitude: j.longitude ?? body.longitude ?? c.longitude ?? null,\n      timezone: j.timezone || body.timezone || c.timezone || '',\n      data_source: 'WIaaS selected-region context',\n      backend_status: 'DATA_PENDING',\n    },\n    physics_metrics: { vapor_pressure_deficit_kpa: null, evaporation_loss_percent: null, heat_index_celsius: null, grid_demand_surge_percent: null, thermal_overhead_percent: null },\n    calculated_risk_state: { initial_risk_level: 'DATA_PENDING', mission_criticality_score: null },\n    telemetry: { temperature_celsius: null, humidity_percentage: null, wind_speed_kmh: null },\n    ledger: {},\n  };\n  return { ...j, region, data_source: state.metadata.data_source, backend_status: state.metadata.backend_status, risk_level: 'DATA_PENDING', mission_criticality_score: null, state_vector: JSON.stringify(state) };\n})() }}",
+        "options": {}
+      },
+      "id": "03eb14c9-6a58-43b6-84d4-37739bd49429",
+      "name": "Set Fallback State Vector",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        47040,
+        13184
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming = $input.first().json || {};\nfunction readable(v) {\n  if (v === null || v === undefined || typeof v === 'object') return '';\n  const s = String(v).trim();\n  if (!s) return '';\n  try { const parsed = JSON.parse(s); if (parsed && typeof parsed === 'object') return ''; } catch (e) {}\n  return s.replace(/\\*\\*/g, '').replace(/^[-#]+\\s*/gm, '').trim();\n}\nfunction firstReadable(...values) { for (const value of values) { const result = readable(value); if (result) return result; } return 'No readable WIaaS report was generated.'; }\nconst chat_message = firstReadable(incoming.chat_message, incoming.readable_report, incoming.report, incoming.regional_summary, incoming.research_summary, incoming.output, incoming.final_response, incoming.reply);\nconst result = {\n  ok: incoming.ok !== false,\n  chat_message,\n  output: chat_message,\n  final_response: chat_message,\n  reply: chat_message,\n  region_key: incoming.region_key || '',\n  region_name: incoming.region_name || incoming.region || 'the selected region',\n  region_context: incoming.region_context || {},\n  telemetry: incoming.telemetry || {},\n  climate_matrix: incoming.climate_matrix || {},\n  ledger: incoming.ledger || {},\n  risk_level: incoming.risk_level || 'n/a',\n  mission_criticality_score: incoming.mission_criticality_score ?? 'n/a',\n  channel: incoming.channel || 'chat',\n  status: incoming.status || 'success'\n};\nreturn [{ json: result }];"
+      },
+      "id": "d3e37fff-f8a7-4f47-ab34-42e34bc55708",
+      "name": "Sanitizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        50240,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming=$input.first().json||{};\nfunction obj(v){if(v&&typeof v==='object'&&!Array.isArray(v))return v;try{const p=JSON.parse(v);return p&&typeof p==='object'?p:{};}catch(e){return {};}}\nfunction nobj(name){try{return $(name).first().json||{};}catch(e){return {};}}\nfunction clean(v){if(v===null||v===undefined||typeof v==='object')return '';const s=String(v).replace(/\\x60\\x60\\x60(?:json)?|\\x60\\x60\\x60/gi,'').trim();if(!s)return '';try{if(typeof JSON.parse(s)==='object')return '';}catch(e){}return s.replace(/\\*\\*/g,'').replace(/\\s+/g,' ').trim();}\nfunction usable(v){const s=clean(v);return s&&!/(?:no|not|does not|doesn't|aren't|isn't|cannot|can't|unable|without|don't|do not|unavailable) .{0,120} (?:backend|system|sensor|agriculture|grid|research|telemetry|state vector|data|payload|reading|summary|summarize|available|provided|included|numbers|metrics)|\\bn\\/a\\b|unavailable regional risk/i.test(s)?s:'';}\nfunction first(...v){for(const x of v){const s=usable(x);if(s)return s;}return '';}\nfunction pick(...v){return v.find(x=>x!==undefined&&x!==null&&x!=='');}\nconst w=nobj('Webhook Trigger'), body=obj(w.body), m={...body,...incoming}, state=obj(m.state_vector||m.llm_state_vector||incoming.normalized_state), meta=obj(state.metadata||m.region_context), p=obj(state.physics_metrics), t=obj(m.telemetry||state.telemetry||obj(m.climate_matrix).telemetry), cm=obj(m.climate_matrix||state.climate_matrix), l=obj(m.ledger||m.synthetic_resource_ledger||state.ledger), r=obj(state.calculated_risk_state);\nconst region_key=pick(m.region_key,meta.region_key,obj(m.region_context).key,''); const region_name=pick(m.region_name,meta.region_name,meta.region, m.region,obj(m.region_context).name,'the selected region'); const risk=pick(m.risk_level,r.initial_risk_level,'n/a'); const score=pick(m.mission_criticality_score,r.mission_criticality_score,'n/a');\nconst temp=pick(t.temperature_celsius,'n/a'), hum=pick(t.humidity_percentage,'n/a'), heat=pick(p.heat_index_celsius,cm.heat_index_celsius,'n/a'), vpd=pick(p.vapor_pressure_deficit_kpa,cm.vapor_pressure_deficit_kpa,'n/a'), evap=pick(p.evaporation_loss_percent,l.water_surface_evap_loss_pct,'n/a'), eff=pick(l.water_irrigation_efficiency_pct,'n/a'), cap=pick(l.grid_available_capacity_mw,'n/a'), surge=pick(p.grid_demand_surge_percent,l.grid_demand_surge_pct,'n/a'), over=pick(p.thermal_overhead_percent,l.fuel_thermal_overhead_pct,'n/a');\nconst ag=first(nobj('Save Agri Output').agriculture_impact,nobj('Agri Agent').output)||'Agriculture: VPD '+vpd+' kPa, evaporation loss '+evap+'%, and irrigation efficiency '+eff+'%. Schedule sensitive work and irrigation during cooler hours.';\nconst gr=first(nobj('Save Grid Output').grid_impact,nobj('Grid Agent').output)||'Grid: available capacity '+cap+' MW, demand surge '+surge+'%, and thermal overhead '+over+'%. Maintain cooling-load monitoring and review the evening peak.';\nconst lo=first(nobj('Save Logistics Output').logistics_impact,nobj('Logistic Agent').output)||'Logistics: protect heat-sensitive cargo and essential movement using heat index '+heat+' C, wind '+pick(t.wind_speed_kmh,'n/a')+' km/h, and risk '+risk+'.';\nconst re=first(nobj('Save Research Output').research_summary,nobj('Research Agent').output)||region_name+' is assessed at '+risk+' operational risk with mission criticality '+score+'/100. Live telemetry is '+temp+' C, '+hum+'% humidity, heat index '+heat+' C, and VPD '+vpd+' kPa.';\nconst built=['Region: '+region_name,'Risk Level: '+risk,'Mission Criticality Score: '+score,'Live Metrics: Temperature '+temp+' C | Humidity '+hum+'% | Heat Index '+heat+' C | VPD '+vpd+' kPa | Grid Demand Surge '+surge+'%','Research Summary: '+re,'Agriculture Impact: '+ag,'Grid Impact: '+gr,'Logistics Impact: '+lo].join('\\n\\n');\nconst chat_message=first(incoming.direct_response,incoming.chat_message,incoming.report,incoming.readable_report)||built;\nreturn [{json:{ok:incoming.ok!==false,chat_message,output:chat_message,final_response:chat_message,reply:chat_message,region_key,region_name,region_context:obj(m.region_context),telemetry:t,climate_matrix:cm,ledger:l,risk_level:risk,mission_criticality_score:score,channel:m.channel||'chat',status:'success'}}];"
+      },
+      "id": "566e2e37-853e-4acf-a4e7-01b843f02e9e",
+      "name": "Compile For Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        50016,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "state_vector",
+              "stringValue": "={{ $(\"Save Grid Output\").first().json.state_vector }}"
+            },
+            {
+              "name": "research_summary",
+              "stringValue": "={{ $(\"Save Grid Output\").first().json.research_summary }}"
+            },
+            {
+              "name": "agriculture_impact",
+              "stringValue": "={{ $(\"Save Grid Output\").first().json.agriculture_impact }}"
+            },
+            {
+              "name": "grid_impact",
+              "stringValue": "={{ $(\"Save Grid Output\").first().json.grid_impact }}"
+            },
+            {
+              "name": "logistics_impact",
+              "stringValue": "={{ (() => {\n    const output = $json.output || $json.text || $json.response || $json.chatOutput || $json.message?.content;\n    let parsed = null;\n    if (String(output || '').trim()) {\n      try { parsed = JSON.parse(String(output).replace(/^\\x60\\x60\\x60json/i, '').replace(/^\\x60\\x60\\x60/i, '').replace(/\\x60\\x60\\x60$/i, '').trim()); } catch (e) {}\n    }\n    const fallback = (() => {\n    let state = {};\n    try { const raw = $('Save Grid Output').first().json.state_vector; state = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}\n    const p = state.physics_metrics || {}, t = state.telemetry || {}, r = state.calculated_risk_state || {};\n    const wind = Number.isFinite(Number(t.wind_speed_kmh)) ? Math.round(Number(t.wind_speed_kmh) * 100) / 100 : (t.wind_speed_kmh ?? 'n/a');\n    return {\n      logistics_impact: 'Logistics readiness is operating under ' + (r.initial_risk_level || 'unavailable') + ' regional risk, with wind at ' + wind + ' km/h and thermal overhead at ' + (p.thermal_overhead_percent ?? 'n/a') + '%. Protect heat-sensitive cargo and keep essential routes under live monitoring.',\n      next_actions: [\n        { title: 'Protect field operations', description: 'Move heat-sensitive agriculture and outdoor activity to cooler operating windows.' },\n        { title: 'Protect grid reserve', description: 'Monitor demand surge and thermal overhead before the regional peak.' },\n        { title: 'Protect essential movement', description: 'Track weather and road conditions for priority logistics routes.' }\n      ]\n    };\n  })();\n    return parsed?.logistics_impact || parsed?.logisticsImpact || fallback.logistics_impact;\n  })() }}"
+            },
+            {
+              "name": "next_actions",
+              "stringValue": "={{ (() => {\n    const output = $json.output || $json.text || $json.response || $json.chatOutput || $json.message?.content;\n    let parsed = null;\n    if (String(output || '').trim()) {\n      try { parsed = JSON.parse(String(output).replace(/^\\x60\\x60\\x60json/i, '').replace(/^\\x60\\x60\\x60/i, '').replace(/\\x60\\x60\\x60$/i, '').trim()); } catch (e) {}\n    }\n    const fallback = (() => {\n    let state = {};\n    try { const raw = $('Save Grid Output').first().json.state_vector; state = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}\n    const p = state.physics_metrics || {}, t = state.telemetry || {}, r = state.calculated_risk_state || {};\n    const wind = Number.isFinite(Number(t.wind_speed_kmh)) ? Math.round(Number(t.wind_speed_kmh) * 100) / 100 : (t.wind_speed_kmh ?? 'n/a');\n    return {\n      logistics_impact: 'Logistics readiness is operating under ' + (r.initial_risk_level || 'unavailable') + ' regional risk, with wind at ' + wind + ' km/h and thermal overhead at ' + (p.thermal_overhead_percent ?? 'n/a') + '%. Protect heat-sensitive cargo and keep essential routes under live monitoring.',\n      next_actions: [\n        { title: 'Protect field operations', description: 'Move heat-sensitive agriculture and outdoor activity to cooler operating windows.' },\n        { title: 'Protect grid reserve', description: 'Monitor demand surge and thermal overhead before the regional peak.' },\n        { title: 'Protect essential movement', description: 'Track weather and road conditions for priority logistics routes.' }\n      ]\n    };\n  })();\n    return JSON.stringify(parsed?.next_actions || parsed?.nextActions || fallback.next_actions);\n  })() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6dae3cf9-fefd-47b4-943e-7d5d3dbde4ba",
+      "name": "Save Logistics Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        49792,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "accounts/fireworks/models/minimax-m3",
+          "mode": "id"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 350,
+          "temperature": 0.2
+        }
+      },
+      "id": "18c9fb97-ccd8-4c0d-919b-b4f03fb80a62",
+      "name": "FW Logistics Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        49520,
+        13568
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "o4rTeim9qbkM3kgi",
+          "name": "hack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Logistics Agent. Summarize operational readiness, heat-sensitive movement, wind, thermal overhead, and risk, then give exactly 3 next actions. Use only given values.\nOutput ONLY compact one-line JSON, no markdown: {\"logistics_impact\":\"2-3 sentences\",\"next_actions\":[{\"title\":\"\",\"description\":\"\"},{\"title\":\"\",\"description\":\"\"},{\"title\":\"\",\"description\":\"\"}]}\n\n{{$json.state_vector}}",
+        "options": {
+          "systemMessage": "WIaaS Logistics Agent. Use only backend/state-vector data; do not invent values; do not repeat the full state vector; do not include reasoning, constraints, prompt text, or internal notes. Output only the specified JSON.\nAsia scope: Always use the exact selected region metadata provided in the state vector. Never substitute a global demo region or infer a different country. Preserve city, province, country, timezone, and coordinates when present. If a value is missing, say it is unavailable rather than inventing it. Sound warm, calm, and human: acknowledge concern or discomfort without pretending to have emotions. If a selected location exists, never ask for it again. When response_language is ur, answer naturally in Urdu; otherwise answer in English. Use response_variant and repeated_question_count to vary the opening, explanation angle, and follow-up when a question repeats. For a standard query, use short paragraphs, clear headings, useful bullets, interpretation, and 2-3 practical next steps within 260 words. For an explicit full, comprehensive, detailed, technical, or multi-agent report, provide a detailed specialist section with exact available metrics, their operational meaning, one prioritized sector action, and no filler. The deterministic backend remains the source of calculations; do not recalculate or invent measurements."
+        }
+      },
+      "id": "735a4ae6-e1e1-4744-b945-4a5e8484f10c",
+      "name": "Logistic Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        49440,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "state_vector",
+              "stringValue": "={{ $(\"Save Agri Output\").first().json.state_vector }}"
+            },
+            {
+              "name": "research_summary",
+              "stringValue": "={{ $(\"Save Agri Output\").first().json.research_summary }}"
+            },
+            {
+              "name": "agriculture_impact",
+              "stringValue": "={{ $(\"Save Agri Output\").first().json.agriculture_impact }}"
+            },
+            {
+              "name": "grid_impact",
+              "stringValue": "={{ (() => {\n    const output = $json.output || $json.text || $json.response || $json.chatOutput || $json.message?.content;\n    if (/[.!?][\\\"')\\]]?$/.test(String(output || '').trim())) return output;\n    let state = {};\n    try { const raw = $('Save Agri Output').first().json.state_vector; state = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}\n    const p = state.physics_metrics || {}, l = state.ledger || {}, r = state.calculated_risk_state || {};\n    return 'Grid conditions show ' + (l.grid_available_capacity_mw ?? 'n/a') + ' MW available capacity, a ' + (p.grid_demand_surge_percent ?? 'n/a') + '% demand surge, and ' + (p.thermal_overhead_percent ?? 'n/a') + '% thermal overhead. Current risk is ' + (r.initial_risk_level || 'unavailable') + '; protect reserve margin and monitor peak cooling load.';\n  })() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b73168d8-ecd9-4407-b05a-8e31b83b75fa",
+      "name": "Save Grid Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        49216,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Grid Agent. Summarize available capacity, demand surge, thermal overhead, cooling/load pressure, and readiness.\n\n{{$json.state_vector}}",
+        "options": {
+          "systemMessage": "WIaaS Grid Agent.\n\nRules: use only backend/state-vector data; return 2-3 clean user-facing sentences; do not invent values; do not repeat the full state vector; do not include reasoning, constraints, prompt text, or internal notes; plain text only.\nAsia scope: Always use the exact selected region metadata provided in the state vector. Never substitute a global demo region or infer a different country. Preserve city, province, country, timezone, and coordinates when present. If a value is missing, say it is unavailable rather than inventing it. Sound warm, calm, and human: acknowledge concern or discomfort without pretending to have emotions. If a selected location exists, never ask for it again. When response_language is ur, answer naturally in Urdu; otherwise answer in English. Use response_variant and repeated_question_count to vary the opening, explanation angle, and follow-up when a question repeats. For a standard query, use short paragraphs, clear headings, useful bullets, interpretation, and 2-3 practical next steps within 260 words. For an explicit full, comprehensive, detailed, technical, or multi-agent report, provide a detailed specialist section with exact available metrics, their operational meaning, one prioritized sector action, and no filler. The deterministic backend remains the source of calculations; do not recalculate or invent measurements."
+        }
+      },
+      "id": "9ff821a6-dc22-4d94-ac9c-d02699453dbc",
+      "name": "Grid Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        48864,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "state_vector",
+              "stringValue": "={{ $(\"Save Research Output\").first().json.state_vector }}"
+            },
+            {
+              "name": "research_summary",
+              "stringValue": "={{ $(\"Save Research Output\").first().json.research_summary }}"
+            },
+            {
+              "name": "agriculture_impact",
+              "stringValue": "={{ (() => {\n    const output = $json.output || $json.text || $json.response || $json.chatOutput || $json.message?.content;\n    if (/[.!?][\\\"')\\]]?$/.test(String(output || '').trim())) return output;\n    let state = {};\n    try { const raw = $('Save Research Output').first().json.state_vector; state = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) {}\n    const p = state.physics_metrics || {}, l = state.ledger || {};\n    return 'Agriculture conditions show VPD ' + (p.vapor_pressure_deficit_kpa ?? 'n/a') + ' kPa, evaporation loss ' + (p.evaporation_loss_percent ?? 'n/a') + '%, and irrigation efficiency ' + (l.water_irrigation_efficiency_pct ?? 'n/a') + '%. Prioritize irrigation during cooler hours, protect soil moisture, and monitor crop stress against the live regional readings.';\n  })() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e2bb974c-dfee-4b2c-bef4-241cd5e32d9c",
+      "name": "Save Agri Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        48640,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "accounts/fireworks/models/minimax-m3",
+          "mode": "id"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 350,
+          "temperature": 0.2
+        }
+      },
+      "id": "f1f84e2d-b4b9-47b9-843d-3d241c5f7f4d",
+      "name": "FW Sector Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        48368,
+        13568
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "o4rTeim9qbkM3kgi",
+          "name": "hack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Agriculture Agent. Summarize irrigation timing, crop stress, evaporation loss, and irrigation efficiency. If VPD < 2.0 kPa, crop stress is low/normal; if VPD >= 2.0 kPa, moisture stress is elevated.\n\n{{$json.state_vector}}",
+        "options": {
+          "systemMessage": "WIaaS Agriculture Agent.\n\nRules: use only backend/state-vector data; return 2-3 clean user-facing sentences; do not invent values; do not repeat the full state vector; do not include reasoning, constraints, prompt text, or internal notes; plain text only.\nAsia scope: Always use the exact selected region metadata provided in the state vector. Never substitute a global demo region or infer a different country. Preserve city, province, country, timezone, and coordinates when present. If a value is missing, say it is unavailable rather than inventing it. Sound warm, calm, and human: acknowledge concern or discomfort without pretending to have emotions. If a selected location exists, never ask for it again. When response_language is ur, answer naturally in Urdu; otherwise answer in English. Use response_variant and repeated_question_count to vary the opening, explanation angle, and follow-up when a question repeats. For a standard query, use short paragraphs, clear headings, useful bullets, interpretation, and 2-3 practical next steps within 260 words. For an explicit full, comprehensive, detailed, technical, or multi-agent report, provide a detailed specialist section with exact available metrics, their operational meaning, one prioritized sector action, and no filler. The deterministic backend remains the source of calculations; do not recalculate or invent measurements."
+        }
+      },
+      "id": "c14c63ab-2ccf-4c6f-97b7-3705c7b65840",
+      "name": "Agri  Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        48288,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "state_vector",
+              "stringValue": "={{ $json.state_vector || JSON.stringify($json) }}"
+            },
+            {
+              "name": "research_summary",
+              "stringValue": "={{ $json.output || $json.text || $json.response || $json.chatOutput || $json.message?.content || \"No research summary generated\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fac92f5b-31ee-41c4-b469-e6482b27cb06",
+      "name": "Save Research Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        48064,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "accounts/fireworks/models/minimax-m3"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 450,
+          "temperature": 0.2
+        }
+      },
+      "id": "8c2b3ca9-6faf-4fa7-803a-40ccde9be300",
+      "name": "FW Research Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        47792,
+        13568
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "o4rTeim9qbkM3kgi",
+          "name": "hack"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Research Agent. Summarize system status, risk, temperature, humidity, heat index, VPD, evaporation, grid surge, thermal overhead, and mission score - only if provided.\n\n{{$json.state_vector}}",
+        "options": {
+          "systemMessage": "WIaaS Research Agent.\n\nRules: use only backend/state-vector data; return 2-3 clean user-facing sentences; do not invent values; do not repeat the full state vector; do not include reasoning, constraints, prompt text, or internal notes; plain text only.\nAsia scope: Always use the exact selected region metadata provided in the state vector. Never substitute a global demo region or infer a different country. Preserve city, province, country, timezone, and coordinates when present. If a value is missing, say it is unavailable rather than inventing it. Sound warm, calm, and human: acknowledge concern or discomfort without pretending to have emotions. If a selected location exists, never ask for it again. When response_language is ur, answer naturally in Urdu; otherwise answer in English. Use response_variant and repeated_question_count to vary the opening, explanation angle, and follow-up when a question repeats. For a standard query, use short paragraphs, clear headings, useful bullets, interpretation, and 2-3 practical next steps within 260 words. For an explicit full, comprehensive, detailed, technical, or multi-agent report, provide a detailed specialist section with exact available metrics, their operational meaning, one prioritized sector action, and no filler. The deterministic backend remains the source of calculations; do not recalculate or invent measurements."
+        }
+      },
+      "id": "6ff407f7-3ebd-4512-95a3-c3c3d90d3da6",
+      "name": "Research Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        47712,
+        13344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst j = $input.first().json;\nfunction pj(v){ try{return typeof v===\"object\"?v:JSON.parse(v);}catch(e){return {};} }\nconst sv = pj(j.state_vector);\nconst m=sv.metadata||{}, r=sv.calculated_risk_state||{};\nconst region = m.region || j.region || \"the selected region\";\nconst risk = r.initial_risk_level ?? j.risk_level ?? \"n/a\";\nconst score = r.mission_criticality_score ?? j.mission_criticality_score ?? \"n/a\";\nlet msg = `WIaaS Risk Level for ${region}\\n\\nRisk Level: ${risk}\\nMission Criticality Score: ${score}`;\nlet channel=\"chat\", typoNote=\"\"; try{ const rr=$(\"Match Region\").first().json; channel=rr.channel||\"chat\"; typoNote=rr.typo_note||\"\"; }catch(e){}\nif(typoNote){ msg = typoNote + \"\\n\\n\" + msg; }\nreturn [{ json: { output: msg, chat_response: msg, final_response: msg, channel } }];\n"
+      },
+      "id": "82f195ca-4f46-4149-8329-2662690224fb",
+      "name": "Risk Answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        50240,
+        13088
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "risk-intent-check",
+              "leftValue": "={{ $json.intent_type || $json.metadata?.intent_type || '' }}",
+              "rightValue": "risk_only_query",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "risk-focus-check",
+              "leftValue": "={{ $json.wiaas_focus || $json.requested_field || '' }}",
+              "rightValue": "risk_level",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "54aac996-a64a-4b9b-a482-7279addb5953",
+      "name": "Risk Only?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        47488,
+        13184
+      ]
+    },
+    {
+      "parameters": {
+        "message": "={{ $json.chat_response || $json.final_response }}",
+        "options": {}
+      },
+      "id": "ce82bbe1-6c17-4129-800f-570d5c649fd5",
+      "name": "Chat",
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.3,
+      "position": [
+        50688,
+        13216
+      ],
+      "webhookId": "b54648bd-803c-4ca0-b091-527845dfbdec",
+      "disabled": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json || {};\nconst body = (j.body && typeof j.body === 'object') ? j.body : {};\nconst pick = (...xs) => { for (const x of xs) if (x !== undefined && x !== null && String(x).trim() !== '') return x; return ''; };\nconst chat = String(pick(j.chat_message, j.chat_response, j.final_response, j.output, j.reply, 'No analysis generated.')).trim();\nconst context = (j.region_context && typeof j.region_context === 'object') ? j.region_context : ((body.region_context && typeof body.region_context === 'object') ? body.region_context : {});\nconst safe = {\n  ok: true,\n  chat_message: chat,\n  output: chat,\n  final_response: chat,\n  reply: chat,\n  region_key: pick(j.region_key, body.region_key, context.key),\n  region_name: pick(j.region_name, body.region_name, context.name, context.city, context.country),\n  region_context: context,\n  telemetry: j.telemetry && typeof j.telemetry === 'object' ? j.telemetry : {},\n  climate_matrix: j.climate_matrix && typeof j.climate_matrix === 'object' ? j.climate_matrix : {},\n  ledger: j.ledger && typeof j.ledger === 'object' ? j.ledger : {},\n  risk_level: pick(j.risk_level, body.risk_level, 'UNKNOWN'),\n  mission_criticality_score: j.mission_criticality_score ?? body.mission_criticality_score ?? null,\n  sessionId: pick(j.sessionId, body.sessionId),\n  response_language: pick(j.response_language, 'en'),\n  primary_intent: pick(j.primary_intent, j.intent_type, 'conversation'),\n  secondary_intents: Array.isArray(j.secondary_intents) ? j.secondary_intents : [],\n  hazards: Array.isArray(j.hazards) ? j.hazards : [],\n  sectors: Array.isArray(j.sectors) ? j.sectors : [],\n  stakeholder: pick(j.stakeholder),\n  response_kind: 'CONVERSATIONAL',\n  status: 'success',\n  channel: pick(j.channel, 'webhook')\n};\nreturn [{ json: safe }];"
+      },
+      "id": "3b5e581f-b9ee-436b-af90-fee543970727",
+      "name": "Respond Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        50688,
+        13024
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "analysis-channel",
+              "leftValue": "={{ $json.channel }}",
+              "rightValue": "webhook",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e9d23615-27dd-4c96-a778-a13bd52c8489",
+      "name": "Analysis Channel?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        50464,
+        13088
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j=$input.first().json||{};\nconst body=j.body&&typeof j.body==='object'?j.body:{};\nconst state=(()=>{try{return typeof j.state_vector==='object'?j.state_vector:JSON.parse(j.state_vector||'{}')}catch(e){return {}}})();\nconst meta=state.metadata||{}; const t=j.telemetry||state.telemetry||{}; const p=state.physics_metrics||{};\nconst q=String(j.user_query||j.chatInput||j.user_message||j.original_message||meta.user_query||'').trim(); const text=q.toLowerCase();\nconst ctx=j.region_context&&typeof j.region_context==='object'?j.region_context:(body.region_context&&typeof body.region_context==='object'?body.region_context:{});\nconst region=String(j.region_name||j.region||meta.region||ctx.name||body.region_name||'the selected region');\nconst num=(...xs)=>{for(const x of xs){const n=Number(x);if(Number.isFinite(n))return n}return null}; const f=(v,d=1)=>v==null?'not available':Number(v).toFixed(d);\nconst temp=num(t.temperature_celsius,t.temperature,p.temperature_celsius); const hum=num(t.relative_humidity,t.humidity,p.relative_humidity); const vpd=num(t.vpd_kpa,t.vpd,p.vpd_kpa); const hi=num(t.heat_index_celsius,t.heat_index,p.heat_index_celsius); const wind=num(t.wind_speed_kmh,t.wind_speed,p.wind_speed_kmh); const surge=num(j.grid_demand_surge_percent,p.grid_demand_surge_percent);\nlet answer='';\nif(/what can crisislens|what can wiaas|what can you do|what do you monitor|capabilit/.test(text)){answer='I can monitor live regional weather and climate signals, assess hazards and risk, and provide focused agriculture, grid, logistics, and emergency guidance. Ask about a place or request a full multi-sector report.';}\nelse if(/farmer|agri|crop|tomato|irrigat/.test(text)){answer='For farmers in '+region+', use cooler hours for irrigation and field work, monitor crop moisture and heat stress, and avoid spraying during high wind or peak heat. Current readings are temperature '+f(temp,1)+' C, humidity '+f(hum,1)+' percent, VPD '+f(vpd,2)+' kPa, and heat index '+f(hi,1)+' C. Tomato-specific disease confirmation is not verified unless evidence is present.';}\nelse if(/grid|power|transformer|blackout|electric/.test(text)){answer='For grid operations in '+region+', watch cooling-driven demand and transformer thermal loading. Current temperature is '+f(temp,1)+' C, heat index '+f(hi,1)+' C, and demand-surge signal '+f(surge,1)+' percent. Keep peak-hour reserve capacity and cooling assets under review; a precise outage forecast is not verified.';}\nelse if(/vpd|vapor pressure/.test(text)){answer='The current VPD for '+region+' is '+f(vpd,2)+' kPa. VPD measures atmospheric drying demand: higher values increase crop transpiration and irrigation loss, while lower values indicate more humid air. Use it with temperature and humidity before changing irrigation timing.';}\nelse if(/risk|hazard|threat|flood|storm|earthquake|emergency/.test(text)){answer='The current reported risk level for '+region+' is '+String(j.risk_level||'not verified')+'. Available signals include temperature '+f(temp,1)+' C, humidity '+f(hum,1)+' percent, wind '+f(wind,1)+' km/h, and heat index '+f(hi,1)+' C. The supplied context does not verify a specific active disaster unless evidence is present.';}\nelse{answer='For '+region+', available live context reports temperature '+f(temp,1)+' C, humidity '+f(hum,1)+' percent, heat index '+f(hi,1)+' C, VPD '+f(vpd,2)+' kPa, and wind '+f(wind,1)+' km/h. Ask for agriculture, grid, logistics, risk, or a full report and I will focus on that question.';}\nreturn [{json:{ok:true,chat_message:answer,output:answer,final_response:answer,reply:answer,region_key:j.region_key||body.region_key||ctx.key||'',region_name:j.region_name||body.region_name||ctx.name||region,region_context:ctx,telemetry:t,climate_matrix:j.climate_matrix||{},ledger:j.ledger||{},risk_level:j.risk_level||body.risk_level||'UNKNOWN',mission_criticality_score:j.mission_criticality_score??body.mission_criticality_score??null,sessionId:j.sessionId||body.sessionId||'',response_language:j.response_language||'en',primary_intent:j.intent_type||'conversation',secondary_intents:[],hazards:[],sectors:[],stakeholder:'',response_kind:'CONVERSATIONAL',status:'success',channel:'webhook'}}];"
+      },
+      "id": "fc874923-5748-44f4-8965-bd7dc2a90f89",
+      "name": "Fast Answer Formatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        50240,
+        12896
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fast-only-for-standard-queries",
+              "leftValue": "={{ false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3d3595aa-7de5-4889-8bac-e3e1c0ebbe5a",
+      "name": "Fast Answer?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        47264,
+        13072
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FW Fallback Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Fallback Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback Classifier": {
+      "main": [
+        [
+          {
+            "node": "Fallback To Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback To Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Fast Answer Formatter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fast Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ To Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Fast Answer Formatter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fast Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "To WIaaS Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Fast Answer Formatter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fast Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FW Sentiment Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sentiment Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sentiment Agent": {
+      "main": [
+        [
+          {
+            "node": "Sentiment Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FW Crisis Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Crisis Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crisis Agent": {
+      "main": [
+        [
+          {
+            "node": "Crisis Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Switch": {
+      "main": [
+        [
+          {
+            "node": "Crisis Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Math Calc",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sentiment Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "To WIaaS Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FAQ To Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Regex Router": {
+      "main": [
+        [
+          {
+            "node": "Route Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Regex Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Conversation Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FW Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Conversation Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Agent": {
+      "main": [
+        [
+          {
+            "node": "Chat Sanitizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Regions For List": {
+      "main": [
+        [
+          {
+            "node": "Format Region List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Which Regions?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Regions For List",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Conversation Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Sanitizer": {
+      "main": [
+        [
+          {
+            "node": "FAQ Channel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Region List": {
+      "main": [
+        [
+          {
+            "node": "FAQ Channel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Region Not Found Response": {
+      "main": [
+        [
+          {
+            "node": "FAQ Channel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ Channel?": {
+      "main": [
+        [
+          {
+            "node": "Respond FAQ",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FAQs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask For Region": {
+      "main": [
+        [
+          {
+            "node": "FAQ Channel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Region Missing?": {
+      "main": [
+        [
+          {
+            "node": "Ask For Region",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Region Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile For Report": {
+      "main": [
+        [
+          {
+            "node": "Sanitizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Logistics Output": {
+      "main": [
+        [
+          {
+            "node": "Compile For Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FW Logistics Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Logistic Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logistic Agent": {
+      "main": [
+        [
+          {
+            "node": "Save Logistics Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Grid Output": {
+      "main": [
+        [
+          {
+            "node": "Logistic Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grid Agent": {
+      "main": [
+        [
+          {
+            "node": "Save Grid Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Agri Output": {
+      "main": [
+        [
+          {
+            "node": "Grid Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FW Sector Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Grid Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Agri  Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agri  Agent": {
+      "main": [
+        [
+          {
+            "node": "Save Agri Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Research Output": {
+      "main": [
+        [
+          {
+            "node": "Agri  Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FW Research Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Agent": {
+      "main": [
+        [
+          {
+            "node": "Save Research Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk Only?": {
+      "main": [
+        [
+          {
+            "node": "Risk Answer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Fallback State Vector": {
+      "main": [
+        [
+          {
+            "node": "Fast Answer Formatter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fast Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitizer": {
+      "main": [
+        [
+          {
+            "node": "Analysis Channel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk Answer": {
+      "main": [
+        [
+          {
+            "node": "Analysis Channel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analysis Channel?": {
+      "main": [
+        [
+          {
+            "node": "Respond Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fast Answer Formatter": {
+      "main": [
+        [
+          {
+            "node": "Analysis Channel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fast Answer?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Risk Only?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c810227c-0bd6-46cd-93f9-0607618c8cfc",
+  "meta": {
+    "instanceId": "64ed6f3f9389084d5fac03c8c3313c56cfc84e0973be51fa7d7601ff7b9fcbb5"
+  },
+  "nodeGroups": [],
+  "id": "Ih3HqMmy4OhZxYZa",
+  "tags": []
+}

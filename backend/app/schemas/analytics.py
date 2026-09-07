@@ -49,6 +49,13 @@ class GridPredictionMatrix(BaseModel):
     analytics_summary: AnalyticsSummary
 
 
+class Forecast7d(BaseModel):
+    max_temps_c: list[float] = Field(default_factory=list)
+    min_temps_c: list[float] = Field(default_factory=list)
+    precipitation_sums_mm: list[float] = Field(default_factory=list)
+    rain_prob_max_pct: list[float] = Field(default_factory=list)
+
+
 
 class AnalyticsResponse(BaseModel):
     region_name: str
@@ -68,6 +75,7 @@ class AnalyticsResponse(BaseModel):
     risk_level: str
     mission_criticality_score: int
     grid_predictions: GridPredictionMatrix
+    forecast_7d: Forecast7d
 
 
 class ChatRequest(BaseModel):

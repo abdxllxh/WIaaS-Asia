@@ -533,21 +533,33 @@ export async function sendChatSimulation(regionKey, query) {
             console.warn(`[api] sendChatSimulation: detected generic/un-updated remote n8n response for "${query}". Falling back to local backend proxy...`);
             throw new Error('Detected generic/un-updated canned response from remote n8n webhook');
         }
+
+        // A stale live workflow may return a clean-looking summary while
+        // silently dropping the requested 7-day farming plan. Route that
+        // narrow request through the backend, which has the forecast arrays.
+        const isWeeklyFarmPlan = /(?:7[- ]day|seven[- ]day|next\s+(?:7|seven)|next week)/i.test(query)
+            && /(?:farmer|farmers|farm|crop|agriculture|irrigation|spray|harvest)/i.test(query);
+        if (isWeeklyFarmPlan && !/(?:day\s*1|7[- ]day|seven[- ]day)/i.test(extractedReply || '')) {
+            throw new Error('Remote response did not include the requested forecast-driven farm plan');
+        }
+
+        const isCropImprovement = /(?:better crops|improve crops|improving crops|crop yield|increase yield|healthy crops|grow better)/i.test(query);
+        if (isCropImprovement && !/(?:soil|root-zone|nutrition|fungal|pest|spray|harvest)/i.test(extractedReply || '')) {
+            throw new Error('Remote response did not include a crop-improvement plan');
+        }
+
+        const needsRegionalNextSteps = !/(?:what can|capabilities|who are you|unsupported|unavailable)/i.test(query)
+            && /(?:weather|happening|risk|assessment|report|farmer|farm|crop|agriculture|irrigation|grid|logistics|research)/i.test(query)
+            && !/next\s+steps/i.test(extractedReply || '');
+        if (needsRegionalNextSteps) {
+            throw new Error('Remote regional assessment is missing its Next Steps section');
+        }
         
-        const localUrdu = buildLocalUrduWiaas(cachedData, regionContext, query);
-        const localSpecificBase = buildLocalSpecificWiaas(cachedData, regionContext, query);
-        const repeatIndex = Number(conversationContext.repeated_question_count || conversationContext.turn_index || 0);
-        const variation = [
-            '',
-            '\n\n**Follow-up:** If you share the crop or exact district, I can narrow this to a more targeted operational recommendation.',
-            '\n\n**Practical check:** Recheck the same indicators at the next telemetry update before changing a field or infrastructure plan.',
-        ][Math.max(0, repeatIndex) % 3];
-        const localSpecific = localSpecificBase ? `${localSpecificBase}${variation}` : '';
         const speechEnglish = responseObject?.speech_en || extractedReply;
-        const speechUrdu = responseObject?.speech_ur || localUrdu;
+        const speechUrdu = responseObject?.speech_ur || extractedReply;
         return {
-            reply: responseLanguage === 'ur' ? speechUrdu : (localSpecific || extractedReply),
-            speech_en: localSpecific || speechEnglish,
+            reply: responseLanguage === 'ur' ? speechUrdu : extractedReply,
+            speech_en: speechEnglish,
             speech_ur: speechUrdu,
             response_language: responseObject?.response_language || responseLanguage,
             raw_data: n8nData,
@@ -672,17 +684,12 @@ export async function sendCrisisLensChat(message) {
         const english = result.speech_en || result.reply || '';
         const urdu = result.speech_ur || buildLocalUrduCrisis(result, regionContext);
         const rawReply = String(result.reply || result.output || '').trim();
-        const complexFallback = buildComplexCrisisFallback(message, regionContext, cachedData);
         const historicalEvent = /\b(recent|recently|past|historical|what happened|cause|caused|losses|damage|killed|missing|affected|displaced|recovery|lessons|after the)\b/i.test(message) && /\b(flood|flooding|earthquake|cyclone|typhoon|storm|landslide|wildfire|fire|disaster|river)\b/i.test(message);
-        const looksLikeWrongCurrentTemplate = historicalEvent && /flood hazard level|current rainfall rate|current weather conditions|current overall risk|low \/ unlikely/i.test(rawReply);
-        const looksLikeGenericCrisisTemplate = !rawReply || looksLikeWrongCurrentTemplate || /multi-hazard situational threat assessment|low to nominal monitoring|no threshold-crossing severe weather detected/i.test(rawReply);
-        const humanFallback = complexFallback || (looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, false) : '');
-        const humanFallbackUrdu = looksLikeGenericCrisisTemplate ? buildHumanCrisisFallback(message, regionContext, cachedData, true) : '';
         return {
             ...result,
-            reply: responseLanguage === 'ur' ? (humanFallbackUrdu || urdu) : (humanFallback || result.reply),
-            speech_en: humanFallback || english,
-            speech_ur: humanFallbackUrdu || urdu,
+            reply: responseLanguage === 'ur' ? urdu : result.reply,
+            speech_en: english,
+            speech_ur: urdu,
             response_language: responseLanguage,
         };
     } catch (error) {

@@ -83,6 +83,7 @@ class WeatherIntelligencePipeline:
                 "latitude":  lat,
                 "longitude": lon,
                 "current":   self._TELEMETRY_VARS,
+                "daily":     "temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max",
                 "timezone":  "auto",
             }
             # Added production standard User-Agent header to avoid edge cloud firewalls during hackathon execution
@@ -95,7 +96,14 @@ class WeatherIntelligencePipeline:
                     self._API_BASE_URL, params=params, headers=headers, timeout=self._REQUEST_TIMEOUT
                 )
                 response.raise_for_status()
-                raw = response.json()["current"]
+                response_json = response.json()
+                raw = response_json["current"]
+                raw["_forecast_7d"] = {
+                    "max_temps_c": response_json.get("daily", {}).get("temperature_2m_max", []),
+                    "min_temps_c": response_json.get("daily", {}).get("temperature_2m_min", []),
+                    "precipitation_sums_mm": response_json.get("daily", {}).get("precipitation_sum", []),
+                    "rain_prob_max_pct": response_json.get("daily", {}).get("precipitation_probability_max", []),
+                }
                 self._telemetry_cache[cache_key] = {"time": now, "data": raw}
             except requests.exceptions.Timeout:
                 print(f"[TIMEOUT]  API request exceeded {self._REQUEST_TIMEOUT}s limit. Checking cache/baseline.")
@@ -194,11 +202,18 @@ class WeatherIntelligencePipeline:
         )
 
         # ── Stage 4: GNN-to-LLM Text-State Vector ─────────────────────────────
+        forecast_7d = raw.get("_forecast_7d", {
+            "max_temps_c": [],
+            "min_temps_c": [],
+            "precipitation_sums_mm": [],
+            "rain_prob_max_pct": [],
+        })
         state_vector: str = GNNToLLMBridge.build_state_vector(
             region_name = region["name"],
             telemetry   = telemetry,
             analysis    = analysis,
             ledger      = ledger,
+            forecast_7d = forecast_7d,
         )
         print(f"[4/6] OK State vector     {len(state_vector)} chars constructed")
 
@@ -235,6 +250,7 @@ class WeatherIntelligencePipeline:
                 "irrigation_penalty_active":      analysis["overhead_irrigation_efficiency"] < 0.5,
             },
             "synthetic_resource_ledger": ledger,
+            "forecast_7d": forecast_7d,
             "llm_state_vector": state_vector,
         }
         # ── ADDED: n8n Compatibility Layer for vxr (Non-destructive) ────────────────

@@ -195,12 +195,16 @@ def _extract_webhook_reply(resp_json: object) -> str:
 
 
 def _response_profile(query: str, agent_mode: str = "wiaas") -> dict:
-    normalized = query.lower()
-    report_terms = ("full report", "comprehensive report", "detailed report", "technical report", "multi-agent report")
+    normalized = re.sub(r"\s+", " ", (query or "").lower()).strip()
+    report_terms = (
+        "full report", "comprehensive report", "detailed report", "technical report",
+        "multi-agent report", "multi agent report", "complete situation report",
+        "full situation report", "all-agent report", "all agent report",
+    )
     wants_all_details = bool(
         re.search(r"\b(?:detailed|complete|full|comprehensive)\b.{0,24}\b(?:all|everything|it)\b", normalized)
         or re.search(r"\b(?:all|everything)\b.{0,18}\b(?:details?|information|analysis)\b", normalized)
-        or re.search(r"\b(?:tell|show|give)\b.{0,24}\b(?:all|everything)\b", normalized)
+        or re.search(r"\b(?:tell|show|give|prepare|generate|create)\b.{0,32}\b(?:all|everything)\b.{0,24}\b(?:agents?|sectors?|details?|report|picture)\b", normalized)
     )
     comprehensive = wants_all_details or any(term in normalized for term in report_terms) or (
         "report" in normalized and any(term in normalized for term in ("generate", "create", "prepare"))
@@ -557,6 +561,12 @@ def analyze_region(
         risk_level=payload["risk_level"],
         mission_criticality_score=payload["mission_criticality_score"],
         grid_predictions=grid_predictions,
+        forecast_7d=payload.get("forecast_7d", {
+            "max_temps_c": [],
+            "min_temps_c": [],
+            "precipitation_sums_mm": [],
+            "rain_prob_max_pct": [],
+        }),
     )
 
 
@@ -1394,55 +1404,6 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
             else:
                 reply = str(data)
 
-            # Inspect if n8n returned an un-updated canned template for a specific query
-            q_lower = user_query.lower()
-            is_specific_query = any(k in q_lower for k in [
-                "threat", "threats", "danger", "hazard", "hazards",
-                "flood", "flooding", "inundat", "waterlog", "rain", "precipitation",
-                "wildfire", "fire", "thermal anomaly", "flammab",
-                "disaster", "alert", "alerts", "warning", "warnings", "gdacs", "emergency",
-                "heatwave", "heat wave", "heat stress", "heat index", "feels like", "apparent temperature", "thermal", "wet bulb", "wet-bulb", "vpd",
-                "severity", "crisis severity", "threat level",
-                "evidence", "proof", "source", "sources", "corroborat",
-                "farmer", "farmers", "crop", "crops", "corps", "agriculture", "irrigation", "pest", "whitefly", "scouting", "yield",
-                "grid operator", "grid operators", "power operator", "power operators", "grid risk", "power risk", "blackout", "electricity", "demand surge", "grid capacity", "power grid", "transformer", "grid load", "power", "grid",
-                "emergency authorities", "emergency services", "disaster authorities", "civil defense", "authorities", "rescue",
-                "public safety", "safety instructions", "safety guidelines", "residents", "citizen", "citizen safety",
-                "comprehensive", "full report", "wiaas report", "crisis report", "all details", "complete report", "report"
-            ])
-            reply_lower = reply.lower()
-            is_generic_canned = any(phrase in reply_lower for phrase in [
-                "do not cross the configured threat thresholds",
-                "does not cross the configured threat thresholds",
-                "severity: unknown",
-                "correlation: unknown",
-                "tell me which stakeholder",
-                "calculated heat index: not available",
-                "no threshold-crossing active threat was detected",
-                "conditions appear stable, but continue monitoring",
-                "let’s walk through what the evidence means",
-                "let's walk through what the evidence means",
-                "here’s the practical risk picture right now",
-                "here's the practical risk picture right now",
-                "evidence-led interpretation",
-                "do you want the supporting evidence",
-                "location needed",
-                "which asian city",
-                "which city",
-                "مقام درکار ہے",
-                "ایشیائی شہر",
-            ])
-
-            if is_generic_canned and is_specific_query:
-                print(f"[crisislens] Intercepted generic canned response from n8n. Substituting specialized intelligence for '{user_query}'...")
-                specialized = generate_specialized_intelligence_response(
-                    region_key=region_key,
-                    user_query=user_query,
-                    payload_context=payload,
-                    response_language=response_language,
-                )
-                return specialized
-
             return {
                 "reply": reply,
                 "speech_en": (response_object or {}).get("speech_en", reply),
@@ -1455,14 +1416,167 @@ async def proxy_crisislens_chat(payload: dict) -> dict:
         except ValueError:
             return {"reply": response.text}
     except requests.exceptions.RequestException as e:
-        print(f"[endpoints] CrisisLens Proxy network error: {type(e).__name__}: {e}. Generating specialized intelligence...")
-        specialized = generate_specialized_intelligence_response(
-            region_key=region_key,
-            user_query=user_query,
-            payload_context=payload,
-            response_language=response_language,
+        print(f"[endpoints] CrisisLens Proxy network error: {type(e).__name__}: {e}. Returning transparent service status.")
+        unavailable = (
+            "I couldn't reach the CrisisLens live intelligence workflow just now. "
+            f"The requested context is {payload.get('region_name', region_key)}; no unverified answer was substituted. Please retry."
         )
-        return specialized
+        return {
+            "ok": False, "reply": unavailable, "chat_message": unavailable, "output": unavailable,
+            "response_language": response_language, "response_kind": "UPSTREAM_UNAVAILABLE",
+            "region_key": region_key, "region_name": payload.get("region_name", region_key),
+            "error_type": type(e).__name__,
+        }
+
+
+def _is_weekly_farming_query(query: str) -> bool:
+    text = (query or "").lower()
+    return (
+        any(term in text for term in ("7-day", "7 day", "seven-day", "seven day", "next 7", "next seven", "next week"))
+        and any(term in text for term in ("farmer", "farmers", "farm", "crop", "agriculture", "irrigation", "spray", "harvest"))
+    )
+
+
+def _is_crop_improvement_query(query: str) -> bool:
+    text = (query or "").lower()
+    return any(term in text for term in ("better crops", "improve crops", "improving crops", "crop yield", "increase yield", "healthy crops", "grow better"))
+
+
+def _crop_improvement_plan(payload: dict) -> str:
+    region = payload.get("monitored_region", "the selected region")
+    climate = payload.get("climate_matrix") or {}
+    telemetry = climate.get("telemetry") or {}
+    humidity = float(telemetry.get("humidity_percentage") or 0)
+    vpd = float(climate.get("vapor_pressure_deficit_kpa") or 0)
+    rain_probs = (payload.get("forecast_7d") or {}).get("rain_prob_max_pct") or []
+    rain_peak = max((float(v) for v in rain_probs if v is not None), default=0)
+    moisture = "water only after checking root-zone moisture" if vpd < 2 else "use measured, deep irrigation before 08:00 or after sunset and add mulch"
+    disease = "Because humidity is high, inspect leaves and lower canopy each morning for fungal spots, mildew, and pest buildup." if humidity >= 80 else "Scout twice weekly for pests, fungal symptoms, and uneven canopy growth."
+    drainage = "Keep drains and field outlets open and remove standing water quickly." if humidity >= 80 or rain_peak >= 60 else "Keep field drains and irrigation furrows clear."
+    return (
+        f"Crop Improvement Plan — {region}\n\n"
+        "1. Soil and roots: Test soil pH, salinity, organic matter, and the root-zone moisture profile before changing inputs. Correct deficiencies from the test rather than applying fertilizer blindly.\n"
+        f"2. Irrigation: At current VPD {vpd:.2f} kPa, {moisture}; use drip or furrow delivery where possible and avoid routine midday overhead watering.\n"
+        f"3. Crop scouting: {disease} Tag problem patches and remove severely affected plant material safely.\n"
+        "4. Nutrition: Split nitrogen and potassium applications across the crop cycle, maintain micronutrients only where a soil or tissue test supports them, and never exceed the product label.\n"
+        "5. Spray and protection: Spray only on dry leaves during a cool, calm window, rotate approved modes of action, observe the pre-harvest interval, and do not spray before forecast rain.\n"
+        f"6. Waterlogging, harvest, and records: {drainage} Harvest in the cool morning, shade and ventilate produce, and record irrigation, pest counts, weather, and yield so the next application is evidence-based.\n\n"
+        "Recheck the live forecast and crop observations daily; exact recommendations depend on the crop, soil type, growth stage, and local agronomist or extension guidance."
+    )
+
+
+def _weekly_farming_plan(payload: dict) -> str:
+    """Produce a deterministic weekly farm plan from the actual forecast arrays.
+
+    This is deliberately narrow: it is only used when an upstream n8n response
+    fails to provide a day-by-day farming answer. It never invents missing daily
+    values and keeps the normal multi-agent report path unchanged.
+    """
+    region = payload.get("monitored_region", "the selected region")
+    forecast = payload.get("forecast_7d") or {}
+    highs = forecast.get("max_temps_c") or []
+    lows = forecast.get("min_temps_c") or []
+    rain = forecast.get("precipitation_sums_mm") or []
+    rain_prob = forecast.get("rain_prob_max_pct") or []
+    days = max(len(highs), len(lows), len(rain), len(rain_prob))
+    if not days:
+        return "A day-by-day farming plan is unavailable because the live 7-day forecast was not received."
+
+    telemetry = (payload.get("climate_matrix") or {}).get("telemetry") or {}
+    climate = payload.get("climate_matrix") or {}
+    humidity = float(telemetry.get("humidity_percentage") or 0)
+    vpd = float(climate.get("vapor_pressure_deficit_kpa") or 0)
+    lines = [
+        f"7-Day Farming Action Plan — {region}",
+        "Use the daily forecast below with a soil-moisture check and crop-specific guidance from your local agronomist.",
+    ]
+    for i in range(days):
+        hi = highs[i] if i < len(highs) else None
+        lo = lows[i] if i < len(lows) else None
+        mm = rain[i] if i < len(rain) else None
+        prob = rain_prob[i] if i < len(rain_prob) else None
+        hi_num = float(hi) if hi is not None else None
+        mm_num = float(mm) if mm is not None else None
+        prob_num = float(prob) if prob is not None else None
+        if (mm_num is not None and mm_num >= 5) or (prob_num is not None and prob_num >= 60):
+            irrigation = "Delay routine irrigation and check drainage; irrigate only if the root zone is genuinely dry."
+            spray = "Do not spray before the rain window; wait for dry leaves and a calm, dry period."
+            harvest = "Avoid harvesting during wet conditions; move harvested produce under cover promptly."
+        elif (hi_num is not None and hi_num >= 35) or vpd >= 2:
+            irrigation = "Irrigate after sunset or before 08:00, using a soil check to set the amount; mulch exposed soil."
+            spray = "Spray only in the cool, calm morning if leaves are dry and wind is low; otherwise defer."
+            harvest = "Do field work and harvesting in the cooler morning; shade and ventilate produce immediately."
+        else:
+            irrigation = "Check soil moisture at dawn and irrigate in the cool hours only if the crop root zone needs water."
+            spray = "Use a cool, dry, low-wind morning spray window; follow the product label and pre-harvest interval."
+            harvest = "Harvest during the cool morning and keep produce shaded, dry, and ventilated."
+        forecast_text = (
+            f"high {hi_num:.1f}°C" if hi_num is not None else "maximum temperature unavailable"
+        ) + "; " + (
+            f"low {float(lo):.1f}°C" if lo is not None else "minimum temperature unavailable"
+        ) + "; " + (
+            f"rain {mm_num:.1f} mm, probability {prob_num:.0f}%" if mm_num is not None and prob_num is not None
+            else "rain fields partially unavailable"
+        )
+        lines.append(f"Day {i + 1} ({forecast_text})")
+        lines.append(f"  Irrigation: {irrigation}")
+        lines.append(f"  Pest/fungal and spray: {spray} Inspect leaves for fungal spots and pests.")
+        lines.append(f"  Harvest/storage: {harvest}")
+    if humidity >= 80:
+        lines.append("Weekly priority: humidity is high, so improve drainage, scout for fungal disease each morning, and avoid prolonged leaf wetness.")
+    lines.append("Do not apply pesticides or nutrients outside the product label, and recheck the forecast before each spray or irrigation decision.")
+    return "\n".join(lines)
+
+
+def _regional_next_steps(payload: dict) -> str:
+    """Append practical, evidence-backed actions to a regional WIaaS assessment."""
+    region = payload.get("monitored_region", "the selected region")
+    climate = payload.get("climate_matrix") or {}
+    telemetry = climate.get("telemetry") or {}
+    ledger = payload.get("synthetic_resource_ledger") or {}
+    risk = str(payload.get("risk_level") or "the current").upper()
+    humidity = float(telemetry.get("humidity_percentage") or 0)
+    vpd = float(climate.get("vapor_pressure_deficit_kpa") or 0)
+    surge = float(ledger.get("grid_demand_surge_pct") or 0)
+    forecast = payload.get("forecast_7d") or {}
+    rain_probs = forecast.get("rain_prob_max_pct") or []
+    rain_peak = max((float(v) for v in rain_probs if v is not None), default=0)
+    irrigation = (
+        "Check root-zone moisture before watering and use a cool-hour irrigation window"
+        if vpd < 2 else
+        "Prioritize pre-dawn or evening irrigation, verify root-zone moisture, and use mulch"
+    )
+    drainage = (
+        "Inspect drains and field outlets for fungal-risk standing water"
+        if humidity >= 80 or rain_peak >= 60 else
+        "Keep drainage channels clear and inspect low points after rainfall"
+    )
+    grid_action = (
+        "Stagger pumps and high-load equipment outside the evening peak"
+        if surge >= 8 else
+        "Monitor pump and cooling loads as the evening peak approaches"
+    )
+    spray = (
+        "Scout crops daily and spray only during a dry, calm window; follow the product label"
+        if humidity >= 70 else
+        "Scout crops daily and use a calm, dry morning for any label-approved spray"
+    )
+    return (
+        f"Next Steps for {region}:\n"
+        f"1. Recheck the live regional assessment each morning; current risk is {risk}.\n"
+        f"2. {irrigation}.\n"
+        f"3. {spray}.\n"
+        f"4. {drainage}.\n"
+        f"5. {grid_action}.\n"
+        "6. Protect heat- or moisture-sensitive goods, record field observations, and escalate any rapid change to the local operator."
+    )
+
+
+def _should_include_regional_next_steps(query: str) -> bool:
+    text = (query or "").lower()
+    if any(term in text for term in ("what can", "capabilities", "who are you", "help", "unsupported", "unavailable")):
+        return False
+    return any(term in text for term in ("weather", "happening", "risk", "assessment", "report", "farmer", "farm", "crop", "agriculture", "irrigation", "grid", "logistics", "research"))
 
 
 @router.post("/{region_key}/chat", response_model=ChatResponse)
@@ -1483,12 +1597,6 @@ def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None
             ),
             raw_data=None,
         )
-
-    # Intercept agronomic report requests to generate local model output
-    q_lower = request.query.lower()
-    if "agronomic report" in q_lower or "agricultural report" in q_lower or "agri-report" in q_lower:
-        report_text = generate_dynamic_agri_report(payload)
-        return ChatResponse(reply=report_text, raw_data={"source": "local_agri_model", "output": report_text})
 
     payload["user_query"] = request.query
     payload["chatInput"] = request.query
@@ -1522,6 +1630,12 @@ def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None
             "longitude": region.get("longitude"),
             "timezone": region.get("timezone", ""),
             "timezone_offset": region.get("timezone_offset"),
+            "forecast_7d": payload.get("forecast_7d", {
+                "max_temps_c": [],
+                "min_temps_c": [],
+                "precipitation_sums_mm": [],
+                "rain_prob_max_pct": [],
+            }),
         },
     })
     # n8n's intent router also matches a readable location phrase.  Keep short
@@ -1541,61 +1655,39 @@ def simulate_chat(region_key: str, request: ChatRequest, name: str | None = None
             if not reply_text:
                 reply_text = json.dumps(resp_json)
 
-            # Inspect if n8n returned an un-updated canned template or "Not available" for a specific query
-            is_specific_query = any(k in q_lower for k in [
-                "heat index", "feels like", "apparent temperature", "heat stress", "thermal", "wet bulb", "wet-bulb", "vpd",
-                "grid risk", "power risk", "blackout", "electricity", "demand surge", "grid capacity", "power grid", "transformer", "grid load", "power", "grid",
-                "evaporation", "water loss", "water could be lost", "evaporation loss", "reservoir", "storage", "water", "soil moisture", "water demand",
-                "farmer", "farmers", "crop", "crops", "corps", "agriculture", "irrigation", "pest", "whitefly", "scouting", "yield",
-                "logistics", "route", "road", "research", "weather pattern", "compare", "comparison", "vulnerability", "cooling demand",
-                "comprehensive", "full report", "wiaas report", "crisis report", "all details", "complete report", "report"
-            ])
-            reply_lower = reply_text.lower()
-            is_generic_canned = any(phrase in reply_lower for phrase in [
-                "do not cross the configured threat thresholds",
-                "does not cross the configured threat thresholds",
-                "severity: unknown",
-                "correlation: unknown",
-                "tell me which stakeholder",
-                "calculated heat index: not available",
-                "no threshold-crossing active threat was detected",
-                "conditions appear stable, but continue monitoring",
-                "let’s walk through what the evidence means",
-                "let's walk through what the evidence means",
-                "here’s the practical risk picture right now",
-                "here's the practical risk picture right now",
-                "evidence-led interpretation",
-                "do you want the supporting evidence",
-                "location needed",
-                "which asian city",
-                "which city",
-                "مقام درکار ہے",
-                "ایشیائی شہر",
-            ]) or ("comprehensive environmental & weather summary" in reply_lower and any(k in q_lower for k in ["soil", "water demand", "cooling demand", "research", "compare", "comparison", "logistics", "route", "vulnerability"]))
-
-            if is_generic_canned and is_specific_query:
-                print(f"[wiaas] Intercepted generic canned response from n8n. Substituting specialized intelligence for '{request.query}'...")
-                specialized = generate_specialized_intelligence_response(
-                    region_key=region_key,
-                    user_query=request.query,
-                    payload_context=payload,
-                    response_language=resp_lang,
-                )
-                return ChatResponse(reply=specialized["reply"], raw_data=specialized)
+            # Older/live n8n revisions can return the generic specialist summary
+            # even when the operator explicitly requested a forecast-driven farm
+            # plan. Keep that narrow case useful and evidence-backed locally.
+            if _is_weekly_farming_query(request.query):
+                reply_lower = (reply_text or "").lower()
+                has_daily_plan = "day 1" in reply_lower and ("irrigation" in reply_lower or "spray" in reply_lower)
+                if not has_daily_plan:
+                    reply_text = _weekly_farming_plan(payload)
+            elif _is_crop_improvement_query(request.query):
+                reply_text = _crop_improvement_plan(payload)
+            elif _should_include_regional_next_steps(request.query) and "next steps" not in (reply_text or "").lower():
+                next_steps = _regional_next_steps(payload)
+                if "Agriculture Impact:" in reply_text:
+                    reply_text = reply_text.replace("Agriculture Impact:", f"{next_steps}\n\nAgriculture Impact:", 1)
+                elif "Live Metrics:" in reply_text:
+                    reply_text = reply_text.replace("Live Metrics:", f"{next_steps}\n\nLive Metrics:", 1)
+                else:
+                    reply_text = f"{reply_text.rstrip()}\n\n{next_steps}"
 
             raw_data = resp_json if isinstance(resp_json, dict) else {"data": resp_json}
             return ChatResponse(reply=reply_text, raw_data=raw_data)
         except ValueError:
             return ChatResponse(reply=response.text, raw_data=None)
     except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
-        print(f"Webhook error detail: {type(e).__name__}: {e}. Generating specialized intelligence fallback...")
-        specialized = generate_specialized_intelligence_response(
-            region_key=region_key,
-            user_query=request.query,
-            payload_context=payload,
-            response_language=resp_lang,
+        print(f"Webhook error detail: {type(e).__name__}: {e}. Returning transparent service status.")
+        unavailable = (
+            "I couldn't reach the WIaaS live intelligence workflow just now. "
+            f"The requested context is {payload.get('region_name', region_key)}; no unverified answer was substituted. Please retry."
         )
-        return ChatResponse(reply=specialized["reply"], raw_data=specialized)
+        return ChatResponse(reply=unavailable, raw_data={
+            "ok": False, "status": "upstream_unavailable", "region_key": region_key,
+            "region_name": payload.get("region_name", region_key), "error_type": type(e).__name__,
+        })
 
 
 
