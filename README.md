@@ -12,7 +12,7 @@
 
 ## 🌏 National Hackathon Context & Vision
 
-**WIAAS Asia (Weather Intelligence as a Service — Asia Edition)** is an autonomous climate resilience and weather intelligence platform engineered for proactive disaster mitigation, agricultural preservation, power grid stability, and emergency economic continuity across **Asia**.
+**WIAAS Asia (Weather Intelligence as a Service, Asia Edition)** is an autonomous climate resilience and weather intelligence platform engineered for proactive disaster mitigation, agricultural preservation, power grid stability, and emergency economic continuity across **Asia**.
 
 Developed as an advanced submission for the **National Hackathon**, WIAAS Asia addresses the urgent challenges facing Asia's most vulnerable microclimates: from compounding heat domes in the Indus Basin and maritime moisture traps in coastal metropolises to typhoon corridors in the Kanto plain and monsoon river valleys in Bengal.
 
@@ -24,13 +24,12 @@ WIAAS Asia combines live weather telemetry, deterministic climate physics, and r
   Your browser does not support inline video.
 </video>
 
-https://github.com/user-attachments/assets/06da3cad-279a-49ed-9f65-b70e9725cb15
 ---
 
 ## 🎯 The Operational Problem & The WIAAS Solution
 
 ### The Problem
-Traditional weather applications output passive numerical forecasts — *"43°C with 78% relative humidity"* — leaving human operators to manually interpret cascading infrastructure consequences. When agricultural crops undergo transpirational collapse, power transformers fail from air conditioning demand surges, or storm runoff inundates transport arteries, manual reaction cycles are far too slow.
+Traditional weather applications output passive numerical forecasts, such as *"43°C with 78% relative humidity"*, leaving human operators to manually interpret cascading infrastructure consequences. When agricultural crops undergo transpirational collapse, power transformers fail from air conditioning demand surges, or storm runoff inundates transport arteries, manual reaction cycles are far too slow.
 
 ### The Solution
 WIAAS Asia bridges the operational gap by coupling **deterministic atmospheric physics** with an **autonomous dual-agent cognitive decision swarm**. It answers:
@@ -42,9 +41,9 @@ WIAAS Asia bridges the operational gap by coupling **deterministic atmospheric p
 
 ## ⚡ Quickstart & 1-Click Launch (Evaluator Ready)
 
-The entire frontend Single Page Application (SPA) is **pre-compiled and served directly** by the FastAPI backend. Anyone evaluating this project **only needs Python 3.10+** — no Node.js or npm installation is required to run the full interactive platform!
+The entire frontend Single Page Application (SPA) is **pre-compiled and served directly** by the FastAPI backend. Anyone evaluating this project **only needs Python 3.10+**; no Node.js or npm installation is required to run the full interactive platform!
 
-### Option A — 1-Click Startup Scripts
+### Option A: 1-Click Startup Scripts
 - **Windows:** Double-click [`start.bat`](start.bat) or run in PowerShell:
   ```powershell
   .\start.bat
@@ -54,7 +53,7 @@ The entire frontend Single Page Application (SPA) is **pre-compiled and served d
   chmod +x start.sh && ./start.sh
   ```
 
-### Option B — Standard Python Launch
+### Option B: Standard Python Launch
 1. **Clone the Repository:**
    ```bash
    git clone https://github.com/abdxllxh/WIaaS-Asia.git
@@ -304,5 +303,5 @@ npm run build
 ---
 
 ## 📄 License
-This project is licensed under the MIT License — see [`LICENSE`](LICENSE) for details.
+This project is licensed under the MIT License. See [`LICENSE`](LICENSE) for details.
 

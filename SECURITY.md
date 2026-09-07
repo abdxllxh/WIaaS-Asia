@@ -1,4 +1,4 @@
-# SECURITY.md — WIaaS Security Policy & Threat Mitigation Architecture
+# SECURITY.md: WIaaS Security Policy & Threat Mitigation Architecture
 
 This document defines the security architecture, threat model, data protection policies, and operational vulnerability guidelines for the **WIaaS (Weather Intelligence as a Service)** platform.
 
